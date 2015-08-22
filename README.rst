@@ -1,7 +1,5 @@
-# voice-feature-extractor
-
 ==============================================================================
-README for the Feature extraction software pipeline
+README for Sage Bionetwork's mHealth feature extraction software pipeline
 ==============================================================================
 | 1. `Introduction and help`_
 | 2. `Input`_
