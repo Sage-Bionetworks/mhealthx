@@ -10,34 +10,38 @@ README for Sage Bionetwork's mHealth feature extraction software pipeline
 _`Introduction and help`
 ------------------------------------------------------------------------------
 This open source (Nipype) pipeline automates feature extraction 
-from mobile health data saved to synapse.org.
+from mobile health data saved as a Synapse project (synapse.org).
 
-- For help in a terminal window::
-
-    extractor -h
-
-- `GitHub <http://github.com/binarybottle/voice-feature-extractor>`_
-- `License <http://www.apache.org/licenses/LICENSE-2.0>`_
+  - For help in a terminal window:  extractor -h
+  - `GitHub repository <http://github.com/binarybottle/voice-feature-extractor>`_
+  - `Apache v2.0 license <http://www.apache.org/licenses/LICENSE-2.0>`_
 
 ------------------------------------------------------------------------------
-_`Input`
+_`Inputs`
 ------------------------------------------------------------------------------
-The mPower app's voice files are stored in m4a (aac) format in a synapse.org project.
+All data are accessed from Synapse tables in a project on synapse.org:
+
+  - Accelerometry: JSON files
+  - Tapping: JSON files
+  - Voice: M4A (AAC) files
+
+------------------------------------------------------------------------------
+_`Preprocessing steps`
+------------------------------------------------------------------------------
+Voice data:
+
+  - Pull M4A voice files from synapse.org.
+  - Convert M4A files to WAV format.
+  - Store fileIDs for preprocessed data to new tables on synapse.org.
 
 ------------------------------------------------------------------------------
 _`Processing steps`
 ------------------------------------------------------------------------------
-Processing: 
-
-  - Pull m4a (aac) voice files from mPower app's synapse.org project.
-  - Convert each voice file from m4a to wav format.
-  - Run different voice feature extraction software packages on the wav files.
-  - Output features to a new synapse.org table.
+  - Run different feature extraction software packages on the (preprocessed) inputs.
+  - Output features to new tables on synapse.org.
 
 ------------------------------------------------------------------------------
-_`Output`
+_`Outputs`
 ------------------------------------------------------------------------------
-Output:
-
-  - wav files
-  - Synapse Tables
+  - Synapse tables
+  - Under consideration: fileIDs for intermediate processed results?
