@@ -1,13 +1,14 @@
 ==============================================================================
 README for Sage Bionetwork's mHealth feature extraction software pipeline
 ==============================================================================
-| 1. `Introduction and help`_
-| 2. `Input`_
-| 3. `Processing steps`_
-| 4. `Output`_
+| 1. `Introduction`_
+| 2. `Inputs`_
+| 3. `Preprocessing`_
+| 4. `Processing`_
+| 5. `Outputs`_
 
 ------------------------------------------------------------------------------
-_`Introduction and help`
+_`Introduction`
 ------------------------------------------------------------------------------
 This open source (Nipype) pipeline automates feature extraction 
 from mobile health data saved as a Synapse project (synapse.org).
@@ -26,7 +27,7 @@ All data are accessed from Synapse tables in a project on synapse.org:
   - Voice: M4A (AAC) files
 
 ------------------------------------------------------------------------------
-_`Preprocessing steps`
+_`Preprocessing`
 ------------------------------------------------------------------------------
 Voice data:
 
@@ -35,7 +36,7 @@ Voice data:
   - Store fileIDs for preprocessed data to new tables on synapse.org.
 
 ------------------------------------------------------------------------------
-_`Processing steps`
+_`Processing`
 ------------------------------------------------------------------------------
   - Run different feature extraction software packages on the (preprocessed) inputs.
   - Output features to new tables on synapse.org.
