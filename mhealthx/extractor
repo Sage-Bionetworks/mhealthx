@@ -132,22 +132,22 @@ if synID_phonation:
     GetPhonationTable.inputs.synapse_email = synapse_email
     GetPhonationTable.inputs.synapse_password = synapse_password
 
-    # #-------------------------------------------------------------------------
-    # # Retrieve voice file in table:
-    # #-------------------------------------------------------------------------
-    # GetPhonationFile = Node(name='get_phonation_file',
-    #                         interface=Fn(function=get_synapse_file,
-    #                                      input_names=['dataframe',
-    #                                                   'synapse_email',
-    #                                                   'synapse_password'],
-    #                                      output_names=['file']))
-    # Flow.add_nodes([GetPhonationFile])
-    # Flow.connect(GetPhonationTable, 'dataframe',
-    #              GetPhonationFile, 'dataframe')
-    # GetPhonationFile.inputs.synapse_email = synapse_email
-    # GetPhonationFile.inputs.synapse_password = synapse_password
-    # Flow.connect(GetPhonationFile, 'file', Sink, 'phonation.@m4a_file')
-    #
+    #-------------------------------------------------------------------------
+    # Retrieve voice file in table:
+    #-------------------------------------------------------------------------
+    GetPhonationFile = Node(name='get_phonation_file',
+                            interface=Fn(function=get_synapse_file,
+                                         input_names=['dataframe',
+                                                      'synapse_email',
+                                                      'synapse_password'],
+                                         output_names=['file']))
+    Flow.add_nodes([GetPhonationFile])
+    Flow.connect(GetPhonationTable, 'dataframe',
+                 GetPhonationFile, 'dataframe')
+    GetPhonationFile.inputs.synapse_email = synapse_email
+    GetPhonationFile.inputs.synapse_password = synapse_password
+    Flow.connect(GetPhonationFile, 'file', Sink, 'phonation.@m4a_file')
+
     # #-------------------------------------------------------------------------
     # # Convert voice file from M4A (AAC) to WAV format:
     # #-------------------------------------------------------------------------

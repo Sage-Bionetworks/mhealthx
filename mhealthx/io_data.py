@@ -86,3 +86,51 @@ def write_synapse_table(dataframe, project_synID, synapse_email,
     schema = Schema(name=schema_name, columns=as_table_columns(dataframe),
                     parent=project_synID)
     syn.store(Table(schema, dataframe))
+
+def get_synapse_file(dataframe, synapse_table_ID, synapse_email, synapse_password):
+    """
+    Retrieve voice file in Synapse table.
+
+    Parameters
+    ----------
+    dataframe : Pandas DataFrame
+        Synapse table contents
+    synapse_email : string
+        email address to access Synapse project
+    synapse_password : string
+        password corresponding to email address to Synapse project
+
+    Returns
+    -------
+    file : string
+        name of file from Synapse table
+
+    Examples
+    --------
+    >>> from mhealthx.io_data import get_synapse_file
+    >>> synapse_table_ID = 'syn4590865'
+    >>> synapse_email = 'arno.klein@sagebase.org'
+    >>> synapse_password = '*****'
+    >>> dataframe = get_synapse_file(synapse_table_ID, synapse_email, synapse_password)
+
+    """
+    import synapseclient
+
+    syn = synapseclient.Synapse()
+    syn.login(synapse_email, synapse_password)
+
+    # pid<-propertyValue(project, "id")
+    # file <- File(path="~/myproject/genotypedata.csv", name="genotypedata", parentId=pid)
+    # # 'synStore' will upload the file to Synapse
+    # # locally we record that the uploaded file is available at ~/myproject/genotypedata.csv
+    # file <- synStore(file)
+    # # we can get the ID of the file in Synapse
+    # fileId <- propertyValue(file, "id")
+    # fileCopy<-synGet(fileId, downloadLocation=".")
+
+    results = syn.tableQuery("select * from {0}".format(synapse_table_ID))
+    dataframe = results.asDataFrame()
+
+    # file =
+
+    return file

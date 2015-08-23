@@ -27,7 +27,7 @@ from distutils.core import setup
 #cmdclass = {'build_py': get_comrec_build('mhealthx', build_py)}
 
 # Get version and release info, which is all stored in info.py
-ver_file = 'info.py'
+ver_file = os.path.join('mhealthx', 'info.py')
 exec(open(ver_file).read())
 
 # Do dependency checking
@@ -60,8 +60,8 @@ def main(**extra_args):
           version=VERSION,
           requires=REQUIRES,
           provides=PROVIDES,
-#          packages     = ['mhealthx'],
-#          scripts      = [pjoin('mhealthx', 'mhealthx')],
+          packages = ['mhealthx'],
+          scripts = [pjoin('mhealthx', 'extractor')],
           **extra_args
          )
 
