@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-This is the main program to run feature extraction of mHealth data on Synapse.
+This pipeline runs feature extraction on mHealth data stored on Synapse.org.
 
 For help in using extractor ::
 
@@ -27,8 +27,8 @@ from nipype.interfaces.io import DataGrabber, DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.interfaces.utility import IdentityInterface
 from nipype.pipeline.engine import Workflow, Node
-from io_data import read_synapse_table, write_synapse_table, \
-                    get_synapse_file
+from mhealthx.io_data import read_synapse_table, write_synapse_table, \
+                             get_synapse_file
 
 #=============================================================================
 #
