@@ -10,17 +10,17 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
-def read_synapse_table(table_synID, email, password):
+def read_synapse_table(synapse_table_ID, synapse_email, synapse_password):
     """
     Read data from a Synapse table.
 
     Parameters
     ----------
-    table_synID : string
+    synapse_table_ID : string
         Synapse ID for table
-    email : string
+    synapse_email : string
         email address to access Synapse project
-    password : string
+    synapse_password : string
         password corresponding to email address to Synapse project
 
     Returns
@@ -30,25 +30,25 @@ def read_synapse_table(table_synID, email, password):
 
     Examples
     --------
-    >>> from extract.io_data import read_synapse_table
-    >>> table_synID = 'syn4590865'
-    >>> email = 'arno.klein@sagebase.org'
-    >>> password = '*****'
-    >>> dataframe = read_synapse_table(table_synID, email, password)
+    >>> from mhealthx.io_data import read_synapse_table
+    >>> synapse_table_ID = 'syn4590865'
+    >>> synapse_email = 'arno.klein@sagebase.org'
+    >>> synapse_password = '*****'
+    >>> dataframe = read_synapse_table(synapse_table_ID, synapse_email, synapse_password)
 
     """
     import synapseclient
 
     syn = synapseclient.Synapse()
-    syn.login(email, password)
+    syn.login(synapse_email, synapse_password)
 
-    results = syn.tableQuery("select * from {0}".format(table_synID))
+    results = syn.tableQuery("select * from {0}".format(synapse_table_ID))
     dataframe = results.asDataFrame()
 
     return dataframe
 
-def write_synapse_table(dataframe, project_synID, email, password,
-                        schema_name=''):
+def write_synapse_table(dataframe, project_synID, synapse_email,
+                        synapse_password, schema_name=''):
     """
     Write data to a Synapse table.
 
@@ -58,30 +58,30 @@ def write_synapse_table(dataframe, project_synID, email, password,
         Synapse table contents
     project_synID : string
         Synapse ID for project within which table is to be written
-    email : string
+    synapse_email : string
         email address to access Synapse project
-    password : string
+    synapse_password : string
         password corresponding to email address to Synapse project
     schema_name : string
         schema name of table
 
     Examples
     --------
-    >>> from extract.io_data import read_synapse_table, write_synapse_table
-    >>> input_table_synID = 'syn4590865'
+    >>> from mhealthx.io_data import read_synapse_table, write_synapse_table
+    >>> input_synapse_table_ID = 'syn4590865'
     >>> project_synID = 'syn4899451'
-    >>> email = 'arno.klein@sagebase.org'
-    >>> password = '*****'
-    >>> dataframe = read_synapse_table(input_table_synID, email, password)
-    >>> schema_name = 'Contents of ' + input_table_synID
-    >>> write_synapse_table(dataframe, project_synID, email, password, schema_name)
+    >>> synapse_email = 'arno.klein@sagebase.org'
+    >>> synapse_password = '*****'
+    >>> dataframe = read_synapse_table(input_synapse_table_ID, synapse_email, synapse_password)
+    >>> schema_name = 'Contents of ' + input_synapse_table_ID
+    >>> write_synapse_table(dataframe, project_synID, synapse_email, synapse_password, schema_name)
 
     """
     import synapseclient
     from synapseclient import Schema, Table, as_table_columns
 
     syn = synapseclient.Synapse()
-    syn.login(email, password)
+    syn.login(synapse_email, synapse_password)
 
     schema = Schema(name=schema_name, columns=as_table_columns(dataframe),
                     parent=project_synID)
