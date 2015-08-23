@@ -40,19 +40,19 @@ parser = argparse.ArgumentParser(description="""
                     data stored on Sage Bionetwork's Synapse.org.""",
                      formatter_class = lambda prog:
                      argparse.HelpFormatter(prog, max_help_position=40))
+parser.add_argument("-v", "--version", help="version number",
+                    action='version', version='%(prog)s 0.1')
 parser.add_argument("-n", "--numproc",
                     help=('number of processors (default: 1)'),
                     type=int, default=1, metavar='INT')
 parser.add_argument("-g", "--graph",
                     help=('plot workflow graph: "hier", "flat", "exec"'),
                     choices=['hier', 'flat', 'exec'], metavar='STR')
-parser.add_argument("-v", "--version", help="extractor version number",
-                    action='version', version='%(prog)s 0.1')
 parser.add_argument("--plugin", dest="plugin",
                     default='Linear',
-                    help="Plugin to use, such as: --plugin PBS")
+                    help="optional plugin: --plugin PBS")
 parser.add_argument("--plugin_args", dest="plugin_args",
-                    help="Plugin arguments in dictionary form, such as:"
+                    help="optional plugin arguments:"
                          " --plugin_args \"dict(qsub_args='-q many')\"")
 login_group = parser.add_argument_group('Synapse login')
 login_group.add_argument("-e", "--email",
@@ -63,20 +63,15 @@ login_group.add_argument("-p", "--password",
                     metavar='STR')
 activities_group = parser.add_argument_group('activities')
 activities_group.add_argument("--phonation",
-                    help="Synapse ID for phonation data table"
-                         " (to run phonation feature extraction)",
+                    help="Synapse table ID for phonation data",
                     metavar='STR')
 activities_group.add_argument("--balance",
-                    help=(argparse.SUPPRESS),
-#                    help="Synapse ID for balance data table"
-#                         " (to run balance feature extraction)",
+                    help="Synapse table ID for balance data",
                     metavar='STR')
 activities_group.add_argument("--tapping",
-                    help=(argparse.SUPPRESS),
-#                    help="Synapse ID for tapping data table"
-#                         " (to run tapping feature extraction)",
+                    help="Synapse table ID for tapping data",
                     metavar='STR')
-outputs_group = parser.add_argument_group('modify outputs')
+outputs_group = parser.add_argument_group('outputs')
 outputs_group.add_argument("--output",
                     help='output folder (if not $HOME/mhealthx_output)',
                     default=os.path.join(os.environ['HOME'],
