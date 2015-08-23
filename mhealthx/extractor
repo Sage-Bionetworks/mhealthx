@@ -27,8 +27,8 @@ from nipype.interfaces.io import DataGrabber, DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.interfaces.utility import IdentityInterface
 from nipype.pipeline.engine import Workflow, Node
-from io_data import read_synapse_table, write_synapse_table #, \
-                    #get_synapse_file
+from io_data import read_synapse_table, write_synapse_table, \
+                    get_synapse_file
 
 #=============================================================================
 #
@@ -126,7 +126,8 @@ if synID_phonation:
                                           input_names=['synapse_table_ID',
                                                        'synapse_email',
                                                        'synapse_password'],
-                                          output_names=['dataframe']))
+                                          output_names=['dataframe',
+                                                        'schema']))
     Flow.add_nodes([GetPhonationTable])
     GetPhonationTable.inputs.synapse_table_ID = synID_phonation
     GetPhonationTable.inputs.synapse_email = synapse_email
@@ -138,29 +139,32 @@ if synID_phonation:
     GetPhonationFile = Node(name='get_phonation_file',
                             interface=Fn(function=get_synapse_file,
                                          input_names=['dataframe',
+                                                      'schema',
                                                       'synapse_email',
                                                       'synapse_password'],
                                          output_names=['file']))
     Flow.add_nodes([GetPhonationFile])
     Flow.connect(GetPhonationTable, 'dataframe',
                  GetPhonationFile, 'dataframe')
+    Flow.connect(GetPhonationTable, 'schema',
+                 GetPhonationFile, 'schema')
     GetPhonationFile.inputs.synapse_email = synapse_email
     GetPhonationFile.inputs.synapse_password = synapse_password
     Flow.connect(GetPhonationFile, 'file', Sink, 'phonation.@m4a_file')
 
-    # #-------------------------------------------------------------------------
-    # # Convert voice file from M4A (AAC) to WAV format:
-    # #-------------------------------------------------------------------------
-    # ConvertPhonationFile = Node(name='convert_phonation_file',
-    #                         interface=Fn(function=m4a_to_wav,
-    #                                      input_names=['m4a_file'],
-    #                                      output_names=['wav_file']))
-    # Flow.add_nodes([ConvertPhonationFile])
-    # Flow.connect(GetPhonationFile, 'file',
-    #              ConvertPhonationFile, 'm4a_file')
-    # Flow.connect(ConvertPhonationFile, 'wav_file',
-    #              Sink, 'phonation.@wav_file')
-    #
+    #-------------------------------------------------------------------------
+    # Convert voice file from M4A (AAC) to WAV format:
+    #-------------------------------------------------------------------------
+    ConvertPhonationFile = Node(name='convert_phonation_file',
+                            interface=Fn(function=m4a_to_wav,
+                                         input_names=['m4a_file'],
+                                         output_names=['wav_file']))
+    Flow.add_nodes([ConvertPhonationFile])
+    Flow.connect(GetPhonationFile, 'file',
+                 ConvertPhonationFile, 'm4a_file')
+    Flow.connect(ConvertPhonationFile, 'wav_file',
+                 Sink, 'phonation.@wav_file')
+
     # #-------------------------------------------------------------------------
     # # Run openSMILE feature extraction on voice data:
     # #-------------------------------------------------------------------------
