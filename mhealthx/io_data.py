@@ -93,7 +93,9 @@ def write_synapse_table(dataframe, project_synID, synapse_email,
     syn.store(Table(schema, dataframe))
 
 
-def get_synapse_file(dataframe, schema, synapse_table_ID, synapse_email, synapse_password):
+def get_synapse_files_in_table(dataframe, schema, column_name,
+                               synapse_email, synapse_password,
+                               output_path='.'):
     """
     Retrieve file in Synapse table.
 
@@ -103,24 +105,30 @@ def get_synapse_file(dataframe, schema, synapse_table_ID, synapse_email, synapse
         Synapse table contents
     schema : synapseclient.table.Schema
         Synapse table schema
+    column_name : string
+        column header for fileIDs in Synapse table
     synapse_email : string
         email address to access Synapse project
     synapse_password : string
         password corresponding to email address to Synapse project
+    output_path : string
+        output path to store files
 
     Returns
     -------
-    #fileinfo : string
-    #    name of file from Synapse table
+    files : list of strings
+        name of file from Synapse table
 
     Examples
     --------
-    >>> from mhealthx.io_data import read_synapse_table, get_synapse_file
+    >>> from mhealthx.io_data import read_synapse_table, get_synapse_files_in_table
     >>> input_synapse_table_ID = 'syn4590865'
     >>> synapse_email = 'arno.klein@sagebase.org'
     >>> synapse_password = '*****'
     >>> dataframe, schema = read_synapse_table(input_synapse_table_ID, synapse_email, synapse_password)
-    >>> file = get_synapse_file(dataframe, schema, synapse_table_ID, synapse_email, synapse_password)
+    >>> column_name = 'audio_audio.m4a'
+    >>> output_path = '.'
+    >>> files = get_synapse_files_in_table(dataframe, schema, column_name, synapse_email, synapse_password, output_path)
 
     """
     import synapseclient
@@ -128,9 +136,15 @@ def get_synapse_file(dataframe, schema, synapse_table_ID, synapse_email, synapse
     syn = synapseclient.Synapse()
     syn.login(synapse_email, synapse_password)
 
-    fileinfo = syn.downloadTableFile(schema, rowId=0, versionNumber=0, column='audio_audio.m4a', downloadLocation='.')
+    files = []
+    nrows = dataframe.shape[0]
+    for rowID in range(nrows):
+        fileinfo = syn.downloadTableFile(schema, rowId=rowID, versionNumber=0,
+                                         column=column_name,
+                                         downloadLocation=output_path)
+        files.append(fileinfo['files'][0])
 
-    return fileinfo
+    return files
 
 
 def m4a_to_wav(m4a_file, output_wav_file):
