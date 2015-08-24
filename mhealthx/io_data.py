@@ -144,7 +144,7 @@ def write_synapse_table(dataframe, project_synID, synapse_email,
     >>> project_synID = 'syn4899451'
     >>> synapse_email = 'arno.klein@sagebase.org'
     >>> synapse_password = '*****'
-    >>> dataframe, schema = read_synapse_table(input_synapse_table_ID, synapse_email, synapse_password)
+    >>> dataframe = read_synapse_table(input_synapse_table_ID, synapse_email, synapse_password)
     >>> schema_name = 'Contents of ' + input_synapse_table_ID
     >>> write_synapse_table(dataframe, project_synID, synapse_email, synapse_password, schema_name)
 
@@ -155,8 +155,11 @@ def write_synapse_table(dataframe, project_synID, synapse_email,
     syn = synapseclient.Synapse()
     syn.login(synapse_email, synapse_password)
 
+    dataframe.index = range(dataframe.shape[0])
+
     schema = Schema(name=schema_name, columns=as_table_columns(dataframe),
-                    parent=project_synID)
+                    parent=project_synID, includeRowIdAndRowVersion=False)
+
     syn.store(Table(schema, dataframe))
 
 
