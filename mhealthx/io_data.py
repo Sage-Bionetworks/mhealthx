@@ -209,7 +209,7 @@ def append_file_names(input_files, file_append):
     return output_files
 
 
-def m4a_to_wav(m4a_file, output_wav_file):
+def m4a_to_wav(m4a_file):
     """
     Convert voice file from M4A (AAC) to WAV format.
 
@@ -231,18 +231,11 @@ def m4a_to_wav(m4a_file, output_wav_file):
     --------
     >>> from mhealthx.io_data import m4a_to_wav
     >>> m4a_file = '/desk/test.tmp'
-    >>> wav_file = '/desk/test.wav'
-    >>> m4a_to_wav(m4a_file, wav_file)
+    >>> m4a_to_wav(m4a_file)
 
     """
     import os
-    from shutil import copyfile
     from mhealthx.thirdparty import audiotranscode
-
-    if not m4a_file.endswith('m4a'):
-        m4a_new = m4a_file + '.m4a'
-        copyfile(m4a_file, m4a_new)
-        m4a_file = m4a_new
 
     wav_file = m4a_file + '.wav'
 

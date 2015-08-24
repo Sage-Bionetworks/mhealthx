@@ -27,13 +27,14 @@ from nipype.interfaces.io import DataGrabber, DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.interfaces.utility import IdentityInterface
 from nipype.pipeline.engine import Workflow, Node
-from mhealthx.io_data import read_synapse_table_files, append_file_names
+from mhealthx.io_data import read_synapse_table_files, append_file_names, \
+                             m4a_to_wav
 
-#=============================================================================
+# ============================================================================
 #
-#   Command-line arguments
+# Command-line arguments
 #
-#=============================================================================
+# ============================================================================
 parser = argparse.ArgumentParser(description="""
                     The extractor software extracts features from mHealth
                     data stored on Sage Bionetwork's Synapse.org.""",
@@ -86,12 +87,16 @@ synapse_password = args.password
 synID_phonation = args.phonation
 synID_balance = args.balance
 synID_tapping = args.tapping
+if args.numproc:
+    nproc = args.numproc
+else:
+    nproc = 1
 
-#=============================================================================
+# ============================================================================
 #
-#   Initialize main workflow and create output directories
+# Initialize main workflow and create output directories
 #
-#=============================================================================
+# ============================================================================
 main_workflow_name = 'mHealthX'
 Flow = Workflow(name=main_workflow_name)
 Flow.base_dir = args.working
@@ -109,17 +114,17 @@ if synID_phonation:
     if not os.path.isdir(phonation_file_path):
         os.makedirs(phonation_file_path)
 
-#=============================================================================
+# ============================================================================
 #
-#   Phonation workflow
+# Phonation workflow
 #
-#=============================================================================
+# ============================================================================
 if synID_phonation:
     phonFlow = Workflow(name='phonation')
 
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
     # Read Synapse table:
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
     GetPhonationFiles = Node(name='get_phonation_files',
                              interface=Fn(function=read_synapse_table_files,
                                           input_names=['synapse_table_ID',
@@ -138,9 +143,9 @@ if synID_phonation:
     GetPhonationFiles.inputs.select_rows = range(3)
     GetPhonationFiles.inputs.output_path = phonation_file_path
 
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
     # Rename m4a files:
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
     RenamePhonationFiles = Node(name='rename_phonation_files',
                                 interface=Fn(function=append_file_names,
                                              input_names=['input_files',
@@ -151,101 +156,83 @@ if synID_phonation:
                  RenamePhonationFiles, 'input_files')
     RenamePhonationFiles.inputs.file_append = '.m4a'
 
-    # #-------------------------------------------------------------------------
-    # # Convert voice file from M4A (AAC) to WAV format:
-    # #-------------------------------------------------------------------------
-    # ConvertPhonationFile = Node(name='convert_phonation_file',
-    #                         interface=Fn(function=m4a_to_wav,
-    #                                      input_names=['m4a_file'],
-    #                                      output_names=['wav_file']))
-    # Flow.add_nodes([ConvertPhonationFile])
-    # Flow.connect(GetPhonationFile, 'file',
-    #              ConvertPhonationFile, 'm4a_file')
-    # Flow.connect(ConvertPhonationFile, 'wav_file',
-    #              Sink, 'phonation.@wav_file')
+    # # ------------------------------------------------------------------------
+    # # Convert voice files from M4A (AAC) to WAV format:
+    # # ------------------------------------------------------------------------
+    # ConvertPhonationFiles = Node(name='convert_phonation_files',
+    #                              interface=Fn(function=m4a_to_wav,
+    #                                           input_names=['m4a_file'],
+    #                                           output_names=['wav_file']))
+    # Flow.add_nodes([ConvertPhonationFiles])
+    # Flow.connect(RenamePhonationFiles, 'output_files',
+    #              ConvertPhonationFiles, 'm4a_file')
+    # #Flow.connect(ConvertPhonationFiles, 'wav_file',
+    # #             Sink, 'phonation.@wav_file')
 
-    # #-------------------------------------------------------------------------
-    # # Run openSMILE feature extraction on voice data:
-    # #-------------------------------------------------------------------------
-    # RunOpenSMILE = Node(name='openSMILE',
-    #                     interface=Fn(function=run_openSMILE,
-    #                                  input_names=['wav_file'],
-    #                                  output_names=['features']))
-    # Flow.add_nodes([RunOpenSMILE])
-    # Flow.connect(ConvertPhonationFile, 'wav_file',
-    #              RunOpenSMILE, 'wav_file')
-    # Flow.connect(RunOpenSMILE, 'features',
-    #              Sink, 'phonation.@features.openSMILE')
+    #-------------------------------------------------------------------------
+    # Run openSMILE feature extraction on voice data:
+    #-------------------------------------------------------------------------
+    RunOpenSMILE = Node(name='openSMILE',
+                        interface=Fn(function=run_openSMILE,
+                                     input_names=['wav_file'],
+                                     output_names=['features']))
+    Flow.add_nodes([RunOpenSMILE])
+    Flow.connect(ConvertPhonationFile, 'wav_file',
+                 RunOpenSMILE, 'wav_file')
+    Flow.connect(RunOpenSMILE, 'features',
+                 Sink, 'phonation.@features.openSMILE')
 
-#=============================================================================
+# ============================================================================
 #
-#   Run workflows
+# Run workflows
 #
-#=============================================================================
+# ============================================================================
 if __name__ == '__main__':
 
     from time import time
     time0 = time()
-    #-------------------------------------------------------------------------
-    # Set the workflow configuration to enable provenance tracking:
-    #-------------------------------------------------------------------------
-    #config.enable_provenance()
 
-    #-------------------------------------------------------------------------
-    # Set the workflow configuration to use content hashing:
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
+    # Workflow configuration: provenance tracking, content hashing, etc.:
+    # ------------------------------------------------------------------------
+    # config.enable_provenance()
     Flow.config['execution']['hash_method'] = 'content'
-    #hashing = args.hashing
-    #if hashing:
-    #Flow.config['execution']['hash_method'] = 'content'
-    #Flow.config['execution']['use_relative_paths'] = True
+    # Flow.config['execution']['use_relative_paths'] = True
 
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
     # Generate a visual graph:
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
     graph_vis = args.graph
-    if graph_vis == 'hier':
-        graph_vis = 'hierarchical'
     if graph_vis:
         if graph_vis == 'exec':
             Flow.write_graph(graph2use=graph_vis, simple_form=False)
         else:
+            if graph_vis == 'hier':
+                graph_vis = 'hierarchical'
             Flow.write_graph(graph2use=graph_vis)
 
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
     # Debug: http://nipy.org/nipype/users/config_file.html#debug-configuration
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
     debug = False
     if debug:
         config.set('logging', 'workflow_level', 'DEBUG')
         logging.update_logging(config)
         Flow.config['execution']['stop_on_first_rerun'] = True
         nproc = 1
-    else:
-        if args.numproc:
-            nproc = args.numproc
-        else:
-            nproc = 1
 
-    #-------------------------------------------------------------------------
-    # Run plugin, such as for multiple processes:
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
+    # Run with or without a plugin:
+    # ------------------------------------------------------------------------
     if args.plugin:
         if args.plugin_args:
-            Flow.run(args.plugin, plugin_args=eval(args.plugin_args))
+            Flow.run(plugin=args.plugin, plugin_args=eval(args.plugin_args))
         else:
-            Flow.run(args.plugin)
-    if args.numproc:
-        if nproc > 1:
-            Flow.run(plugin='MultiProc',
-                     plugin_args={'n_procs': args.numproc})
-                     #updatehash=True)
-        else:
-            Flow.run()  #updatehash=True)
+            Flow.run(plugin=args.plugin)
+    elif nproc > 1:
+        Flow.run(plugin='MultiProc',
+                 plugin_args={'n_procs': nproc})
     else:
-        Flow.run()  #updatehash=True)
-    # # Default is to use all processors:
-    #else:
-    #    Flow.run(plugin='MultiProc')
+        Flow.run()  # Use all processors: Flow.run(plugin='MultiProc')
 
-    print('extractor run finished ({0:0.2f} seconds).'.format(time() - time0))
+    print('Done! ({0:0.2f} seconds)'.format(time() - time0))
