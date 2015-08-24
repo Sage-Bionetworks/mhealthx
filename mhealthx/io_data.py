@@ -27,8 +27,6 @@ def read_synapse_table(synapse_table_ID, synapse_email, synapse_password):
     -------
     dataframe : Pandas DataFrame
         Synapse table contents
-    schema : synapseclient.table.Schema
-        Synapse table schema
 
     Examples
     --------
@@ -36,7 +34,7 @@ def read_synapse_table(synapse_table_ID, synapse_email, synapse_password):
     >>> synapse_table_ID = 'syn4590865'
     >>> synapse_email = 'arno.klein@sagebase.org'
     >>> synapse_password = '*****'
-    >>> dataframe, schema = read_synapse_table(synapse_table_ID, synapse_email, synapse_password)
+    >>> dataframe = read_synapse_table(synapse_table_ID, synapse_email, synapse_password)
 
     """
     import synapseclient
@@ -44,12 +42,12 @@ def read_synapse_table(synapse_table_ID, synapse_email, synapse_password):
     syn = synapseclient.Synapse()
     syn.login(synapse_email, synapse_password)
 
-    schema = syn.get(synapse_table_ID)
+    #schema = syn.get(synapse_table_ID)
 
     results = syn.tableQuery("select * from {0}".format(synapse_table_ID))
     dataframe = results.asDataFrame()
 
-    return dataframe, schema
+    return dataframe
 
 
 def read_synapse_table_files(synapse_table_ID,
@@ -77,8 +75,6 @@ def read_synapse_table_files(synapse_table_ID,
     -------
     dataframe : Pandas DataFrame
         Synapse table contents
-    schema : synapseclient.table.Schema
-        Synapse table schema
     files : list of strings
         files from Synapse table (full paths to downloaded files)
 
@@ -91,7 +87,7 @@ def read_synapse_table_files(synapse_table_ID,
     >>> column_name = 'audio_audio.m4a'
     >>> select_rows = range(3)
     >>> output_path = '.'
-    >>> dataframe, schema, files = read_synapse_table_files(synapse_table_ID, synapse_email, synapse_password, column_name, select_rows, output_path)
+    >>> dataframe, files = read_synapse_table_files(synapse_table_ID, synapse_email, synapse_password, column_name, select_rows, output_path)
 
     """
     import synapseclient
@@ -120,7 +116,7 @@ def read_synapse_table_files(synapse_table_ID,
             else:
                 files.append('')
 
-    return dataframe, schema, files
+    return dataframe, files
 
 
 def write_synapse_table(dataframe, project_synID, synapse_email,
@@ -162,60 +158,6 @@ def write_synapse_table(dataframe, project_synID, synapse_email,
     schema = Schema(name=schema_name, columns=as_table_columns(dataframe),
                     parent=project_synID)
     syn.store(Table(schema, dataframe))
-
-
-def get_synapse_files_in_table(dataframe, schema, column_name,
-                               synapse_email, synapse_password,
-                               output_path='.'):
-    """
-    Retrieve file in Synapse table.
-
-    Parameters
-    ----------
-    dataframe : Pandas DataFrame
-        Synapse table contents
-    schema : synapseclient.table.Schema
-        Synapse table schema
-    column_name : string
-        column header for fileIDs in Synapse table
-    synapse_email : string
-        email address to access Synapse project
-    synapse_password : string
-        password corresponding to email address to Synapse project
-    output_path : string
-        output path to store files
-
-    Returns
-    -------
-    files : list of strings
-        files from Synapse table (full paths to downloaded files)
-
-    Examples
-    --------
-    >>> from mhealthx.io_data import read_synapse_table, get_synapse_files_in_table
-    >>> input_synapse_table_ID = 'syn4590865'
-    >>> synapse_email = 'arno.klein@sagebase.org'
-    >>> synapse_password = '*****'
-    >>> dataframe, schema = read_synapse_table(input_synapse_table_ID, synapse_email, synapse_password)
-    >>> column_name = 'audio_audio.m4a'
-    >>> output_path = '.'
-    >>> files = get_synapse_files_in_table(dataframe, schema, column_name, synapse_email, synapse_password, output_path)
-
-    """
-    import synapseclient
-
-    syn = synapseclient.Synapse()
-    syn.login(synapse_email, synapse_password)
-
-    files = []
-    nrows = dataframe.shape[0]
-    for rowID in range(nrows):
-        fileinfo = syn.downloadTableFile(schema, rowId=rowID, versionNumber=0,
-                                         column=column_name,
-                                         downloadLocation=output_path)
-        files.append(fileinfo['files'][0])
-
-    return files
 
 
 def m4a_to_wav(m4a_file, output_wav_file):
