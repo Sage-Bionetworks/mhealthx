@@ -112,7 +112,7 @@ def read_synapse_table_files(synapse_table_ID,
                                              column=column_name,
                                              downloadLocation=output_path)
             if fileinfo:
-                files.append(fileinfo['files'][0])
+                files.append(fileinfo['path'])
             else:
                 files.append('')
 
@@ -162,12 +162,12 @@ def write_synapse_table(dataframe, project_synID, synapse_email,
 
 def append_file_names(input_files, file_append):
     """
-    Append each file with a string.
+    Copy each file with an append to its file name.
 
     Parameters
     ----------
     input_files : list of strings
-        each string is the full path to a file
+        full path to the input files
     file_append : string
         append to each file name
 
@@ -188,15 +188,16 @@ def append_file_names(input_files, file_append):
     from shutil import copyfile
 
     output_files = []
+
     # Loop through input files:
     for input_file in input_files:
         if not os.path.exists(input_file):
             raise(IOError(input_file + " not found"))
         else:
-            # Don't do anything if file already has correct append:
+            # Don't copy file if file already has correct append:
             if input_file.endswith(file_append):
                 output_files.append(input_file)
-            # Append file name and copy to a new file:
+            # Copy to a new file with appended file name:
             else:
                 output_file = input_file + file_append
                 copyfile(input_file, output_file)
