@@ -160,6 +160,54 @@ def write_synapse_table(dataframe, project_synID, synapse_email,
     syn.store(Table(schema, dataframe))
 
 
+def append_file_names(input_files, file_append):
+    """
+    Append each file with a string.
+
+    Parameters
+    ----------
+    input_files : list of strings
+        each string is the full path to a file
+    file_append : string
+        append to each file name
+
+    Returns
+    -------
+    output_files : list of strings
+        each string is the full path to a renamed file
+
+    Examples
+    --------
+    >>> from mhealthx.io_data import append_file_names
+    >>> input_files = ['/Users/arno/mhealthx_working/mHealthX/phonation_files/test.tmp']
+    >>> file_append = '.m4a'
+    >>> output_files = append_file_names(input_files, file_append)
+
+    """
+    import os
+    from shutil import copyfile
+
+    output_files = []
+    # Loop through input files:
+    for input_file in input_files:
+        if not os.path.exists(input_file):
+            raise(IOError(input_file + " not found"))
+        else:
+            # Don't do anything if file already has correct append:
+            if input_file.endswith(file_append):
+                output_files.append(input_file)
+            # Append file name and copy to a new file:
+            else:
+                output_file = input_file + file_append
+                copyfile(input_file, output_file)
+                if not os.path.exists(output_file):
+                    raise(IOError(output_file + " not found"))
+                else:
+                    output_files.append(output_file)
+
+    return output_files
+
+
 def m4a_to_wav(m4a_file, output_wav_file):
     """
     Convert voice file from M4A (AAC) to WAV format.

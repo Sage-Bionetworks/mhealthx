@@ -27,7 +27,7 @@ from nipype.interfaces.io import DataGrabber, DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.interfaces.utility import IdentityInterface
 from nipype.pipeline.engine import Workflow, Node
-from mhealthx.io_data import read_synapse_table_files
+from mhealthx.io_data import read_synapse_table_files, append_file_names
 
 #=============================================================================
 #
@@ -135,26 +135,24 @@ if synID_phonation:
     GetPhonationFiles.inputs.synapse_email = synapse_email
     GetPhonationFiles.inputs.synapse_password = synapse_password
     GetPhonationFiles.inputs.column_name = 'audio_audio.m4a'
-    GetPhonationFiles.inputs.select_rows = range(3)
+    GetPhonationFiles.inputs.select_rows = [] #range(3)
     GetPhonationFiles.inputs.output_path = phonation_file_path
 
     #-------------------------------------------------------------------------
     # Rename m4a files:
     #-------------------------------------------------------------------------
-    # RenamePhonationFiles = Node(name='rename_m4a_files',
-    #                             interface=Fn(function=append_file_names,
-    #                                          input_names=['input_files',
-    #                                                       'file_append'],
-    #                                          output_names=['output_files']))
-    # Flow.add_nodes([RenamePhonationFiles])
-    # Flow.connect(GetPhonationTable, 'dataframe',
-    #              RenamePhonationFiles, 'dataframe')
-    # Flow.connect(GetPhonationTable, 'schema',
-    #              RenamePhonationFiles, 'schema')
-    # RenamePhonationFiles.inputs.synapse_email = synapse_email
-    # RenamePhonationFiles.inputs.synapse_password = synapse_password
-    # Flow.connect(RenamePhonationFiles, 'file', Sink, 'phonation.@m4a_files')
-    #
+    RenamePhonationFiles = Node(name='rename_phonation_files',
+                                interface=Fn(function=append_file_names,
+                                             input_names=['input_files',
+                                                          'file_append'],
+                                             output_names=['output_files']))
+    Flow.add_nodes([RenamePhonationFiles])
+    Flow.connect(GetPhonationFiles, 'files',
+                 RenamePhonationFiles, 'input_files')
+    RenamePhonationFiles.inputs.file_append = '.m4a'
+    #Flow.connect(RenamePhonationFiles, 'output_files', Sink,
+    #             'phonation.@m4a_files')
+
     # #-------------------------------------------------------------------------
     # # Convert voice file from M4A (AAC) to WAV format:
     # #-------------------------------------------------------------------------
