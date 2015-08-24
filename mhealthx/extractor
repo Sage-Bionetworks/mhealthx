@@ -27,9 +27,7 @@ from nipype.interfaces.io import DataGrabber, DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.interfaces.utility import IdentityInterface
 from nipype.pipeline.engine import Workflow, Node
-from mhealthx.io_data import read_synapse_table, write_synapse_table, \
-                             get_synapse_files_in_table, \
-                             read_synapse_table_files
+from mhealthx.io_data import read_synapse_table_files
 
 #=============================================================================
 #
@@ -119,43 +117,6 @@ if synID_phonation:
 if synID_phonation:
     phonFlow = Workflow(name='phonation')
 
-    # #-------------------------------------------------------------------------
-    # # Read Synapse table:
-    # #-------------------------------------------------------------------------
-    # GetPhonationTable = Node(name='get_phonation_table',
-    #                          interface=Fn(function=read_synapse_table,
-    #                                       input_names=['synapse_table_ID',
-    #                                                    'synapse_email',
-    #                                                    'synapse_password'],
-    #                                       output_names=['dataframe',
-    #                                                     'schema']))
-    # Flow.add_nodes([GetPhonationTable])
-    # GetPhonationTable.inputs.synapse_table_ID = synID_phonation
-    # GetPhonationTable.inputs.synapse_email = synapse_email
-    # GetPhonationTable.inputs.synapse_password = synapse_password
-
-    #-------------------------------------------------------------------------
-    # Retrieve phonation files in table:
-    #-------------------------------------------------------------------------
-    # GetPhonationFiles = Node(name='get_phonation_files',
-    #                          interface=Fn(function=get_synapse_files_in_table,
-    #                                       input_names=['dataframe',
-    #                                                    'schema',
-    #                                                    'column_name',
-    #                                                    'synapse_email',
-    #                                                    'synapse_password',
-    #                                                    'output_path'],
-    #                                       output_names=['files']))
-    # Flow.add_nodes([GetPhonationFiles])
-    # Flow.connect(GetPhonationTable, 'dataframe',
-    #              GetPhonationFiles, 'dataframe')
-    # Flow.connect(GetPhonationTable, 'schema',
-    #              GetPhonationFiles, 'schema')
-    # GetPhonationFiles.inputs.column_name = 'audio_audio.m4a'
-    # GetPhonationFiles.inputs.synapse_email = synapse_email
-    # GetPhonationFiles.inputs.synapse_password = synapse_password
-    # GetPhonationFiles.inputs.output_path = phonation_file_path
-
     #-------------------------------------------------------------------------
     # Read Synapse table:
     #-------------------------------------------------------------------------
@@ -168,13 +129,12 @@ if synID_phonation:
                                                        'select_rows',
                                                        'output_path'],
                                           output_names=['dataframe',
-                                                        'schema',
                                                         'files']))
     Flow.add_nodes([GetPhonationFiles])
     GetPhonationFiles.inputs.synapse_table_ID = synID_phonation
     GetPhonationFiles.inputs.synapse_email = synapse_email
     GetPhonationFiles.inputs.synapse_password = synapse_password
-    GetPhonationFiles.inputs.column_name = '' #audio_audio.m4a'
+    GetPhonationFiles.inputs.column_name = 'audio_audio.m4a'
     GetPhonationFiles.inputs.select_rows = range(3)
     GetPhonationFiles.inputs.output_path = phonation_file_path
 
