@@ -135,7 +135,7 @@ if synID_phonation:
     GetPhonationFiles.inputs.synapse_email = synapse_email
     GetPhonationFiles.inputs.synapse_password = synapse_password
     GetPhonationFiles.inputs.column_name = 'audio_audio.m4a'
-    GetPhonationFiles.inputs.select_rows = range(3)
+    GetPhonationFiles.inputs.select_rows = []
     GetPhonationFiles.inputs.output_path = phonation_file_path
 
     #-------------------------------------------------------------------------
