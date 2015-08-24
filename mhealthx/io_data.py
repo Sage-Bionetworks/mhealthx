@@ -52,6 +52,77 @@ def read_synapse_table(synapse_table_ID, synapse_email, synapse_password):
     return dataframe, schema
 
 
+def read_synapse_table_files(synapse_table_ID,
+                             synapse_email, synapse_password,
+                             column_name='', select_rows=[], output_path='.'):
+    """
+    Read data from a Synapse table.
+
+    Parameters
+    ----------
+    synapse_table_ID : string
+        Synapse ID for table
+    synapse_email : string
+        email address to access Synapse project
+    synapse_password : string
+        password corresponding to email address to Synapse project
+    column_name : string
+        column header for fileIDs in Synapse table (if wish to download files)
+    select_rows : list
+        row indices, if retrieving column_name files (empty means all rows)
+    output_path : string
+        output path to store column_name files
+
+    Returns
+    -------
+    dataframe : Pandas DataFrame
+        Synapse table contents
+    schema : synapseclient.table.Schema
+        Synapse table schema
+    files : list of strings
+        files from Synapse table (full paths to downloaded files)
+
+    Examples
+    --------
+    >>> from mhealthx.io_data import read_synapse_table_files
+    >>> synapse_table_ID = 'syn4590865'
+    >>> synapse_email = 'arno.klein@sagebase.org'
+    >>> synapse_password = '*****'
+    >>> column_name = 'audio_audio.m4a'
+    >>> select_rows = range(3)
+    >>> output_path = '.'
+    >>> dataframe, schema, files = read_synapse_table_files(synapse_table_ID, synapse_email, synapse_password, column_name, select_rows, output_path)
+
+    """
+    import synapseclient
+
+    syn = synapseclient.Synapse()
+    syn.login(synapse_email, synapse_password)
+
+    # Download Synapse table schema and dataframe:
+    schema = syn.get(synapse_table_ID)
+    results = syn.tableQuery("select * from {0}".format(synapse_table_ID))
+    dataframe = results.asDataFrame()
+    files = []
+
+    # Download Synapse files for fileIDs in specified table column:
+    if column_name:
+        if not select_rows:
+            select_rows = range(dataframe.shape[0])
+        for rowID in select_rows:
+            fileinfo = syn.downloadTableFile(schema,
+                                             rowId=rowID,
+                                             versionNumber=0,
+                                             column=column_name,
+                                             downloadLocation=output_path)
+            if fileinfo:
+                files.append(fileinfo['files'][0])
+            else:
+                files.append('')
+
+    return dataframe, schema, files
+
+
 def write_synapse_table(dataframe, project_synID, synapse_email,
                         synapse_password, schema_name=''):
     """
@@ -117,7 +188,7 @@ def get_synapse_files_in_table(dataframe, schema, column_name,
     Returns
     -------
     files : list of strings
-        name of file from Synapse table
+        files from Synapse table (full paths to downloaded files)
 
     Examples
     --------
