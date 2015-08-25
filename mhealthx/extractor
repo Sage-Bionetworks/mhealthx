@@ -149,7 +149,7 @@ if synID_phonation:
     GetPhonationFiles.inputs.username = '' #username
     GetPhonationFiles.inputs.password = '' #password
     GetPhonationFiles.inputs.column_name = 'audio_audio.m4a'
-    GetPhonationFiles.inputs.select_rows = []
+    GetPhonationFiles.inputs.select_rows = range(3) #[]
     GetPhonationFiles.inputs.output_path = phonation_file_path
 
     # ------------------------------------------------------------------------

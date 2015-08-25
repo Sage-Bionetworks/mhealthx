@@ -268,7 +268,7 @@ def convert_audio_files(input_files, file_append):
                 output_file = input_file + file_append
 
                 # Nipype command line wrapper over ffmpeg:
-                cli = CommandLine(command = 'ffmpeg')
+                cli = CommandLine(command = '/home/arno/software/audio/ffmpeg-2.7.2/bin/ffmpeg')
                 cli.inputs.args = ' '.join(['-i', input_file, output_file])
                 cli.cmdline
                 cli.run()

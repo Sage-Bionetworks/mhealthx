@@ -52,7 +52,7 @@ def opensmile(input_files, config_file, output_append):
             output_file = input_file + output_append
 
             # Nipype command line wrapper over openSMILE:
-            cli = CommandLine(command = 'SMILExtract')
+            cli = CommandLine(command = '/home/arno/software/audio/openSMILE/SMILExtract')
             cli.inputs.args = ' '.join(['-C', config_file,
                                         '-I', input_file,
                                         '-O', output_file])
