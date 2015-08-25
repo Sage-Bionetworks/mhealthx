@@ -269,16 +269,18 @@ def convert_audio_files(input_files, file_append, command='avconv'):
             # Convert file to new format:
             else:
                 output_file = input_file + file_append
-
-                # Nipype command line wrapper over ffmpeg:
-                cli = CommandLine(command = command)
-                cli.inputs.args = ' '.join(['-i', input_file, output_file])
-                cli.cmdline
-                cli.run()
-
-                if not os.path.exists(output_file):
-                    raise(IOError(output_file + " not found"))
-                else:
+                if os.path.exists(output_file):
                     output_files.append(output_file)
+                else:
+                    # Nipype command line wrapper:
+                    cli = CommandLine(command = command)
+                    cli.inputs.args = ' '.join(['-i', input_file, output_file])
+                    cli.cmdline
+                    cli.run()
+
+                    if not os.path.exists(output_file):
+                        raise(IOError(output_file + " not found"))
+                    else:
+                        output_files.append(output_file)
 
     return output_files

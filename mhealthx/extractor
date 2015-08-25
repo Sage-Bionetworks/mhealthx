@@ -183,7 +183,7 @@ if synID_phonation:
                  ConvertPhonationFiles, 'input_files')
     ConvertPhonationFiles.inputs.file_append = '.wav'
     ConvertPhonationFiles.inputs.command = os.path.join(thirdparty,
-                                                        'libav', 'ffmpeg')
+                                                        'ffmpeg', 'ffmpeg')
 
     #-------------------------------------------------------------------------
     # Run openSMILE feature extraction on voice data:
