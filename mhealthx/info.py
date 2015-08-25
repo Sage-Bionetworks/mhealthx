@@ -78,5 +78,5 @@ MICRO               = version_micro
 ISRELEASE           = version_extra
 VERSION             = __version__
 PROVIDES            = ["mhealthx"]
-#REQUIRES            = ["numpy (>={0})".format(NUMPY_MIN_VERSION)]
+REQUIRES            = [] #["numpy (>={0})".format(NUMPY_MIN_VERSION)]
 
