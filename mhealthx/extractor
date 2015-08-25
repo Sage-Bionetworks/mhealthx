@@ -23,12 +23,12 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 import os
 import argparse
 from nipype import config, logging
-from nipype.interfaces.io import DataGrabber, DataSink
+from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
-from nipype.interfaces.utility import IdentityInterface
 from nipype.pipeline.engine import Workflow, Node
 from mhealthx.io_data import read_synapse_table_files, append_file_names, \
-                             m4a_to_wav
+                             convert_audio_files
+from mhealthx.features import opensmile
 
 # ============================================================================
 #
@@ -36,10 +36,10 @@ from mhealthx.io_data import read_synapse_table_files, append_file_names, \
 #
 # ============================================================================
 parser = argparse.ArgumentParser(description="""
-                    The extractor software extracts features from mHealth
-                    data stored on Sage Bionetwork's Synapse.org.""",
-                     formatter_class = lambda prog:
-                     argparse.HelpFormatter(prog, max_help_position=40))
+                    Extract features from mHealth data
+                    stored on Sage Bionetwork's Synapse.org.""",
+                    formatter_class = lambda prog:
+                    argparse.HelpFormatter(prog, max_help_position=40))
 parser.add_argument("-v", "--version", help="version number",
                     action='version', version='%(prog)s 0.1')
 parser.add_argument("-n", "--numproc",
@@ -55,11 +55,11 @@ parser.add_argument("--plugin_args", dest="plugin_args",
                     help="optional plugin arguments:"
                          " --plugin_args \"dict(qsub_args='-q many')\"")
 login_group = parser.add_argument_group('Synapse login')
-login_group.add_argument("-e", "--email",
-                    help="email address to access Synapse project",
+login_group.add_argument("-u", "--username",
+                    help="Synapse username",
                     metavar='STR')
 login_group.add_argument("-p", "--password",
-                    help="password to access Synapse project",
+                    help="Synapse password",
                     metavar='STR')
 activities_group = parser.add_argument_group('activities')
 activities_group.add_argument("--phonation",
@@ -72,18 +72,18 @@ activities_group.add_argument("--tapping",
                     help="Synapse table ID for tapping data",
                     metavar='STR')
 outputs_group = parser.add_argument_group('outputs')
-outputs_group.add_argument("--output",
+outputs_group.add_argument("-o", "--output",
                     help='output folder (if not $HOME/mhealthx_output)',
                     default=os.path.join(os.environ['HOME'],
                                          'mhealthx_output'), metavar='STR')
-outputs_group.add_argument("--working",
-                    help="working folder"
-                         " (if not $HOME/mhealthx_working)",
+outputs_group.add_argument("-c", "--cache",
+                    help="cache folder"
+                         " (if not $HOME/mhealthx_cache)",
                     default=os.path.join(os.environ['HOME'],
-                                         'mhealthx_working'), metavar='STR')
+                                         'mhealthx_cache'), metavar='STR')
 args = parser.parse_args()
-synapse_email = args.email
-synapse_password = args.password
+username = args.username
+password = args.password
 synID_phonation = args.phonation
 synID_balance = args.balance
 synID_tapping = args.tapping
@@ -94,22 +94,31 @@ else:
 
 # ============================================================================
 #
+# Login once to Synapse and cache credentials
+#
+# ============================================================================
+import synapseclient
+syn = synapseclient.Synapse()
+syn.login(username, password, rememberMe=True)
+
+# ============================================================================
+#
 # Initialize main workflow and create output directories
 #
 # ============================================================================
 main_workflow_name = 'mHealthX'
 Flow = Workflow(name=main_workflow_name)
-Flow.base_dir = args.working
+Flow.base_dir = args.cache
 Sink = Node(DataSink(), name='Results')
 Sink.inputs.base_directory = args.output
 if not os.path.isdir(args.output):
     print("Create missing output directory: {0}".format(args.output))
     os.makedirs(args.output)
-if not os.path.isdir(args.working):
-    print("Create missing working directory: {0}".format(args.working))
-    os.makedirs(args.working)
+if not os.path.isdir(args.cache):
+    print("Create missing cache directory: {0}".format(args.cache))
+    os.makedirs(args.cache)
 if synID_phonation:
-    phonation_file_path = os.path.join(args.working, main_workflow_name,
+    phonation_file_path = os.path.join(args.cache, main_workflow_name,
                                        'phonation_files')
     if not os.path.isdir(phonation_file_path):
         os.makedirs(phonation_file_path)
@@ -128,8 +137,8 @@ if synID_phonation:
     GetPhonationFiles = Node(name='get_phonation_files',
                              interface=Fn(function=read_synapse_table_files,
                                           input_names=['synapse_table_ID',
-                                                       'synapse_email',
-                                                       'synapse_password',
+                                                       'username',
+                                                       'password',
                                                        'column_name',
                                                        'select_rows',
                                                        'output_path'],
@@ -137,14 +146,14 @@ if synID_phonation:
                                                         'files']))
     Flow.add_nodes([GetPhonationFiles])
     GetPhonationFiles.inputs.synapse_table_ID = synID_phonation
-    GetPhonationFiles.inputs.synapse_email = synapse_email
-    GetPhonationFiles.inputs.synapse_password = synapse_password
+    GetPhonationFiles.inputs.username = '' #username
+    GetPhonationFiles.inputs.password = '' #password
     GetPhonationFiles.inputs.column_name = 'audio_audio.m4a'
     GetPhonationFiles.inputs.select_rows = range(3)
     GetPhonationFiles.inputs.output_path = phonation_file_path
 
     # ------------------------------------------------------------------------
-    # Rename m4a files:
+    # Append file names with ".m4a":
     # ------------------------------------------------------------------------
     RenamePhonationFiles = Node(name='rename_phonation_files',
                                 interface=Fn(function=append_file_names,
@@ -156,29 +165,29 @@ if synID_phonation:
                  RenamePhonationFiles, 'input_files')
     RenamePhonationFiles.inputs.file_append = '.m4a'
 
-    # # ------------------------------------------------------------------------
-    # # Convert voice files from M4A (AAC) to WAV format:
-    # # ------------------------------------------------------------------------
-    # ConvertPhonationFiles = Node(name='convert_phonation_files',
-    #                              interface=Fn(function=m4a_to_wav,
-    #                                           input_names=['m4a_file'],
-    #                                           output_names=['wav_file']))
-    # Flow.add_nodes([ConvertPhonationFiles])
-    # Flow.connect(RenamePhonationFiles, 'output_files',
-    #              ConvertPhonationFiles, 'm4a_file')
-    # #Flow.connect(ConvertPhonationFiles, 'wav_file',
-    # #             Sink, 'phonation.@wav_file')
+    # ------------------------------------------------------------------------
+    # Convert voice files to .wav format:
+    # ------------------------------------------------------------------------
+    ConvertPhonationFiles = Node(name='convert_phonation_files',
+                                 interface=Fn(function=convert_audio_files,
+                                              input_names=['input_files',
+                                                           'file_append'],
+                                              output_names=['output_files']))
+    Flow.add_nodes([ConvertPhonationFiles])
+    Flow.connect(RenamePhonationFiles, 'output_files',
+                 ConvertPhonationFiles, 'input_files')
+    ConvertPhonationFiles.inputs.file_append = '.wav'
 
     #-------------------------------------------------------------------------
     # Run openSMILE feature extraction on voice data:
     #-------------------------------------------------------------------------
     RunOpenSMILE = Node(name='openSMILE',
-                        interface=Fn(function=run_openSMILE,
-                                     input_names=['wav_file'],
+                        interface=Fn(function=opensmile,
+                                     input_names=['input_files'],
                                      output_names=['features']))
     Flow.add_nodes([RunOpenSMILE])
-    Flow.connect(ConvertPhonationFile, 'wav_file',
-                 RunOpenSMILE, 'wav_file')
+    Flow.connect(ConvertPhonationFiles, 'output_files',
+                 RunOpenSMILE, 'input_files')
     Flow.connect(RunOpenSMILE, 'features',
                  Sink, 'phonation.@features.openSMILE')
 

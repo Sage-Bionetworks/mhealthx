@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Input/output functions to read and write Synapse tables.
+Input/output functions to read, write, and modify files and Synapse tables.
 
 Authors:
     - Arno Klein, 2015  (arno@sagebase.org)  http://binarybottle.com
@@ -10,7 +10,7 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
-def read_synapse_table(synapse_table_ID, synapse_email, synapse_password):
+def read_synapse_table(synapse_table_ID, username='', password=''):
     """
     Read data from a Synapse table.
 
@@ -18,10 +18,10 @@ def read_synapse_table(synapse_table_ID, synapse_email, synapse_password):
     ----------
     synapse_table_ID : string
         Synapse ID for table
-    synapse_email : string
-        email address to access Synapse project
-    synapse_password : string
-        password corresponding to email address to Synapse project
+    username : string
+        Synapse username
+    password : string
+        Synapse password
 
     Returns
     -------
@@ -32,17 +32,20 @@ def read_synapse_table(synapse_table_ID, synapse_email, synapse_password):
     --------
     >>> from mhealthx.io_data import read_synapse_table
     >>> synapse_table_ID = 'syn4590865'
-    >>> synapse_email = 'arno.klein@sagebase.org'
-    >>> synapse_password = '*****'
-    >>> dataframe = read_synapse_table(synapse_table_ID, synapse_email, synapse_password)
+    >>> username = ''
+    >>> password = ''
+    >>> dataframe = read_synapse_table(synapse_table_ID, username, password)
 
     """
     import synapseclient
 
     syn = synapseclient.Synapse()
-    syn.login(synapse_email, synapse_password)
 
-    #schema = syn.get(synapse_table_ID)
+    # Log in to Synapse:
+    if username and password:
+        syn.login(username, password)
+    else:
+        syn.login()
 
     results = syn.tableQuery("select * from {0}".format(synapse_table_ID))
     dataframe = results.asDataFrame()
@@ -50,8 +53,7 @@ def read_synapse_table(synapse_table_ID, synapse_email, synapse_password):
     return dataframe
 
 
-def read_synapse_table_files(synapse_table_ID,
-                             synapse_email, synapse_password,
+def read_synapse_table_files(synapse_table_ID, username='', password='',
                              column_name='', select_rows=[], output_path='.'):
     """
     Read data from a Synapse table.
@@ -60,10 +62,10 @@ def read_synapse_table_files(synapse_table_ID,
     ----------
     synapse_table_ID : string
         Synapse ID for table
-    synapse_email : string
-        email address to access Synapse project
-    synapse_password : string
-        password corresponding to email address to Synapse project
+    username : string
+        Synapse username
+    password : string
+        Synapse password
     column_name : string
         column header for fileIDs in Synapse table (if wish to download files)
     select_rows : list
@@ -82,18 +84,23 @@ def read_synapse_table_files(synapse_table_ID,
     --------
     >>> from mhealthx.io_data import read_synapse_table_files
     >>> synapse_table_ID = 'syn4590865'
-    >>> synapse_email = 'arno.klein@sagebase.org'
-    >>> synapse_password = '*****'
+    >>> username = ''
+    >>> password = ''
     >>> column_name = 'audio_audio.m4a'
     >>> select_rows = range(3)
     >>> output_path = '.'
-    >>> dataframe, files = read_synapse_table_files(synapse_table_ID, synapse_email, synapse_password, column_name, select_rows, output_path)
+    >>> dataframe, files = read_synapse_table_files(synapse_table_ID, username, password, column_name, select_rows, output_path)
 
     """
     import synapseclient
 
     syn = synapseclient.Synapse()
-    syn.login(synapse_email, synapse_password)
+
+    # Log in to Synapse:
+    if username and password:
+        syn.login(username, password)
+    else:
+        syn.login()
 
     # Download Synapse table schema and dataframe:
     schema = syn.get(synapse_table_ID)
@@ -119,8 +126,8 @@ def read_synapse_table_files(synapse_table_ID,
     return dataframe, files
 
 
-def write_synapse_table(dataframe, project_synID, synapse_email,
-                        synapse_password, schema_name=''):
+def write_synapse_table(dataframe, project_synID, schema_name='',
+                        username='', password=''):
     """
     Write data to a Synapse table.
 
@@ -130,30 +137,35 @@ def write_synapse_table(dataframe, project_synID, synapse_email,
         Synapse table contents
     project_synID : string
         Synapse ID for project within which table is to be written
-    synapse_email : string
-        email address to access Synapse project
-    synapse_password : string
-        password corresponding to email address to Synapse project
     schema_name : string
         schema name of table
+    username : string
+        Synapse username
+    password : string
+        Synapse password
 
     Examples
     --------
     >>> from mhealthx.io_data import read_synapse_table, write_synapse_table
     >>> input_synapse_table_ID = 'syn4590865'
     >>> project_synID = 'syn4899451'
-    >>> synapse_email = 'arno.klein@sagebase.org'
-    >>> synapse_password = '*****'
-    >>> dataframe = read_synapse_table(input_synapse_table_ID, synapse_email, synapse_password)
+    >>> dataframe = read_synapse_table(input_synapse_table_ID, username, password)
     >>> schema_name = 'Contents of ' + input_synapse_table_ID
-    >>> write_synapse_table(dataframe, project_synID, synapse_email, synapse_password, schema_name)
+    >>> username = ''
+    >>> password = ''
+    >>> write_synapse_table(dataframe, project_synID, schema_name, username, password)
 
     """
     import synapseclient
     from synapseclient import Schema, Table, as_table_columns
 
     syn = synapseclient.Synapse()
-    syn.login(synapse_email, synapse_password)
+
+    # Log in to Synapse:
+    if username and password:
+        syn.login(username, password)
+    else:
+        syn.login()
 
     dataframe.index = range(dataframe.shape[0])
 
@@ -212,40 +224,58 @@ def append_file_names(input_files, file_append):
     return output_files
 
 
-def m4a_to_wav(m4a_file):
+def convert_audio_files(input_files, file_append):
     """
-    Convert voice file from M4A (AAC) to WAV format.
+    Convert audio files to new format.
 
     Calls python-audiotranscode (and faad2)
 
     Parameters
     ----------
-    m4a_file : string
-        M4A (AAC) file name
-    output_wav_file : string
-        WAV file name
+    input_files : list of strings
+        full path to the input files
+    file_append : string
+        append to each file name to indicate output file format (e.g., '.wav')
 
     Returns
     -------
-    wav_file : string
-        WAV file name
+    output_files : list of strings
+        each string is the full path to a renamed file
 
     Examples
     --------
-    >>> from mhealthx.io_data import m4a_to_wav
-    >>> m4a_file = '/desk/test.tmp'
-    >>> m4a_to_wav(m4a_file)
+    >>> from mhealthx.io_data import convert_audio_files
+    >>> input_files = ['/Users/arno/mhealthx_working/mHealthX/phonation_files/test.m4a']
+    >>> file_append = '.wav'
+    >>> output_files = convert_audio_files(input_files, file_append)
 
     """
     import os
-    from mhealthx.thirdparty import audiotranscode
+    from nipype.interfaces.base import CommandLine
 
-    wav_file = m4a_file + '.wav'
+    output_files = []
 
-    at = audiotranscode.AudioTranscode()
-    at.transcode(m4a_file, wav_file)
+    # Loop through input files:
+    for input_file in input_files:
+        if not os.path.exists(input_file):
+            raise(IOError(input_file + " not found"))
+        else:
+            # Don't convert file if file already has correct append:
+            if input_file.endswith(file_append):
+                output_files.append(input_file)
+            # Convert file to new format:
+            else:
+                output_file = input_file + file_append
 
-    if not os.path.exists(wav_file):
-        raise(IOError(wav_file + " not found"))
+                # Nipype command line wrapper over ffmpeg:
+                cli = CommandLine(command = 'ffmpeg')
+                cli.inputs.args = ' '.join(['-i', input_file, output_file])
+                cli.cmdline
+                cli.run()
 
-    return wav_file
+                if not os.path.exists(output_file):
+                    raise(IOError(output_file + " not found"))
+                else:
+                    output_files.append(output_file)
+
+    return output_files
