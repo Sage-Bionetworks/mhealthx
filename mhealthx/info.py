@@ -57,7 +57,7 @@ mHealthX is licensed under the terms of the Apache v2.0 license.
 """
 
 # versions for dependencies
-NUMPY_MIN_VERSION='1.2'
+#NUMPY_MIN_VERSION='1.2'
 
 # Main setup parameters
 NAME                = 'mHealthX'
@@ -78,5 +78,5 @@ MICRO               = version_micro
 ISRELEASE           = version_extra
 VERSION             = __version__
 PROVIDES            = ["mhealthx"]
-REQUIRES            = ["numpy (>={0})".format(NUMPY_MIN_VERSION)]
+#REQUIRES            = ["numpy (>={0})".format(NUMPY_MIN_VERSION)]
 
