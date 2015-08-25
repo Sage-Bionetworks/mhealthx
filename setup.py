@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-mHealthX package for automated feature extraction of mobile health app data
+mhealthx package for automated feature extraction of mobile health app data
 """
 
 import os
