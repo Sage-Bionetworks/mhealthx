@@ -224,7 +224,7 @@ def append_file_names(input_files, file_append):
     return output_files
 
 
-def convert_audio_files(input_files, file_append):
+def convert_audio_files(input_files, file_append, command='avconv'):
     """
     Convert audio files to new format.
 
@@ -236,6 +236,8 @@ def convert_audio_files(input_files, file_append):
         full path to the input files
     file_append : string
         append to each file name to indicate output file format (e.g., '.wav')
+    command : string
+        executable command without arguments
 
     Returns
     -------
@@ -247,6 +249,7 @@ def convert_audio_files(input_files, file_append):
     >>> from mhealthx.io_data import convert_audio_files
     >>> input_files = ['/Users/arno/mhealthx_working/mHealthX/phonation_files/test.m4a']
     >>> file_append = '.wav'
+    >>> command = '/home/arno/software/audio/libav/avconv'
     >>> output_files = convert_audio_files(input_files, file_append)
 
     """
@@ -268,7 +271,7 @@ def convert_audio_files(input_files, file_append):
                 output_file = input_file + file_append
 
                 # Nipype command line wrapper over ffmpeg:
-                cli = CommandLine(command = '/home/arno/software/audio/ffmpeg-2.7.2/bin/ffmpeg')
+                cli = CommandLine(command = command)
                 cli.inputs.args = ' '.join(['-i', input_file, output_file])
                 cli.cmdline
                 cli.run()

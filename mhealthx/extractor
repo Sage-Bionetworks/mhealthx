@@ -54,11 +54,14 @@ parser.add_argument("--plugin", dest="plugin",
 parser.add_argument("--plugin_args", dest="plugin_args",
                     help="optional plugin arguments:"
                          " --plugin_args \"dict(qsub_args='-q many')\"")
-login_group = parser.add_argument_group('Synapse login')
-login_group.add_argument("-u", "--username",
+setup_group = parser.add_argument_group('setup')
+setup_group.add_argument("-t", "--thirdparty",
+                    help="path to third-party software",
+                    metavar='STR')
+setup_group.add_argument("-u", "--username",
                     help="Synapse username",
                     metavar='STR')
-login_group.add_argument("-p", "--password",
+setup_group.add_argument("-p", "--password",
                     help="Synapse password",
                     metavar='STR')
 activities_group = parser.add_argument_group('activities')
@@ -84,6 +87,7 @@ outputs_group.add_argument("-c", "--cache",
 args = parser.parse_args()
 username = args.username
 password = args.password
+thirdparty = args.thirdparty
 synID_phonation = args.phonation
 synID_balance = args.balance
 synID_tapping = args.tapping
@@ -171,12 +175,15 @@ if synID_phonation:
     ConvertPhonationFiles = Node(name='convert_phonation_files',
                                  interface=Fn(function=convert_audio_files,
                                               input_names=['input_files',
-                                                           'file_append'],
+                                                           'file_append',
+                                                           'command'],
                                               output_names=['output_files']))
     Flow.add_nodes([ConvertPhonationFiles])
     Flow.connect(RenamePhonationFiles, 'output_files',
                  ConvertPhonationFiles, 'input_files')
     ConvertPhonationFiles.inputs.file_append = '.wav'
+    ConvertPhonationFiles.inputs.command = os.path.join(thirdparty,
+                                                        'libav', 'avconv')
 
     #-------------------------------------------------------------------------
     # Run openSMILE feature extraction on voice data:
@@ -185,14 +192,19 @@ if synID_phonation:
                         interface=Fn(function=opensmile,
                                      input_names=['input_files',
                                                   'config_file',
-                                                  'output_append'],
-                                     output_names=['features']))
+                                                  'output_append',
+                                                  'command'],
+                                     output_names=['feature_table']))
     Flow.add_nodes([RunOpenSMILE])
     Flow.connect(ConvertPhonationFiles, 'output_files',
                  RunOpenSMILE, 'input_files')
-    RunOpenSMILE.inputs.config_file = '/home/arno/software/audio/openSMILE/config/IS13_ComParE.conf'
+    RunOpenSMILE.inputs.config_file = os.path.join(thirdparty,
+                                                   'openSMILE','conf',
+                                                   'IS13_ComParE.conf')
     RunOpenSMILE.inputs.output_append = '.csv'
-    Flow.connect(RunOpenSMILE, 'features',
+    RunOpenSMILE.inputs.command = os.path.join(thirdparty,
+                                               'openSMILE','SMILExtract')
+    Flow.connect(RunOpenSMILE, 'feature_table',
                  Sink, 'phonation.@features.openSMILE')
 
 # ============================================================================
