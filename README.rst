@@ -22,27 +22,17 @@ _`Inputs`
 ------------------------------------------------------------------------------
 All data are accessed from Synapse tables in a project on synapse.org:
 
-  - Accelerometry: JSON files
+  - Voice: WAV files
   - Tapping: JSON files
-  - Voice: M4A (AAC) files
-
-------------------------------------------------------------------------------
-_`Preprocessing`
-------------------------------------------------------------------------------
-Voice data:
-
-  - Pull M4A voice files from synapse.org.
-  - Convert M4A files to WAV format.
-  - Store fileIDs for preprocessed data to new tables on synapse.org.
+  - Accelerometry: JSON files
 
 ------------------------------------------------------------------------------
 _`Processing`
 ------------------------------------------------------------------------------
-  - Run different feature extraction software packages on the (preprocessed) inputs.
+  - Run different feature extraction software packages on the input data.
   - Output features to new tables on synapse.org.
 
 ------------------------------------------------------------------------------
 _`Outputs`
 ------------------------------------------------------------------------------
   - Synapse tables
-  - Under consideration: fileIDs for intermediate processed results?
