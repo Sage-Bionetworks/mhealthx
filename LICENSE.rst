@@ -2,7 +2,7 @@
 License
 =======
 
-Except where otherwise noted, all feature extraction software is licensed 
+Except where otherwise noted, mhealthx feature extraction software is licensed 
 under the `Apache v2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_ license.
 
 The usual disclaimer:
