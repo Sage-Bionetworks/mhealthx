@@ -1,3 +1,8 @@
+build
+CMakeCache.txt
+CMakeFiles
+crash-*
+
 ._*
 .#* 
 .del-* 
@@ -11,11 +16,8 @@
 ,* 
 _$* 
 
-build
-CMakeCache.txt
-CMakeFiles
-crash-*
-MANIFEST.in
+*~ 
+*$ 
 
 *.a 
 *.bak 
@@ -38,6 +40,5 @@ MANIFEST.in
 *.Z 
 *.zip
 
-*~ 
-*$ 
+
 
