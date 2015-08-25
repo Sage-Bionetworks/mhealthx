@@ -183,7 +183,7 @@ if synID_phonation:
                  ConvertPhonationFiles, 'input_files')
     ConvertPhonationFiles.inputs.file_append = '.wav'
     ConvertPhonationFiles.inputs.command = os.path.join(thirdparty,
-                                                        'libav', 'avconv')
+                                                        'libav', 'ffmpeg')
 
     #-------------------------------------------------------------------------
     # Run openSMILE feature extraction on voice data:
@@ -199,7 +199,7 @@ if synID_phonation:
     Flow.connect(ConvertPhonationFiles, 'output_files',
                  RunOpenSMILE, 'input_files')
     RunOpenSMILE.inputs.config_file = os.path.join(thirdparty,
-                                                   'openSMILE','conf',
+                                                   'openSMILE','config',
                                                    'IS13_ComParE.conf')
     RunOpenSMILE.inputs.output_append = '.csv'
     RunOpenSMILE.inputs.command = os.path.join(thirdparty,
