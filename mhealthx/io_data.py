@@ -10,68 +10,26 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
-def read_synapse_table(synapse_table_ID, username='', password=''):
+def read_synapse_table_files(synapse_table_ID,
+                             column_name='', select_rows=[], output_path='.',
+                             username='', password=''):
     """
-    Read data from a Synapse table.
+    Read data from a Synapse table. If column_name specified, download files.
 
     Parameters
     ----------
     synapse_table_ID : string
         Synapse ID for table
-    username : string
-        Synapse username
-    password : string
-        Synapse password
-
-    Returns
-    -------
-    dataframe : Pandas DataFrame
-        Synapse table contents
-
-    Examples
-    --------
-    >>> from mhealthx.io_data import read_synapse_table
-    >>> synapse_table_ID = 'syn4590865'
-    >>> username = ''
-    >>> password = ''
-    >>> dataframe = read_synapse_table(synapse_table_ID, username, password)
-
-    """
-    import synapseclient
-
-    syn = synapseclient.Synapse()
-
-    # Log in to Synapse:
-    if username and password:
-        syn.login(username, password)
-    else:
-        syn.login()
-
-    results = syn.tableQuery("select * from {0}".format(synapse_table_ID))
-    dataframe = results.asDataFrame()
-
-    return dataframe
-
-
-def read_synapse_table_files(synapse_table_ID, username='', password='',
-                             column_name='', select_rows=[], output_path='.'):
-    """
-    Read data from a Synapse table.
-
-    Parameters
-    ----------
-    synapse_table_ID : string
-        Synapse ID for table
-    username : string
-        Synapse username
-    password : string
-        Synapse password
     column_name : string
         column header for fileIDs in Synapse table (if wish to download files)
     select_rows : list
         row indices, if retrieving column_name files (empty means all rows)
     output_path : string
         output path to store column_name files
+    username : string
+        Synapse username (only needed once on a given machine)
+    password : string
+        Synapse password (only needed once on a given machine)
 
     Returns
     -------
@@ -84,12 +42,12 @@ def read_synapse_table_files(synapse_table_ID, username='', password='',
     --------
     >>> from mhealthx.io_data import read_synapse_table_files
     >>> synapse_table_ID = 'syn4590865'
-    >>> username = ''
-    >>> password = ''
     >>> column_name = 'audio_audio.m4a'
     >>> select_rows = range(3)  # [] for all rows
     >>> output_path = '.'
-    >>> dataframe, files = read_synapse_table_files(synapse_table_ID, username, password, column_name, select_rows, output_path)
+    >>> username = ''
+    >>> password = ''
+    >>> dataframe, files = read_synapse_table_files(synapse_table_ID, column_name, select_rows, output_path, username, password)
 
     """
     import synapseclient
@@ -140,9 +98,9 @@ def write_synapse_table(dataframe, project_synID, schema_name='',
     schema_name : string
         schema name of table
     username : string
-        Synapse username
+        Synapse username (only needed once on a given machine)
     password : string
-        Synapse password
+        Synapse password (only needed once on a given machine)
 
     Examples
     --------
@@ -315,9 +273,9 @@ if __name__ == '__main__':
     command = '/software/audio/ffmpeg/ffmpeg'
 
     # Download files:
-    dataframe, files = read_synapse_table_files(synapse_table_ID, username,
-                                                password, column_name,
-                                                select_rows, output_path)
+    dataframe, files = read_synapse_table_files(synapse_table_ID, column_name,
+                                                select_rows, output_path,
+                                                username, password)
 
     # Rename files with .m4a append (copy):
     file_append1 = '.m4a'

@@ -150,20 +150,20 @@ if synID_phonation:
     GetPhonationFiles = Node(name='get_phonation_files',
                              interface=Fn(function=read_synapse_table_files,
                                           input_names=['synapse_table_ID',
-                                                       'username',
-                                                       'password',
                                                        'column_name',
                                                        'select_rows',
-                                                       'output_path'],
+                                                       'output_path',
+                                                       'username',
+                                                       'password'],
                                           output_names=['dataframe',
                                                         'files']))
     Flow.add_nodes([GetPhonationFiles])
     GetPhonationFiles.inputs.synapse_table_ID = synID_phonation
-    GetPhonationFiles.inputs.username = '' #username
-    GetPhonationFiles.inputs.password = '' #password
     GetPhonationFiles.inputs.column_name = 'audio_audio.m4a'
     GetPhonationFiles.inputs.select_rows = range(3) #[]
     GetPhonationFiles.inputs.output_path = phonation_file_path
+    GetPhonationFiles.inputs.username = ''
+    GetPhonationFiles.inputs.password = ''
 
     # ------------------------------------------------------------------------
     # Append file names with ".m4a":
