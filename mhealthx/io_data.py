@@ -179,12 +179,10 @@ def upload_files_handles_to_synapse(input_files, project_synID,
     files_handles = []
     for input_file in input_files:
         file_handle = syn._chunkedUploadFile(input_file)
-        filename = os.path.basename(input_file)
-        files_handles.append([filename, file_handle['id']])
+        files_handles.append([file_handle['id']])
 
     # Upload files and file handle IDs:
-    cols = [Column(name='filename', columnType='STRING'),
-            Column(name='fileID', columnType='FILEHANDLEID')]
+    cols = [Column(name='fileID', columnType='FILEHANDLEID')]
     schema = syn.store(Schema(name=schema_name, columns=cols, parent=project_synID))
     syn.store(RowSet(columns=cols, schema=schema,
                      rows=[Row(r) for r in files_handles]))
@@ -310,24 +308,20 @@ def convert_audio_files(input_files, file_append, command='ffmpeg',
 
 
 # ============================================================================
-# Run above functions on the command line to convert all voice files to wav
+# Run above functions to convert all voice files to wav and upload to Synapse:
 # ============================================================================
 if __name__ == '__main__':
 
-    import os
-
-    from mhealthx.io_data import read_synapse_table_files, \
-                                 append_file_names, \
-                                 convert_audio_files
-
     # Setup:
     synapse_table_ID = 'syn4590865'
+    target_project_synID = 'syn4899451'
     username = ''
     password = ''
     column_name = 'audio_audio.m4a'
     select_rows = range(3) #[]  # Test with first 3 rows: range(3)
     output_path = '.'
-    command = '/home/arno/software/audio/ffmpeg/ffmpeg'
+    ffmpeg = '/home/arno/software/audio/ffmpeg/ffmpeg'
+    ffmpeg = '/software/ffmpeg/ffmpeg'
 
     # Download files:
     dataframe, files = read_synapse_table_files(synapse_table_ID, column_name,
@@ -342,5 +336,10 @@ if __name__ == '__main__':
     file_append2 = '.wav'
     input_args = '-i'
     output_args = '-ac 2'
-    output_files = convert_audio_files(renamed_files, file_append2, command,
+    output_files = convert_audio_files(renamed_files, file_append2, ffmpeg,
                                        input_args, output_args)
+
+    # Upload wav files and file handle IDs:
+    schema_name = 'mPower phonation files and file handle IDs'
+    upload_files_handles_to_synapse(output_files, target_project_synID,
+                                    schema_name, username, password)
