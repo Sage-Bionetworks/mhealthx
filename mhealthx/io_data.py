@@ -10,7 +10,7 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
-def read_synapse_table_files(synapse_table_ID,
+def read_synapse_table_files(synapse_table_id,
                              column_name='', select_rows=[], output_path='.',
                              username='', password=''):
     """
@@ -18,7 +18,7 @@ def read_synapse_table_files(synapse_table_ID,
 
     Parameters
     ----------
-    synapse_table_ID : string
+    synapse_table_id : string
         Synapse ID for table
     column_name : string
         column header for fileIDs in Synapse table (if wish to download files)
@@ -41,13 +41,13 @@ def read_synapse_table_files(synapse_table_ID,
     Examples
     --------
     >>> from mhealthx.io_data import read_synapse_table_files
-    >>> synapse_table_ID = 'syn4590865'
+    >>> synapse_table_id = 'syn4590865'
     >>> column_name = 'audio_audio.m4a'
     >>> select_rows = range(3)  # [] for all rows
     >>> output_path = '.'
     >>> username = ''
     >>> password = ''
-    >>> dataframe, files = read_synapse_table_files(synapse_table_ID, column_name, select_rows, output_path, username, password)
+    >>> dataframe, files = read_synapse_table_files(synapse_table_id, column_name, select_rows, output_path, username, password)
 
     """
     import synapseclient
@@ -61,8 +61,8 @@ def read_synapse_table_files(synapse_table_ID,
         syn.login()
 
     # Download Synapse table schema and dataframe:
-    schema = syn.get(synapse_table_ID)
-    results = syn.tableQuery("select * from {0}".format(synapse_table_ID))
+    schema = syn.get(synapse_table_id)
+    results = syn.tableQuery("select * from {0}".format(synapse_table_id))
     dataframe = results.asDataFrame()
     files = []
 
@@ -84,7 +84,7 @@ def read_synapse_table_files(synapse_table_ID,
     return dataframe, files
 
 
-def write_synapse_table(dataframe, synapse_project_ID, schema_name='',
+def write_synapse_table(dataframe, synapse_project_id, schema_name='',
                         username='', password=''):
     """
     Write data to a Synapse table.
@@ -93,7 +93,7 @@ def write_synapse_table(dataframe, synapse_project_ID, schema_name='',
     ----------
     dataframe : Pandas DataFrame
         Synapse table contents
-    synapse_project_ID : string
+    synapse_project_id : string
         Synapse ID for project within which table is to be written
     schema_name : string
         schema name of table
@@ -105,13 +105,13 @@ def write_synapse_table(dataframe, synapse_project_ID, schema_name='',
     Examples
     --------
     >>> from mhealthx.io_data import read_synapse_table, write_synapse_table
-    >>> input_synapse_table_ID = 'syn4590865'
-    >>> synapse_project_ID = 'syn4899451'
-    >>> dataframe = read_synapse_table(input_synapse_table_ID, username, password)
-    >>> schema_name = 'Contents of ' + input_synapse_table_ID
+    >>> input_synapse_table_id = 'syn4590865'
+    >>> synapse_project_id = 'syn4899451'
+    >>> dataframe = read_synapse_table(input_synapse_table_id, username, password)
+    >>> schema_name = 'Contents of ' + input_synapse_table_id
     >>> username = ''
     >>> password = ''
-    >>> write_synapse_table(dataframe, synapse_project_ID, schema_name, username, password)
+    >>> write_synapse_table(dataframe, synapse_project_id, schema_name, username, password)
 
     """
     import synapseclient
@@ -128,21 +128,21 @@ def write_synapse_table(dataframe, synapse_project_ID, schema_name='',
     dataframe.index = range(dataframe.shape[0])
 
     schema = Schema(name=schema_name, columns=as_table_columns(dataframe),
-                    parent=synapse_project_ID, includeRowIdAndRowVersion=False)
+                    parent=synapse_project_id, includeRowIdAndRowVersion=False)
 
     syn.store(Table(schema, dataframe))
 
 
-def copy_synapse_table(synapse_table_ID, synapse_project_ID, schema_name='',
+def copy_synapse_table(synapse_table_id, synapse_project_id, schema_name='',
                        remove_columns=[], username='', password=''):
     """
     Copy Synapse table contents to another Synapse project.
 
     Parameters
     ----------
-    synapse_table_ID : string
+    synapse_table_id : string
         Synapse ID for table to copy
-    synapse_project_ID : string
+    synapse_project_id : string
         Synapse ID for project within which table is to be written
     schema_name : string
         schema name of table
@@ -153,16 +153,25 @@ def copy_synapse_table(synapse_table_ID, synapse_project_ID, schema_name='',
     password : string
         Synapse password (only needed once on a given machine)
 
+    Returns
+    -------
+    dataframe : Pandas DataFrame
+        Synapse table contents
+    schema_name : string
+        schema name of table
+    synapse_project_id : string
+        Synapse ID for project within which table is to be written
+
     Examples
     --------
     >>> from mhealthx.io_data import copy_synapse_table
-    >>> synapse_table_ID = 'syn4590865'
-    >>> synapse_project_ID = 'syn4899451'
+    >>> synapse_table_id = 'syn4590865'
+    >>> synapse_project_id = 'syn4899451'
     >>> schema_name = 'mPower phonation feature file table'
     >>> remove_columns = ['audio_audio.m4a', 'audio_countdown.m4a']
     >>> username = ''
     >>> password = ''
-    >>> copy_synapse_table(synapse_table_ID, synapse_project_ID, schema_name, remove_columns, username, password)
+    >>> dataframe, schema_name, synapse_project_id = copy_synapse_table(synapse_table_id, synapse_project_id, schema_name, remove_columns, username, password)
 
     """
     import synapseclient
@@ -178,22 +187,24 @@ def copy_synapse_table(synapse_table_ID, synapse_project_ID, schema_name='',
         syn.login()
 
     # Download Synapse table as a dataframe:
-    results = syn.tableQuery("select * from {0}".format(synapse_table_ID))
-    df = results.asDataFrame()
+    results = syn.tableQuery("select * from {0}".format(synapse_table_id))
+    dataframe = results.asDataFrame()
 
     # Remove specified columns:
     for remove_column in remove_columns:
-        del df[remove_column]
+        del dataframe[remove_column]
 
     # Upload to Synapse table:
-    df.index = range(df.shape[0])
-    schema = Schema(name=schema_name, columns=as_table_columns(df),
-                    parent=synapse_project_ID,
+    dataframe.index = range(dataframe.shape[0])
+    schema = Schema(name=schema_name, columns=as_table_columns(dataframe),
+                    parent=synapse_project_id,
                     includeRowIdAndRowVersion=False)
-    table = syn.store(Table(schema, df))
+    table = syn.store(Table(schema, dataframe))
+
+    return dataframe, schema_name, synapse_project_id
 
 
-def upload_files_handles_to_synapse(input_files, synapse_project_ID,
+def upload_files_handles_to_synapse(input_files, synapse_project_id,
                                     schema_name='', username='', password=''):
     """
     Upload files and file handle IDs to Synapse.
@@ -202,7 +213,7 @@ def upload_files_handles_to_synapse(input_files, synapse_project_ID,
     ----------
     input_files : list of strings
         paths to files to upload to Synapse
-    synapse_project_ID : string
+    synapse_project_id : string
         Synapse ID for project within which table is to be written
     schema_name : string
         schema name of table
@@ -215,11 +226,11 @@ def upload_files_handles_to_synapse(input_files, synapse_project_ID,
     --------
     >>> from mhealthx.io_data import upload_files_handles_to_synapse
     >>> input_files = ['/Users/arno/Local/wav/test1.wav', '/Users/arno/Local/wav/test2.wav']
-    >>> synapse_project_ID = 'syn4899451'
+    >>> synapse_project_id = 'syn4899451'
     >>> schema_name = 'Test to store files and file handle IDs'
     >>> username = ''
     >>> password = ''
-    >>> upload_files_handles_to_synapse(input_files, synapse_project_ID, schema_name, username, password)
+    >>> upload_files_handles_to_synapse(input_files, synapse_project_id, schema_name, username, password)
 
     """
     import os
@@ -243,7 +254,7 @@ def upload_files_handles_to_synapse(input_files, synapse_project_ID,
 
     # Upload files and file handle IDs:
     cols = [Column(name='fileID', columnType='FILEHANDLEID')]
-    schema = syn.store(Schema(name=schema_name, columns=cols, parent=synapse_project_ID))
+    schema = syn.store(Schema(name=schema_name, columns=cols, parent=synapse_project_id))
     syn.store(RowSet(columns=cols, schema=schema,
                      rows=[Row(r) for r in files_handles]))
 
@@ -373,8 +384,8 @@ def convert_audio_files(input_files, file_append, command='ffmpeg',
 if __name__ == '__main__':
 
     # Setup:
-    synapse_table_ID = 'syn4590865'
-    target_synapse_project_ID = 'syn4899451'
+    synapse_table_id = 'syn4590865'
+    target_synapse_project_id = 'syn4899451'
     username = ''
     password = ''
     column_name = 'audio_audio.m4a'
@@ -385,7 +396,7 @@ if __name__ == '__main__':
     #schema_name = 'mPower countdown wav files and file handle IDs'
 
     # Download files:
-    dataframe, files = read_synapse_table_files(synapse_table_ID, column_name,
+    dataframe, files = read_synapse_table_files(synapse_table_id, column_name,
                                                 select_rows, output_path,
                                                 username, password)
 
@@ -401,5 +412,5 @@ if __name__ == '__main__':
                                        input_args, output_args)
 
     # Upload wav files and file handle IDs:
-    upload_files_handles_to_synapse(output_files, target_synapse_project_ID,
+    upload_files_handles_to_synapse(output_files, target_synapse_project_id,
                                     schema_name, username, password)
