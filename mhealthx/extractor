@@ -176,7 +176,9 @@ if synID_phonation:
                                  interface=Fn(function=convert_audio_files,
                                               input_names=['input_files',
                                                            'file_append',
-                                                           'command'],
+                                                           'command',
+                                                           'input_args',
+                                                           'output_args'],
                                               output_names=['output_files']))
     Flow.add_nodes([ConvertPhonationFiles])
     Flow.connect(RenamePhonationFiles, 'output_files',
@@ -184,6 +186,8 @@ if synID_phonation:
     ConvertPhonationFiles.inputs.file_append = '.wav'
     ConvertPhonationFiles.inputs.command = os.path.join(thirdparty,
                                                         'ffmpeg', 'ffmpeg')
+    ConvertPhonationFiles.inputs.input_args = '-i'
+    ConvertPhonationFiles.inputs.output_args = '-ac 2'
 
     #-------------------------------------------------------------------------
     # Run openSMILE feature extraction on voice data:

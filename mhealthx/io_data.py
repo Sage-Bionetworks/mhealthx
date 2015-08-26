@@ -87,7 +87,7 @@ def read_synapse_table_files(synapse_table_ID, username='', password='',
     >>> username = ''
     >>> password = ''
     >>> column_name = 'audio_audio.m4a'
-    >>> select_rows = range(3)
+    >>> select_rows = range(3)  # [] for all rows
     >>> output_path = '.'
     >>> dataframe, files = read_synapse_table_files(synapse_table_ID, username, password, column_name, select_rows, output_path)
 
@@ -224,7 +224,8 @@ def append_file_names(input_files, file_append):
     return output_files
 
 
-def convert_audio_files(input_files, file_append, command='avconv'):
+def convert_audio_files(input_files, file_append, command='ffmpeg',
+                        input_args='-i', output_args='-ac 2'):
     """
     Convert audio files to new format.
 
@@ -238,6 +239,10 @@ def convert_audio_files(input_files, file_append, command='avconv'):
         append to each file name to indicate output file format (e.g., '.wav')
     command : string
         executable command without arguments
+    input_args : string
+        arguments preceding input file name in command
+    output_args : string
+        arguments preceding output file name in command
 
     Returns
     -------
@@ -249,8 +254,10 @@ def convert_audio_files(input_files, file_append, command='avconv'):
     >>> from mhealthx.io_data import convert_audio_files
     >>> input_files = ['/Users/arno/mhealthx_working/mHealthX/phonation_files/test.m4a']
     >>> file_append = '.wav'
-    >>> command = '/home/arno/software/audio/libav/avconv'
-    >>> output_files = convert_audio_files(input_files, file_append)
+    >>> command = '/home/arno/software/audio/ffmpeg/ffmpeg'
+    >>> input_args = '-i'
+    >>> output_args = '-ac 2'
+    >>> output_files = convert_audio_files(input_files, file_append, command, input_args, output_args)
 
     """
     import os
@@ -274,7 +281,8 @@ def convert_audio_files(input_files, file_append, command='avconv'):
                 else:
                     # Nipype command line wrapper:
                     cli = CommandLine(command = command)
-                    cli.inputs.args = ' '.join(['-i', input_file, output_file])
+                    cli.inputs.args = ' '.join([input_args, input_file,
+                                                output_args, output_file])
                     cli.cmdline
                     cli.run()
 
@@ -284,3 +292,40 @@ def convert_audio_files(input_files, file_append, command='avconv'):
                         output_files.append(output_file)
 
     return output_files
+
+
+# ============================================================================
+# Run above functions on the command line to convert all voice files to wav
+# ============================================================================
+if __name__ == '__main__':
+
+    import os
+
+    from mhealthx.io_data import read_synapse_table_files, \
+                                 append_file_names, \
+                                 convert_audio_files
+
+    # Setup:
+    synapse_table_ID = 'syn4590865'
+    username = ''
+    password = ''
+    column_name = 'audio_audio.m4a'
+    select_rows = range(3) #[]  # Test with first 3 rows: range(3)
+    output_path = '.'
+    command = '/software/audio/ffmpeg/ffmpeg'
+
+    # Download files:
+    dataframe, files = read_synapse_table_files(synapse_table_ID, username,
+                                                password, column_name,
+                                                select_rows, output_path)
+
+    # Rename files with .m4a append (copy):
+    file_append1 = '.m4a'
+    renamed_files = append_file_names(files, file_append1)
+
+    # Convert from m4a to wav:
+    file_append2 = '.wav'
+    input_args = '-i'
+    output_args = '-ac 2'
+    output_files = convert_audio_files(renamed_files, file_append2, command,
+                                       input_args, output_args)
