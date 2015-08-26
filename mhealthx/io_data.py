@@ -321,7 +321,8 @@ if __name__ == '__main__':
     select_rows = range(3) #[]  # Test with first 3 rows: range(3)
     output_path = '.'
     ffmpeg = '/home/arno/software/audio/ffmpeg/ffmpeg'
-    ffmpeg = '/software/ffmpeg/ffmpeg'
+    schema_name = 'mPower phonation wav files and file handle IDs'
+    #schema_name = 'mPower countdown wav files and file handle IDs'
 
     # Download files:
     dataframe, files = read_synapse_table_files(synapse_table_ID, column_name,
@@ -340,6 +341,5 @@ if __name__ == '__main__':
                                        input_args, output_args)
 
     # Upload wav files and file handle IDs:
-    schema_name = 'mPower phonation files and file handle IDs'
     upload_files_handles_to_synapse(output_files, target_project_synID,
                                     schema_name, username, password)
