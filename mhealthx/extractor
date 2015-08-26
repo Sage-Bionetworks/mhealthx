@@ -2,6 +2,11 @@
 """
 This pipeline runs feature extraction on mHealth data stored on Synapse.org.
 
+Example: extractor --phonation syn4590865 -t /home/arno/software/audio
+
+- First-time use on a given machine: include -u and -p for Synapse login.
+- Replace -t argument with path to installed feature extraction software.
+
 For help in using extractor ::
 
     - README file
@@ -37,7 +42,11 @@ from mhealthx.features import opensmile
 # ============================================================================
 parser = argparse.ArgumentParser(description="""
                     Extract features from mHealth data
-                    stored on Sage Bionetwork's Synapse.org.""",
+                    stored on Sage Bionetwork's Synapse.org.
+                    Example: extractor --phonation syn4590865 -t /software
+                    (-t: path to installed third-party software; -u, -p:
+                    Synapse login for first use on a given machine)
+""",
                     formatter_class = lambda prog:
                     argparse.HelpFormatter(prog, max_help_position=40))
 parser.add_argument("-v", "--version", help="version number",
