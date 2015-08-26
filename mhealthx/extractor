@@ -251,22 +251,23 @@ if synID_phonation:
     #-------------------------------------------------------------------------
     # Save openSMILE output file handles to the mPower phonation file table:
     #-------------------------------------------------------------------------
- #   StoreOpenSMILEfiles = Node(name='store_opensmile_files',
- #                      interface=Fn(function=upload_files_handles_to_synapse,
- #                                   input_names=['input_files',
- #                                                'synapse_project_id',
- #                                                'schema_name',
- #                                                'username',
- #                                                'password']))
-#    Flow.add_nodes([StoreOpenSMILEfiles])
-#    Flow.connect(RunOpenSMILE, 'output_files',
-#                 StoreOpenSMILEfiles, 'input_files')
-#    Flow.connect(MakePhonationFileTable, 'synapse_project_id',
-#                 StoreOpenSMILEfiles, 'synapse_project_id')
-#    Flow.connect(MakePhonationFileTable, 'schema_name',
-#                 StoreOpenSMILEfiles, 'schema_name')
-#    StoreOpenSMILEfiles.inputs.username = ''
-#    StoreOpenSMILEfiles.inputs.password = ''
+    StoreOpenSMILEfiles = Node(name='store_opensmile_files',
+                       interface=Fn(function=upload_files_handles_to_synapse,
+                                    input_names=['input_files',
+                                                 'synapse_project_id',
+                                                 'schema_name',
+                                                 'username',
+                                                 'password'],
+                                    output_names=[]))
+    Flow.add_nodes([StoreOpenSMILEfiles])
+    Flow.connect(RunOpenSMILE, 'output_files',
+                 StoreOpenSMILEfiles, 'input_files')
+    Flow.connect(MakePhonationFileTable, 'synapse_project_id',
+                 StoreOpenSMILEfiles, 'synapse_project_id')
+    Flow.connect(MakePhonationFileTable, 'schema_name',
+                 StoreOpenSMILEfiles, 'schema_name')
+    StoreOpenSMILEfiles.inputs.username = ''
+    StoreOpenSMILEfiles.inputs.password = ''
 
 
 # ============================================================================
