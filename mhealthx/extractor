@@ -32,7 +32,8 @@ from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node
 from mhealthx.io_data import read_synapse_table_files, append_file_names, \
-                             convert_audio_files
+                             convert_audio_files, copy_synapse_table, \
+                             upload_files_handles_to_synapse
 from mhealthx.features import opensmile
 
 # ============================================================================
@@ -219,6 +220,45 @@ if synID_phonation:
                                                'openSMILE','SMILExtract')
     Flow.connect(RunOpenSMILE, 'feature_table',
                  Sink, 'phonation.@features.openSMILE')
+
+    #-------------------------------------------------------------------------
+    # Copy original Synapse table to an mPower phonation file table:
+    #-------------------------------------------------------------------------
+    CopyToPhonationFileTable = Node(name='copy_to_phonation_file_table',
+                            interface=Fn(function=copy_synapse_table,
+                                         input_names=['synapse_table_ID',
+                                                      'synapse_project_ID',
+                                                      'schema_name',
+                                                      'remove_columns',
+                                                      'username',
+                                                      'password']))
+    Flow.add_nodes([CopyToPhonationFileTable])
+    Flow.connect(GetPhonationFiles, 'files',
+                 RenamePhonationFiles, 'input_files')
+    CopyToPhonationFileTable.inputs.synapse_table_ID = synID_phonation
+    CopyToPhonationFileTable.inputs.synapse_project_ID = 'syn4899451'
+    CopyToPhonationFileTable.inputs.schema_name = 'mPower phonation ' \
+                                                  'feature file table'
+    CopyToPhonationFileTable.inputs.remove_columns = ['audio_audio.m4a',
+                                                      'audio_countdown.m4a']
+    CopyToPhonationFileTable.inputs.username = ''
+    CopyToPhonationFileTable.inputs.password = ''
+
+    #-------------------------------------------------------------------------
+    # Save openSMILE output file handles to the mPower phonation file table:
+    #-------------------------------------------------------------------------
+    StoreOpenSMILEfiles = Node(name='store_opensmile_files',
+                       interface=Fn(function=upload_files_handles_to_synapse,
+                                    input_names=['input_files',
+                                                 'synapse_project_ID',
+                                                 'schema_name',
+                                                 'username',
+                                                 'password']))
+    Flow.add_nodes([RenamePhonationFiles])
+    Flow.connect(GetPhonationFiles, 'files',
+                 RenamePhonationFiles, 'input_files')
+    RenamePhonationFiles.inputs.file_append = '.m4a'
+
 
 # ============================================================================
 #
