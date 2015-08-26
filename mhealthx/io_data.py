@@ -134,7 +134,7 @@ def write_synapse_table(dataframe, synapse_project_id, schema_name='',
 
 
 def copy_synapse_table(synapse_table_id, synapse_project_id, schema_name='',
-                       remove_columns=[], username='', password=''):
+                       dataframe=None, remove_columns=[], username='', password=''):
     """
     Copy Synapse table contents to another Synapse project.
 
@@ -146,6 +146,8 @@ def copy_synapse_table(synapse_table_id, synapse_project_id, schema_name='',
         Synapse ID for project within which table is to be written
     schema_name : string
         schema name of table
+    dataframe : Pandas DataFrame
+        Synapse table contents (optional)
     remove_columns : list of strings
         column headers for columns not to be copied
     username : string
@@ -187,8 +189,9 @@ def copy_synapse_table(synapse_table_id, synapse_project_id, schema_name='',
         syn.login()
 
     # Download Synapse table as a dataframe:
-    results = syn.tableQuery("select * from {0}".format(synapse_table_id))
-    dataframe = results.asDataFrame()
+    if dataframe.empty:
+        results = syn.tableQuery("select * from {0}".format(synapse_table_id))
+        dataframe = results.asDataFrame()
 
     # Remove specified columns:
     for remove_column in remove_columns:

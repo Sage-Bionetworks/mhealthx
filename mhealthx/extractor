@@ -218,7 +218,7 @@ if synID_phonation:
     RunOpenSMILE.inputs.output_append = '.csv'
     RunOpenSMILE.inputs.command = os.path.join(thirdparty,
                                                'openSMILE','SMILExtract')
-    Flow.connect(RunOpenSMILE, 'feature_table',
+    Flow.connect(RunOpenSMILE, 'output_files',
                  Sink, 'phonation.@features.openSMILE')
 
     #-------------------------------------------------------------------------
@@ -229,6 +229,7 @@ if synID_phonation:
                                          input_names=['synapse_table_id',
                                                       'synapse_project_id',
                                                       'schema_name',
+                                                      'dataframe',
                                                       'remove_columns',
                                                       'username',
                                                       'password'],
@@ -240,6 +241,8 @@ if synID_phonation:
     MakePhonationFileTable.inputs.synapse_project_id = 'syn4899451'
     MakePhonationFileTable.inputs.schema_name = 'mPower phonation ' \
                                                   'feature file table'
+    Flow.connect(GetPhonationFiles, 'dataframe',
+                 MakePhonationFileTable, 'dataframe')
     MakePhonationFileTable.inputs.remove_columns = ['audio_audio.m4a',
                                                       'audio_countdown.m4a']
     MakePhonationFileTable.inputs.username = ''
@@ -248,22 +251,22 @@ if synID_phonation:
     #-------------------------------------------------------------------------
     # Save openSMILE output file handles to the mPower phonation file table:
     #-------------------------------------------------------------------------
-    StoreOpenSMILEfiles = Node(name='store_opensmile_files',
-                       interface=Fn(function=upload_files_handles_to_synapse,
-                                    input_names=['input_files',
-                                                 'synapse_project_id',
-                                                 'schema_name',
-                                                 'username',
-                                                 'password']))
-    Flow.add_nodes([StoreOpenSMILEfiles])
-    Flow.connect(RunOpenSMILE, 'output_files',
-                 StoreOpenSMILEfiles, 'input_files')
-    Flow.connect(MakePhonationFileTable, 'synapse_project_id',
-                 StoreOpenSMILEfiles, 'synapse_project_id')
-    Flow.connect(MakePhonationFileTable, 'schema_name',
-                 StoreOpenSMILEfiles, 'schema_name')
-    StoreOpenSMILEfiles.inputs.username = ''
-    StoreOpenSMILEfiles.inputs.password = ''
+ #   StoreOpenSMILEfiles = Node(name='store_opensmile_files',
+ #                      interface=Fn(function=upload_files_handles_to_synapse,
+ #                                   input_names=['input_files',
+ #                                                'synapse_project_id',
+ #                                                'schema_name',
+ #                                                'username',
+ #                                                'password']))
+#    Flow.add_nodes([StoreOpenSMILEfiles])
+#    Flow.connect(RunOpenSMILE, 'output_files',
+#                 StoreOpenSMILEfiles, 'input_files')
+#    Flow.connect(MakePhonationFileTable, 'synapse_project_id',
+#                 StoreOpenSMILEfiles, 'synapse_project_id')
+#    Flow.connect(MakePhonationFileTable, 'schema_name',
+#                 StoreOpenSMILEfiles, 'schema_name')
+#    StoreOpenSMILEfiles.inputs.username = ''
+#    StoreOpenSMILEfiles.inputs.password = ''
 
 
 # ============================================================================
