@@ -327,7 +327,7 @@ if __name__ == '__main__':
     column_name = 'audio_audio.m4a'
     select_rows = range(3) #[]  # Test with first 3 rows: range(3)
     output_path = '.'
-    command = '/software/audio/ffmpeg/ffmpeg'
+    command = '/home/arno/software/audio/ffmpeg/ffmpeg'
 
     # Download files:
     dataframe, files = read_synapse_table_files(synapse_table_ID, column_name,
