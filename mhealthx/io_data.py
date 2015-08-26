@@ -133,6 +133,63 @@ def write_synapse_table(dataframe, project_synID, schema_name='',
     syn.store(Table(schema, dataframe))
 
 
+def upload_files_handles_to_synapse(input_files, project_synID,
+                                    schema_name='', username='', password=''):
+    """
+    Upload files and file handle IDs to Synapse.
+
+    Parameters
+    ----------
+    input_files : list of strings
+        paths to files to upload to Synapse
+    project_synID : string
+        Synapse ID for project within which table is to be written
+    schema_name : string
+        schema name of table
+    username : string
+        Synapse username (only needed once on a given machine)
+    password : string
+        Synapse password (only needed once on a given machine)
+
+    Examples
+    --------
+    >>> from mhealthx.io_data import upload_files_handles_to_synapse
+    >>> input_files = ['/Users/arno/Local/wav/test1.wav', '/Users/arno/Local/wav/test2.wav']
+    >>> project_synID = 'syn4899451'
+    >>> schema_name = 'Test to store files and file handle IDs'
+    >>> username = ''
+    >>> password = ''
+    >>> upload_files_handles_to_synapse(input_files, project_synID, schema_name, username, password)
+
+    """
+    import os
+    import synapseclient
+    from synapseclient import Schema
+    from synapseclient.table import Column, RowSet, Row
+
+    syn = synapseclient.Synapse()
+
+    # Log in to Synapse:
+    if username and password:
+        syn.login(username, password)
+    else:
+        syn.login()
+
+    # Store file handle IDs:
+    files_handles = []
+    for input_file in input_files:
+        file_handle = syn._chunkedUploadFile(input_file)
+        filename = os.path.basename(input_file)
+        files_handles.append([filename, file_handle['id']])
+
+    # Upload files and file handle IDs:
+    cols = [Column(name='filename', columnType='STRING'),
+            Column(name='fileID', columnType='FILEHANDLEID')]
+    schema = syn.store(Schema(name=schema_name, columns=cols, parent=project_synID))
+    syn.store(RowSet(columns=cols, schema=schema,
+                     rows=[Row(r) for r in files_handles]))
+
+
 def append_file_names(input_files, file_append):
     """
     Copy each file with an append to its file name.
