@@ -11,8 +11,8 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 
 
 def read_synapse_table_files(synapse_table_id,
-                             column_names=[], download_limit=None, output_path='.',
-                             username='', password=''):
+                             column_names=[], download_limit=None,
+                             output_path='.', username='', password=''):
     """
     Read data from a Synapse table. If column_names specified, download files.
 
@@ -23,7 +23,7 @@ def read_synapse_table_files(synapse_table_id,
     column_names : list of strings
         column headers for columns with fileIDs (if wish to download files)
     download_limit : int
-        number of rows to retrieve files from (None = all rows)
+        limit file downloads to this number of rows (None = all rows)
     output_path : string
         output path to store column_name files
     username : string
@@ -247,9 +247,8 @@ def write_synapse_table(table_data, synapse_project_id, schema_name='',
     syn.store(Table(schema, table_data))
 
 
-def upload_files_handles_to_synapse(input_files, synapse_project_id,
-                                    schema_name='', column_name='fileID',
-                                    username='', password=''):
+def files_to_synapse_table(input_files, synapse_project_id, schema_name='',
+                           column_name='fileID', username='', password=''):
     """
     Upload files and file handle IDs to Synapse.
 
@@ -270,17 +269,17 @@ def upload_files_handles_to_synapse(input_files, synapse_project_id,
 
     Examples
     --------
-    >>> from mhealthx.io_data import upload_files_handles_to_synapse
+    >>> from mhealthx.io_data import files_to_synapse_table
     >>> input_files = ['/Users/arno/Local/wav/test1.wav']
     >>> synapse_project_id = 'syn4899451'
     >>> schema_name = 'Test to store files and file handle IDs'
     >>> column_name = 'fileID1'
     >>> username = ''
     >>> password = ''
-    >>> upload_files_handles_to_synapse(input_files, synapse_project_id, schema_name, column_name, username, password)
+    >>> files_to_synapse_table(input_files, synapse_project_id, schema_name, column_name, username, password)
     >>> #column_name = 'fileID2'
     >>> #input_files = ['/Users/arno/Local/wav/test2.wav']
-    >>> #upload_files_handles_to_synapse(input_files, synapse_project_id, schema_name, column_name, username, password)
+    >>> #files_to_synapse_table(input_files, synapse_project_id, schema_name, column_name, username, password)
 
     """
     import synapseclient
@@ -363,5 +362,5 @@ if __name__ == '__main__':
     #                                              username, password)
     #
     # # Upload wav files and file handle IDs:
-    # upload_files_handles_to_synapse(files, target_synapse_project_id,
+    # files_to_synapse_table(files, target_synapse_project_id,
     #                                 schema_name, username, password)

@@ -194,6 +194,34 @@ if synID_phonation:
     Flow.connect(RunOpenSMILE, 'output_files',
                  Sink, 'phonation.@features.openSMILE')
 
+
+    #-------------------------------------------------------------------------
+    # Push openSMILE features to a Synapse table:
+    #-------------------------------------------------------------------------
+    SaveOpenSMILE = Node(name='save_openSMILE_features',
+                        interface=Fn(function=opensmile,
+                                     input_names=['input_files',
+                                                  'config_file',
+                                                  'output_append',
+                                                  'command'],
+                                     output_names=['output_files']))
+    Flow.add_nodes([RunOpenSMILE])
+
+    # Until wav files are converted and ready, use the following:
+    RunOpenSMILE.inputs.input_files = ['/home/arno/wav/test1.wav',
+                                       '/home/arno/wav/test2.wav',
+                                       '/home/arno/wav/test3.wav']
+
+    Flow.connect(GetPhonationFiles, 'files', RunOpenSMILE, 'input_files')
+    RunOpenSMILE.inputs.config_file = os.path.join(thirdparty,
+                                                   'openSMILE','config',
+                                                   'IS13_ComParE.conf')
+    RunOpenSMILE.inputs.output_append = '.csv'
+    RunOpenSMILE.inputs.command = os.path.join(thirdparty,
+                                               'openSMILE','SMILExtract')
+    Flow.connect(RunOpenSMILE, 'output_files',
+                 Sink, 'phonation.@features.openSMILE')
+
     # #-------------------------------------------------------------------------
     # # Copy original Synapse table to an mPower phonation file table:
     # #-------------------------------------------------------------------------
