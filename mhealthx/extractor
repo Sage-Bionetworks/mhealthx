@@ -148,56 +148,23 @@ if synID_phonation:
     # ------------------------------------------------------------------------
     # Read Synapse table:
     # ------------------------------------------------------------------------
-    GetPhonationFiles = Node(name='get_phonation_files',
+    GetPhonationFiles = Node(name='retrieve_phonation_files',
                              interface=Fn(function=read_synapse_table_files,
                                           input_names=['synapse_table_id',
-                                                       'column_name',
-                                                       'select_rows',
+                                                       'column_names',
+                                                       'nrows',
                                                        'output_path',
                                                        'username',
                                                        'password'],
-                                          output_names=['dataframe',
+                                          output_names=['table_data',
                                                         'files']))
     Flow.add_nodes([GetPhonationFiles])
     GetPhonationFiles.inputs.synapse_table_id = synID_phonation
     GetPhonationFiles.inputs.column_name = 'audio_audio.m4a'
-    GetPhonationFiles.inputs.select_rows = range(3) #[]
+    GetPhonationFiles.inputs.nrows = 3  # None = all rows
     GetPhonationFiles.inputs.output_path = phonation_file_path
     GetPhonationFiles.inputs.username = ''
     GetPhonationFiles.inputs.password = ''
-
-    # ------------------------------------------------------------------------
-    # Append file names with ".m4a":
-    # ------------------------------------------------------------------------
-    RenamePhonationFiles = Node(name='rename_phonation_files',
-                                interface=Fn(function=append_file_names,
-                                             input_names=['input_files',
-                                                          'file_append'],
-                                             output_names=['output_files']))
-    Flow.add_nodes([RenamePhonationFiles])
-    Flow.connect(GetPhonationFiles, 'files',
-                 RenamePhonationFiles, 'input_files')
-    RenamePhonationFiles.inputs.file_append = '.m4a'
-
-    # ------------------------------------------------------------------------
-    # Convert voice files to .wav format:
-    # ------------------------------------------------------------------------
-    ConvertPhonationFiles = Node(name='convert_phonation_files',
-                                 interface=Fn(function=convert_audio_files,
-                                              input_names=['input_files',
-                                                           'file_append',
-                                                           'command',
-                                                           'input_args',
-                                                           'output_args'],
-                                              output_names=['output_files']))
-    Flow.add_nodes([ConvertPhonationFiles])
-    Flow.connect(RenamePhonationFiles, 'output_files',
-                 ConvertPhonationFiles, 'input_files')
-    ConvertPhonationFiles.inputs.file_append = '.wav'
-    ConvertPhonationFiles.inputs.command = os.path.join(thirdparty,
-                                                        'ffmpeg', 'ffmpeg')
-    ConvertPhonationFiles.inputs.input_args = '-i'
-    ConvertPhonationFiles.inputs.output_args = '-ac 2'
 
     #-------------------------------------------------------------------------
     # Run openSMILE feature extraction on voice data:
@@ -210,8 +177,7 @@ if synID_phonation:
                                                   'command'],
                                      output_names=['output_files']))
     Flow.add_nodes([RunOpenSMILE])
-    Flow.connect(ConvertPhonationFiles, 'output_files',
-                 RunOpenSMILE, 'input_files')
+    Flow.connect(GetPhonationFiles, 'files', RunOpenSMILE, 'input_files')
     RunOpenSMILE.inputs.config_file = os.path.join(thirdparty,
                                                    'openSMILE','config',
                                                    'IS13_ComParE.conf')
@@ -221,53 +187,53 @@ if synID_phonation:
     Flow.connect(RunOpenSMILE, 'output_files',
                  Sink, 'phonation.@features.openSMILE')
 
-    #-------------------------------------------------------------------------
-    # Copy original Synapse table to an mPower phonation file table:
-    #-------------------------------------------------------------------------
-    MakePhonationFileTable = Node(name='make_phonation_file_table',
-                            interface=Fn(function=copy_synapse_table,
-                                         input_names=['synapse_table_id',
-                                                      'synapse_project_id',
-                                                      'schema_name',
-                                                      'dataframe',
-                                                      'remove_columns',
-                                                      'username',
-                                                      'password'],
-                                         output_names=['dataframe',
-                                                       'schema_name',
-                                                       'synapse_project_id']))
-    Flow.add_nodes([MakePhonationFileTable])
-    MakePhonationFileTable.inputs.synapse_table_id = synID_phonation
-    MakePhonationFileTable.inputs.synapse_project_id = 'syn4899451'
-    MakePhonationFileTable.inputs.schema_name = 'mPower phonation ' \
-                                                  'feature file table'
-    Flow.connect(GetPhonationFiles, 'dataframe',
-                 MakePhonationFileTable, 'dataframe')
-    MakePhonationFileTable.inputs.remove_columns = ['audio_audio.m4a',
-                                                      'audio_countdown.m4a']
-    MakePhonationFileTable.inputs.username = ''
-    MakePhonationFileTable.inputs.password = ''
-
-    #-------------------------------------------------------------------------
-    # Save openSMILE output file handles to the mPower phonation file table:
-    #-------------------------------------------------------------------------
-    StoreOpenSMILEfiles = Node(name='store_opensmile_files',
-                       interface=Fn(function=upload_files_handles_to_synapse,
-                                    input_names=['input_files',
-                                                 'synapse_project_id',
-                                                 'schema_name',
-                                                 'username',
-                                                 'password'],
-                                    output_names=[]))
-    Flow.add_nodes([StoreOpenSMILEfiles])
-    Flow.connect(RunOpenSMILE, 'output_files',
-                 StoreOpenSMILEfiles, 'input_files')
-    Flow.connect(MakePhonationFileTable, 'synapse_project_id',
-                 StoreOpenSMILEfiles, 'synapse_project_id')
-    Flow.connect(MakePhonationFileTable, 'schema_name',
-                 StoreOpenSMILEfiles, 'schema_name')
-    StoreOpenSMILEfiles.inputs.username = ''
-    StoreOpenSMILEfiles.inputs.password = ''
+    # #-------------------------------------------------------------------------
+    # # Copy original Synapse table to an mPower phonation file table:
+    # #-------------------------------------------------------------------------
+    # MakePhonationFileTable = Node(name='make_phonation_file_table',
+    #                         interface=Fn(function=copy_synapse_table,
+    #                                      input_names=['synapse_table_id',
+    #                                                   'synapse_project_id',
+    #                                                   'schema_name',
+    #                                                   'table_data',
+    #                                                   'remove_columns',
+    #                                                   'username',
+    #                                                   'password'],
+    #                                      output_names=['table_data',
+    #                                                    'schema_name',
+    #                                                    'synapse_project_id']))
+    # Flow.add_nodes([MakePhonationFileTable])
+    # MakePhonationFileTable.inputs.synapse_table_id = synID_phonation
+    # MakePhonationFileTable.inputs.synapse_project_id = 'syn4899451'
+    # MakePhonationFileTable.inputs.schema_name = 'mPower phonation ' \
+    #                                               'feature file table'
+    # Flow.connect(GetPhonationFiles, 'table_data',
+    #              MakePhonationFileTable, 'table_data')
+    # MakePhonationFileTable.inputs.remove_columns = ['audio_audio.m4a',
+    #                                                   'audio_countdown.m4a']
+    # MakePhonationFileTable.inputs.username = ''
+    # MakePhonationFileTable.inputs.password = ''
+    #
+    # #-------------------------------------------------------------------------
+    # # Save openSMILE output file handles to the mPower phonation file table:
+    # #-------------------------------------------------------------------------
+    # StoreOpenSMILEfiles = Node(name='store_opensmile_files',
+    #                    interface=Fn(function=upload_files_handles_to_synapse,
+    #                                 input_names=['input_files',
+    #                                              'synapse_project_id',
+    #                                              'schema_name',
+    #                                              'username',
+    #                                              'password'],
+    #                                 output_names=[]))
+    # Flow.add_nodes([StoreOpenSMILEfiles])
+    # Flow.connect(RunOpenSMILE, 'output_files',
+    #              StoreOpenSMILEfiles, 'input_files')
+    # Flow.connect(MakePhonationFileTable, 'synapse_project_id',
+    #              StoreOpenSMILEfiles, 'synapse_project_id')
+    # Flow.connect(MakePhonationFileTable, 'schema_name',
+    #              StoreOpenSMILEfiles, 'schema_name')
+    # StoreOpenSMILEfiles.inputs.username = ''
+    # StoreOpenSMILEfiles.inputs.password = ''
 
 
 # ============================================================================

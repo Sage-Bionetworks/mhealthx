@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Input/output functions to read, write, and modify files and Synapse tables.
+Input/output functions to read and write Synapse tables.
 
 Authors:
     - Arno Klein, 2015  (arno@sagebase.org)  http://binarybottle.com
@@ -11,7 +11,7 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 
 
 def read_synapse_table_files(synapse_table_id,
-                             column_names=[], max_row=None, output_path='.',
+                             column_names=[], nrows=None, output_path='.',
                              username='', password=''):
     """
     Read data from a Synapse table. If column_names specified, download files.
@@ -22,7 +22,7 @@ def read_synapse_table_files(synapse_table_id,
         Synapse ID for table
     column_names : list of strings
         column headers for columns with fileIDs (if wish to download files)
-    max_row : int
+    nrows : int
         number of rows to retrieve files from (None = all rows)
     output_path : string
         output path to store column_name files
@@ -43,11 +43,11 @@ def read_synapse_table_files(synapse_table_id,
     >>> from mhealthx.io_data import read_synapse_table_files
     >>> synapse_table_id = 'syn4590865' #'syn4907789'
     >>> column_names = ['audio_audio.m4a', 'audio_countdown.m4a']
-    >>> max_row = 3  # None to download files from all rows
+    >>> nrows = 3  # None to download files from all rows
     >>> output_path = '.'
     >>> username = ''
     >>> password = ''
-    >>> table_data, files = read_synapse_table_files(synapse_table_id, column_names, max_row, output_path, username, password)
+    >>> table_data, files = read_synapse_table_files(synapse_table_id, column_names, nrows, output_path, username, password)
 
     """
     import synapseclient
@@ -72,8 +72,8 @@ def read_synapse_table_files(synapse_table_id,
     if column_names:
 
         # Set the number of rows to loop through:
-        if not max_row:
-            max_row = table_data.shape[0]
+        if not nrows:
+            nrows = table_data.shape[0]
 
         # Loop through specified columns:
         for column_name in column_names:
@@ -81,7 +81,7 @@ def read_synapse_table_files(synapse_table_id,
 
             # Loop through specified number of rows:
             files_per_column = []
-            for irow in range(max_row):
+            for irow in range(nrows):
 
                 # If there is no file in that row, save None:
                 if np.isnan(column_data[irow]):
@@ -156,9 +156,9 @@ def copy_synapse_table(synapse_table_id, synapse_project_id,
     >>> username = ''
     >>> password = ''
     >>> column_names = []
-    >>> max_row = 3  # None to download files from all rows
+    >>> nrows = 3  # None to download files from all rows
     >>> output_path = '.'
-    >>> table_data, files = read_synapse_table_files(synapse_table_id, column_names, max_row, output_path, username, password)
+    >>> table_data, files = read_synapse_table_files(synapse_table_id, column_names, nrows, output_path, username, password)
     >>> remove_columns = ['audio_audio.m4a', 'audio_countdown.m4a']
     >>> table_data, schema_name, synapse_project_id = copy_synapse_table(synapse_table_id, synapse_project_id, schema_name, table_data, remove_columns, username, password)
 
@@ -219,11 +219,11 @@ def write_synapse_table(table_data, synapse_project_id, schema_name='',
     >>> input_synapse_table_id = 'syn4590865'
     >>> synapse_project_id = 'syn4899451'
     >>> column_names = []
-    >>> max_row = None
+    >>> nrows = None
     >>> output_path = '.'
     >>> username = ''
     >>> password = ''
-    >>> table_data, files = read_synapse_table_files(input_synapse_table_id, column_names, max_row, output_path, username, password)
+    >>> table_data, files = read_synapse_table_files(input_synapse_table_id, column_names, nrows, output_path, username, password)
     >>> schema_name = 'Contents of ' + input_synapse_table_id
     >>> write_synapse_table(table_data, synapse_project_id, schema_name, username, password)
 
@@ -420,7 +420,7 @@ if __name__ == '__main__':
     username = ''
     password = ''
     column_name = 'audio_audio.wav'
-    max_row = 3 # Test with first 3 rows or None for all rows
+    nrows = 3 # Test with first 3 rows or None for all rows
     output_path = '.'
     ffmpeg = '/home/arno/software/audio/ffmpeg/ffmpeg'
     schema_name = 'mPower phonation wav files and file handle IDs'
@@ -428,7 +428,7 @@ if __name__ == '__main__':
 
     # Download files:
     table_data, files = read_synapse_table_files(synapse_table_id,
-                                                 column_name, max_row,
+                                                 column_name, nrows,
                                                  output_path,
                                                  username, password)
 
