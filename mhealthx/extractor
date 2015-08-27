@@ -152,7 +152,7 @@ if synID_phonation:
                              interface=Fn(function=read_synapse_table_files,
                                           input_names=['synapse_table_id',
                                                        'column_names',
-                                                       'nrows',
+                                                       'download_limit',
                                                        'output_path',
                                                        'username',
                                                        'password'],
@@ -160,8 +160,9 @@ if synID_phonation:
                                                         'files']))
     Flow.add_nodes([GetPhonationFiles])
     GetPhonationFiles.inputs.synapse_table_id = synID_phonation
-    GetPhonationFiles.inputs.column_name = 'audio_audio.m4a'
-    GetPhonationFiles.inputs.nrows = 3  # None = all rows
+    GetPhonationFiles.inputs.column_names = ['audio_audio.m4a',
+                                             'audio_countdown.m4a']
+    GetPhonationFiles.inputs.download_limit = 3  # None = all rows
     GetPhonationFiles.inputs.output_path = phonation_file_path
     GetPhonationFiles.inputs.username = ''
     GetPhonationFiles.inputs.password = ''
@@ -177,6 +178,12 @@ if synID_phonation:
                                                   'command'],
                                      output_names=['output_files']))
     Flow.add_nodes([RunOpenSMILE])
+
+    # Until wav files are converted and ready, use the following:
+    RunOpenSMILE.inputs.input_files = ['/home/arno/wav/test1.wav',
+                                       '/home/arno/wav/test2.wav',
+                                       '/home/arno/wav/test3.wav']
+
     Flow.connect(GetPhonationFiles, 'files', RunOpenSMILE, 'input_files')
     RunOpenSMILE.inputs.config_file = os.path.join(thirdparty,
                                                    'openSMILE','config',

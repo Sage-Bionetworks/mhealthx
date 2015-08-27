@@ -11,7 +11,7 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 
 
 def read_synapse_table_files(synapse_table_id,
-                             column_names=[], nrows=None, output_path='.',
+                             column_names=[], download_limit=None, output_path='.',
                              username='', password=''):
     """
     Read data from a Synapse table. If column_names specified, download files.
@@ -22,7 +22,7 @@ def read_synapse_table_files(synapse_table_id,
         Synapse ID for table
     column_names : list of strings
         column headers for columns with fileIDs (if wish to download files)
-    nrows : int
+    download_limit : int
         number of rows to retrieve files from (None = all rows)
     output_path : string
         output path to store column_name files
@@ -43,11 +43,11 @@ def read_synapse_table_files(synapse_table_id,
     >>> from mhealthx.io_data import read_synapse_table_files
     >>> synapse_table_id = 'syn4590865' #'syn4907789'
     >>> column_names = ['audio_audio.m4a', 'audio_countdown.m4a']
-    >>> nrows = 3  # None to download files from all rows
+    >>> download_limit = 3  # None = download files from all rows
     >>> output_path = '.'
     >>> username = ''
     >>> password = ''
-    >>> table_data, files = read_synapse_table_files(synapse_table_id, column_names, nrows, output_path, username, password)
+    >>> table_data, files = read_synapse_table_files(synapse_table_id, column_names, download_limit, output_path, username, password)
 
     """
     import synapseclient
@@ -72,8 +72,8 @@ def read_synapse_table_files(synapse_table_id,
     if column_names:
 
         # Set the number of rows to loop through:
-        if not nrows:
-            nrows = table_data.shape[0]
+        if type(download_limit) != int:
+            download_limit = table_data.shape[0]
 
         # Loop through specified columns:
         for column_name in column_names:
@@ -81,7 +81,7 @@ def read_synapse_table_files(synapse_table_id,
 
             # Loop through specified number of rows:
             files_per_column = []
-            for irow in range(nrows):
+            for irow in range(download_limit):
 
                 # If there is no file in that row, save None:
                 if np.isnan(column_data[irow]):
@@ -156,9 +156,9 @@ def copy_synapse_table(synapse_table_id, synapse_project_id,
     >>> username = ''
     >>> password = ''
     >>> column_names = []
-    >>> nrows = 3  # None to download files from all rows
+    >>> download_limit = 3  # None to download files from all rows
     >>> output_path = '.'
-    >>> table_data, files = read_synapse_table_files(synapse_table_id, column_names, nrows, output_path, username, password)
+    >>> table_data, files = read_synapse_table_files(synapse_table_id, column_names, download_limit, output_path, username, password)
     >>> remove_columns = ['audio_audio.m4a', 'audio_countdown.m4a']
     >>> table_data, schema_name, synapse_project_id = copy_synapse_table(synapse_table_id, synapse_project_id, schema_name, table_data, remove_columns, username, password)
 
@@ -219,11 +219,11 @@ def write_synapse_table(table_data, synapse_project_id, schema_name='',
     >>> input_synapse_table_id = 'syn4590865'
     >>> synapse_project_id = 'syn4899451'
     >>> column_names = []
-    >>> nrows = None
+    >>> download_limit = None
     >>> output_path = '.'
     >>> username = ''
     >>> password = ''
-    >>> table_data, files = read_synapse_table_files(input_synapse_table_id, column_names, nrows, output_path, username, password)
+    >>> table_data, files = read_synapse_table_files(input_synapse_table_id, column_names, download_limit, output_path, username, password)
     >>> schema_name = 'Contents of ' + input_synapse_table_id
     >>> write_synapse_table(table_data, synapse_project_id, schema_name, username, password)
 
@@ -339,99 +339,29 @@ def upload_files_handles_to_synapse(input_files, synapse_project_id,
     #                      rows=[Row(r) for r in files_handles]))
 
 
-def convert_audio_files(input_files, file_append, command='ffmpeg',
-                        input_args='-i', output_args='-ac 2'):
-    """
-    Convert audio files to new format.
-
-    Calls python-audiotranscode (and faad2)
-
-    Parameters
-    ----------
-    input_files : list of strings
-        full path to the input files
-    file_append : string
-        append to each file name to indicate output file format (e.g., '.wav')
-    command : string
-        executable command without arguments
-    input_args : string
-        arguments preceding input file name in command
-    output_args : string
-        arguments preceding output file name in command
-
-    Returns
-    -------
-    output_files : list of strings
-        each string is the full path to a renamed file
-
-    Examples
-    --------
-    >>> from mhealthx.io_data import convert_audio_files
-    >>> input_files = ['/Users/arno/mhealthx_working/mHealthX/phonation_files/test.m4a']
-    >>> file_append = '.wav'
-    >>> command = '/home/arno/software/audio/ffmpeg/ffmpeg'
-    >>> input_args = '-i'
-    >>> output_args = '-ac 2'
-    >>> output_files = convert_audio_files(input_files, file_append, command, input_args, output_args)
-
-    """
-    import os
-    from nipype.interfaces.base import CommandLine
-
-    output_files = []
-
-    # Loop through input files:
-    for input_file in input_files:
-        if not os.path.exists(input_file):
-            raise(IOError(input_file + " not found"))
-        else:
-            # Don't convert file if file already has correct append:
-            if input_file.endswith(file_append):
-                output_files.append(input_file)
-            # Convert file to new format:
-            else:
-                output_file = input_file + file_append
-                if os.path.exists(output_file):
-                    output_files.append(output_file)
-                else:
-                    # Nipype command line wrapper:
-                    cli = CommandLine(command = command)
-                    cli.inputs.args = ' '.join([input_args, input_file,
-                                                output_args, output_file])
-                    cli.cmdline
-                    cli.run()
-
-                    if not os.path.exists(output_file):
-                        raise(IOError(output_file + " not found"))
-                    else:
-                        output_files.append(output_file)
-
-    return output_files
-
-
 # ============================================================================
 # Run above functions to convert all voice files to wav and upload to Synapse:
 # ============================================================================
 if __name__ == '__main__':
 
-    # Setup:
-    synapse_table_id = 'syn4590865'
-    target_synapse_project_id = 'syn4899451'
-    username = ''
-    password = ''
-    column_name = 'audio_audio.wav'
-    nrows = 3 # Test with first 3 rows or None for all rows
-    output_path = '.'
-    ffmpeg = '/home/arno/software/audio/ffmpeg/ffmpeg'
-    schema_name = 'mPower phonation wav files and file handle IDs'
-    #schema_name = 'mPower countdown wav files and file handle IDs'
-
-    # Download files:
-    table_data, files = read_synapse_table_files(synapse_table_id,
-                                                 column_name, nrows,
-                                                 output_path,
-                                                 username, password)
-
-    # Upload wav files and file handle IDs:
-    upload_files_handles_to_synapse(files, target_synapse_project_id,
-                                    schema_name, username, password)
+    # # Setup:
+    # synapse_table_id = 'syn4590865'
+    # target_synapse_project_id = 'syn4899451'
+    # username = ''
+    # password = ''
+    # column_name = 'audio_audio.wav'
+    # download_limit = 3 # Test with first 3 rows or None for all rows
+    # output_path = '.'
+    # ffmpeg = '/home/arno/software/audio/ffmpeg/ffmpeg'
+    # schema_name = 'mPower phonation wav files and file handle IDs'
+    # #schema_name = 'mPower countdown wav files and file handle IDs'
+    #
+    # # Download files:
+    # table_data, files = read_synapse_table_files(synapse_table_id,
+    #                                              column_name, download_limit,
+    #                                              output_path,
+    #                                              username, password)
+    #
+    # # Upload wav files and file handle IDs:
+    # upload_files_handles_to_synapse(files, target_synapse_project_id,
+    #                                 schema_name, username, password)
