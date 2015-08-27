@@ -23,7 +23,7 @@ def read_synapse_table_files(synapse_table_id,
     column_names : list of strings
         column headers for columns with fileIDs (if wish to download files)
     max_row : int
-        number of rows to retrieve files from (None means all rows)
+        number of rows to retrieve files from (None = all rows)
     output_path : string
         output path to store column_name files
     username : string
@@ -43,7 +43,7 @@ def read_synapse_table_files(synapse_table_id,
     >>> from mhealthx.io_data import read_synapse_table_files
     >>> synapse_table_id = 'syn4590865' #'syn4907789'
     >>> column_names = ['audio_audio.m4a', 'audio_countdown.m4a']
-    >>> max_row = 3  # None for all rows
+    >>> max_row = 3  # None to download files from all rows
     >>> output_path = '.'
     >>> username = ''
     >>> password = ''
@@ -83,9 +83,9 @@ def read_synapse_table_files(synapse_table_id,
             files_per_column = []
             for irow in range(max_row):
 
-                # If there is no file in that row, save an empty string:
+                # If there is no file in that row, save None:
                 if np.isnan(column_data[irow]):
-                    files_per_column.append('')
+                    files_per_column.append(None)
 
                 # Download the file:
                 else:
@@ -102,6 +102,97 @@ def read_synapse_table_files(synapse_table_id,
             files.append(files_per_column)
 
     return table_data, files
+
+
+def copy_synapse_table(synapse_table_id, synapse_project_id,
+                       schema_name='', table_data=None, remove_columns=[],
+                       username='', password=''):
+    """
+    Copy Synapse table contents to another Synapse project.
+
+    Parameters
+    ----------
+    synapse_table_id : string
+        Synapse ID for table to copy
+    synapse_project_id : string
+        copy table to project with this Synapse ID
+    schema_name : string
+        schema name of table
+    table_data : Pandas DataFrame
+        Synapse table contents (optional)
+    remove_columns : list of strings
+        column headers for columns to be removed
+    username : string
+        Synapse username (only needed once on a given machine)
+    password : string
+        Synapse password (only needed once on a given machine)
+
+    Returns
+    -------
+    table_data : Pandas DataFrame
+        Synapse table contents
+    schema_name : string
+        schema name of table
+    synapse_project_id : string
+        Synapse ID for project within which table is to be written
+
+    Examples
+    --------
+    >>> from mhealthx.io_data import copy_synapse_table
+    >>> synapse_table_id = 'syn4590865'
+    >>> synapse_project_id = 'syn4899451'
+    >>> schema_name = 'Copy of ' + synapse_table_id
+    >>> table_data = None
+    >>> remove_columns = []
+    >>> username = ''
+    >>> password = ''
+    >>> table_data, schema_name, synapse_project_id = copy_synapse_table(synapse_table_id, synapse_project_id, schema_name, table_data, remove_columns, username, password)
+    >>>
+    >>> # Example where columns are removed from a dataframe:
+    >>> from mhealthx.io_data import read_synapse_table_files, copy_synapse_table
+    >>> synapse_table_id = 'syn4590865' #'syn4907789'
+    >>> synapse_project_id = 'syn4899451'
+    >>> schema_name = 'Copy a few files from ' + synapse_table_id
+    >>> username = ''
+    >>> password = ''
+    >>> column_names = []
+    >>> max_row = 3  # None to download files from all rows
+    >>> output_path = '.'
+    >>> table_data, files = read_synapse_table_files(synapse_table_id, column_names, max_row, output_path, username, password)
+    >>> remove_columns = ['audio_audio.m4a', 'audio_countdown.m4a']
+    >>> table_data, schema_name, synapse_project_id = copy_synapse_table(synapse_table_id, synapse_project_id, schema_name, table_data, remove_columns, username, password)
+
+    """
+    import synapseclient
+    from synapseclient import Schema
+    from synapseclient.table import Table, Column, RowSet, Row, as_table_columns
+
+    syn = synapseclient.Synapse()
+
+    # Log in to Synapse:
+    if username and password:
+        syn.login(username, password)
+    else:
+        syn.login()
+
+    # Download Synapse table as a dataframe:
+    if table_data is None:
+        results = syn.tableQuery("select * from {0}".format(synapse_table_id))
+        table_data = results.asDataFrame()
+
+    # Remove specified columns:
+    if remove_columns:
+        for remove_column in remove_columns:
+            del table_data[remove_column]
+
+    # Upload to Synapse table:
+    table_data.index = range(table_data.shape[0])
+    schema = Schema(name=schema_name, columns=as_table_columns(table_data),
+                    parent=synapse_project_id,
+                    includeRowIdAndRowVersion=False)
+    table = syn.store(Table(schema, table_data))
+
+    return table_data, schema_name, synapse_project_id
 
 
 def write_synapse_table(table_data, synapse_project_id, schema_name='',
@@ -154,83 +245,6 @@ def write_synapse_table(table_data, synapse_project_id, schema_name='',
                     parent=synapse_project_id, includeRowIdAndRowVersion=False)
 
     syn.store(Table(schema, table_data))
-
-
-def copy_synapse_table(synapse_table_id, synapse_project_id,
-                       schema_name='', table_data=None, remove_columns=[],
-                       username='', password=''):
-    """
-    Copy Synapse table contents to another Synapse project.
-
-    Parameters
-    ----------
-    synapse_table_id : string
-        Synapse ID for table to copy
-    synapse_project_id : string
-        copy table to project with this Synapse ID
-    schema_name : string
-        schema name of table
-    table_data : Pandas DataFrame
-        Synapse table contents (optional)
-    remove_columns : list of strings
-        column headers for columns to be removed
-    username : string
-        Synapse username (only needed once on a given machine)
-    password : string
-        Synapse password (only needed once on a given machine)
-
-    Returns
-    -------
-    table_data : Pandas DataFrame
-        Synapse table contents
-    schema_name : string
-        schema name of table
-    synapse_project_id : string
-        Synapse ID for project within which table is to be written
-
-    Examples
-    --------
-    >>> from mhealthx.io_data import copy_synapse_table
-    >>> synapse_table_id = 'syn4590865'
-    >>> synapse_project_id = 'syn4899451'
-    >>> schema_name = 'Copy of ' + synapse_table_id
-    >>> table_data = None
-    >>> remove_columns = ['audio_audio.m4a', 'audio_countdown.m4a']
-    >>> username = ''
-    >>> password = ''
-    >>> table_data, schema_name, synapse_project_id = copy_synapse_table(synapse_table_id, synapse_project_id, schema_name, table_data, remove_columns, username, password)
-
-    """
-    import synapseclient
-    from synapseclient import Schema
-    from synapseclient.table import Table, Column, RowSet, Row, as_table_columns
-
-    syn = synapseclient.Synapse()
-
-    # Log in to Synapse:
-    if username and password:
-        syn.login(username, password)
-    else:
-        syn.login()
-
-    # Download Synapse table as a dataframe:
-    if table_data is None:
-        results = syn.tableQuery("select * from {0}".format(synapse_table_id))
-        table_data = results.asDataFrame()
-
-    # Remove specified columns:
-    if remove_columns:
-        for remove_column in remove_columns:
-            del table_data[remove_column]
-
-    # Upload to Synapse table:
-    table_data.index = range(table_data.shape[0])
-    schema = Schema(name=schema_name, columns=as_table_columns(table_data),
-                    parent=synapse_project_id,
-                    includeRowIdAndRowVersion=False)
-    table = syn.store(Table(schema, table_data))
-
-    return table_data, schema_name, synapse_project_id
 
 
 def upload_files_handles_to_synapse(input_files, synapse_project_id,
