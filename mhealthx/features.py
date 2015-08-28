@@ -9,17 +9,17 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
-def opensmile(input_files, config_file, output_append='.csv',
+def opensmile(wav_file, config_file, output_append='.csv',
               command='SMILExtract'):
     """
-    Run openSMILE's SMILExtract on input files to extract audio features.
+    Run openSMILE's SMILExtract on input file to extract audio features.
 
-    SMILExtract -C config/my_configfile.conf -I input_file.wav -O output_file
+    SMILExtract -C config/my_configfile.conf -I input.wav -O output.csv
 
     Parameters
     ----------
-    input_files : list of strings
-        full path to the input files
+    wav_file : string
+        full path to the input file
     command : string
         command without arguments
     config_file : string
@@ -31,43 +31,111 @@ def opensmile(input_files, config_file, output_append='.csv',
 
     Returns
     -------
-    output_files : list of strings
-        output files of features (full paths)
+    feature_file : string
+        output table of features (full path)
 
     Examples
     --------
     >>> from mhealthx.features import opensmile
-    >>> input_files = ['/home/arno/mhealthx_working/mHealthX/phonation_files/test.wav']
+    >>> wav_file = ['/home/arno/mhealthx_working/mHealthX/phonation_files/test.wav']
     >>> config_file = '/home/arno/software/audio/openSMILE/config/IS13_ComParE.conf'
     >>> output_append = '.csv'
     >>> command = '/home/arno/software/audio/openSMILE/SMILExtract'
-    >>> output_files = opensmile(input_files, config_file, output_append, command)
+    >>> feature_file = opensmile(wav_file, config_file, output_append, command)
 
     """
     import os
     from nipype.interfaces.base import CommandLine
 
-    output_files = []
+    if not os.path.exists(wav_file):
+        raise(IOError(wav_file + " not found"))
+    else:
+        feature_file = wav_file + output_append
 
-    # Loop through input files:
-    for input_file in input_files:
-        if not os.path.exists(input_file):
-            raise(IOError(input_file + " not found"))
+        # Nipype command line wrapper over openSMILE:
+        cli = CommandLine(command = command)
+        cli.inputs.args = ' '.join(['-C', config_file,
+                                    '-I', wav_file,
+                                    '-O', feature_file])
+        cli.cmdline
+        cli.run()
+
+        if not os.path.exists(feature_file):
+            raise(IOError(feature_file + " not found"))
+
+    return feature_file
+
+
+def opensmile_features_to_synapse(in_files, synapse_project_id,
+                                  table_name, username, password):
+    """
+    Save openSMILE's SMILExtract audio features to a Synapse table.
+
+    Parameters
+    ----------
+    in_files : list of strings
+        full path to the input files
+    synapse_project_id : string
+        Synapse ID for project to which table is to be written
+    table_name : string
+        schema name of table
+    username : string
+        Synapse username (only needed once on a given machine)
+    password : string
+        Synapse password (only needed once on a given machine)
+
+    Returns
+    -------
+    table_data : Pandas DataFrame
+        output table
+    table_name : string
+        schema name of table
+    synapse_table_id : string
+        Synapse table ID
+
+    Examples
+    --------
+    >>> from mhealthx.features import opensmile_features_to_synapse
+    >>> in_files = []
+    >>> synapse_project_id = 'syn4899451'
+    >>> table_name = 'Phonation openSMILE feature table'
+    >>> username = ''
+    >>> password = ''
+    >>> table_data, table_name, synapse_table_id = opensmile_features_to_synapse(in_files, synapse_project_id, table_name)
+
+    """
+    import pandas as pd
+    import synapseclient
+    from synapseclient import Schema, Table, as_table_columns
+
+    from mhealthx.io_data import concatenate_tables_to_synapse_table as cat
+
+    syn = synapseclient.Synapse()
+
+    # Log in to Synapse:
+    if username and password:
+        syn.login(username, password)
+    else:
+        syn.login()
+
+    # Store each file as a row in a Synapse table:
+    first = True
+    for in_file in in_files:
+        if first:
+            df_data = pd.read_csv(in_file)
+            first = False
         else:
+            df_data = pd.read_csv(in_file)
 
-            output_file = input_file + output_append
+    table_data, project_id = cat(frames, synapse_project_id, table_name,
+                                 username, password)
 
-            # Nipype command line wrapper over openSMILE:
-            cli = CommandLine(command = command)
-            cli.inputs.args = ' '.join(['-C', config_file,
-                                        '-I', input_file,
-                                        '-O', output_file])
-            cli.cmdline
-            cli.run()
+    # Create table schema:
+    schema = Schema(name=table_name, columns=as_table_columns(table_data),
+                    parent=synapse_project_id)
 
-            if not os.path.exists(output_file):
-                raise(IOError(output_file + " not found"))
-            else:
-                output_files.append(output_file)
+    # Store as Synapse table:
+    table = syn.store(Table(schema, table_data))
+    synapse_table_id = str(table.tableId)
 
-    return output_files
+    return table_data, table_name, synapse_table_id

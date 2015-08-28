@@ -30,11 +30,9 @@ import argparse
 from nipype import config, logging
 from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
-from nipype.pipeline.engine import Workflow, Node
-from mhealthx.io_data import read_synapse_table_files, append_file_names, \
-                             convert_audio_files, copy_synapse_table, \
-                             upload_files_handles_to_synapse
-from mhealthx.features import opensmile
+from nipype.pipeline.engine import Workflow, Node, MapNode
+from mhealthx.io_data import read_synapse_table_files
+from mhealthx.features import opensmile, opensmile_features_to_synapse
 
 # ============================================================================
 #
@@ -153,74 +151,61 @@ if synID_phonation:
                                           input_names=['synapse_table_id',
                                                        'column_names',
                                                        'download_limit',
-                                                       'output_path',
+                                                       'out_path',
                                                        'username',
                                                        'password'],
                                           output_names=['table_data',
-                                                        'files']))
+                                                        'downloaded_files']))
     Flow.add_nodes([GetPhonationFiles])
     GetPhonationFiles.inputs.synapse_table_id = synID_phonation
     GetPhonationFiles.inputs.column_names = ['audio_audio.m4a',
                                              'audio_countdown.m4a']
     GetPhonationFiles.inputs.download_limit = 3  # None = all rows
-    GetPhonationFiles.inputs.output_path = phonation_file_path
+    GetPhonationFiles.inputs.out_path = phonation_file_path
     GetPhonationFiles.inputs.username = ''
     GetPhonationFiles.inputs.password = ''
 
     #-------------------------------------------------------------------------
     # Run openSMILE feature extraction on voice data:
     #-------------------------------------------------------------------------
-    RunOpenSMILE = Node(name='openSMILE',
-                        interface=Fn(function=opensmile,
-                                     input_names=['input_files',
-                                                  'config_file',
-                                                  'output_append',
-                                                  'command'],
-                                     output_names=['output_files']))
+    RunOpenSMILE = MapNode(name='openSMILE',
+                           iterfield=['in_file'],
+                           interface=Fn(function=opensmile,
+                                        input_names=['wav_file',
+                                                     'config_file',
+                                                     'out_append',
+                                                     'command'],
+                                        output_names=['feature_file']))
     Flow.add_nodes([RunOpenSMILE])
 
     # Until wav files are converted and ready, use the following:
-    RunOpenSMILE.inputs.input_files = ['/home/arno/wav/test1.wav',
-                                       '/home/arno/wav/test2.wav',
-                                       '/home/arno/wav/test3.wav']
+    RunOpenSMILE.inputs.in_files = ['/home/arno/wav/test1.wav',
+                                    '/home/arno/wav/test2.wav',
+                                    '/home/arno/wav/test3.wav']
+    #Flow.connect(GetPhonationFiles, 'files', RunOpenSMILE, 'wav_file')
 
-    Flow.connect(GetPhonationFiles, 'files', RunOpenSMILE, 'input_files')
     RunOpenSMILE.inputs.config_file = os.path.join(thirdparty,
                                                    'openSMILE','config',
                                                    'IS13_ComParE.conf')
-    RunOpenSMILE.inputs.output_append = '.csv'
+    RunOpenSMILE.inputs.out_append = '.csv'
     RunOpenSMILE.inputs.command = os.path.join(thirdparty,
                                                'openSMILE','SMILExtract')
-    Flow.connect(RunOpenSMILE, 'output_files',
+    Flow.connect(RunOpenSMILE, 'out_file',
                  Sink, 'phonation.@features.openSMILE')
-
 
     #-------------------------------------------------------------------------
     # Push openSMILE features to a Synapse table:
     #-------------------------------------------------------------------------
-    SaveOpenSMILE = Node(name='save_openSMILE_features',
-                        interface=Fn(function=opensmile,
-                                     input_names=['input_files',
-                                                  'config_file',
-                                                  'output_append',
-                                                  'command'],
-                                     output_names=['output_files']))
-    Flow.add_nodes([RunOpenSMILE])
-
-    # Until wav files are converted and ready, use the following:
-    RunOpenSMILE.inputs.input_files = ['/home/arno/wav/test1.wav',
-                                       '/home/arno/wav/test2.wav',
-                                       '/home/arno/wav/test3.wav']
-
-    Flow.connect(GetPhonationFiles, 'files', RunOpenSMILE, 'input_files')
-    RunOpenSMILE.inputs.config_file = os.path.join(thirdparty,
-                                                   'openSMILE','config',
-                                                   'IS13_ComParE.conf')
-    RunOpenSMILE.inputs.output_append = '.csv'
-    RunOpenSMILE.inputs.command = os.path.join(thirdparty,
-                                               'openSMILE','SMILExtract')
-    Flow.connect(RunOpenSMILE, 'output_files',
-                 Sink, 'phonation.@features.openSMILE')
+    # SaveOpenSMILE = Node(name='save_openSMILE_features',
+    #                     interface=Fn(function=opensmile_features_to_synapse,
+    #                                  input_names=['in_files',
+    #                                               'synapse_project_id',
+    #                                               'table_name'],
+    #                                  output_names=['synapse_table_id']))
+    # Flow.add_nodes([SaveOpenSMILE])
+    # Flow.connect(RunOpenSMILE, 'out_file', SaveOpenSMILE, 'in_files')
+    # SaveOpenSMILE.inputs.synapse_project_id = 'syn4899451'
+    # SaveOpenSMILE.inputs.table_name = 'Phonation openSMILE feature table'
 
     # #-------------------------------------------------------------------------
     # # Copy original Synapse table to an mPower phonation file table:
@@ -254,15 +239,15 @@ if synID_phonation:
     # #-------------------------------------------------------------------------
     # StoreOpenSMILEfiles = Node(name='store_opensmile_files',
     #                    interface=Fn(function=upload_files_handles_to_synapse,
-    #                                 input_names=['input_files',
+    #                                 input_names=['in_files',
     #                                              'synapse_project_id',
     #                                              'table_name',
     #                                              'username',
     #                                              'password'],
     #                                 output_names=[]))
     # Flow.add_nodes([StoreOpenSMILEfiles])
-    # Flow.connect(RunOpenSMILE, 'output_files',
-    #              StoreOpenSMILEfiles, 'input_files')
+    # Flow.connect(RunOpenSMILE, 'out_files',
+    #              StoreOpenSMILEfiles, 'in_files')
     # Flow.connect(MakePhonationFileTable, 'synapse_project_id',
     #              StoreOpenSMILEfiles, 'synapse_project_id')
     # Flow.connect(MakePhonationFileTable, 'table_name',

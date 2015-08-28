@@ -12,7 +12,7 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 
 def read_synapse_table_files(synapse_table_id,
                              column_names=[], download_limit=None,
-                             output_path='.', username='', password=''):
+                             out_path='.', username='', password=''):
     """
     Read data from a Synapse table. If column_names specified, download files.
 
@@ -24,7 +24,7 @@ def read_synapse_table_files(synapse_table_id,
         column headers for columns with fileIDs (if wish to download files)
     download_limit : int
         limit file downloads to this number of rows (None = all rows)
-    output_path : string
+    out_path : string
         output path to store column_name files
     username : string
         Synapse username (only needed once on a given machine)
@@ -35,7 +35,7 @@ def read_synapse_table_files(synapse_table_id,
     -------
     table_data : Pandas DataFrame
         Synapse table contents
-    files : list of lists of strings
+    downloaded_files : list of lists of strings
         files from Synapse table column(s) (full paths to downloaded files)
 
     Examples
@@ -44,10 +44,10 @@ def read_synapse_table_files(synapse_table_id,
     >>> synapse_table_id = 'syn4590865' #'syn4907789'
     >>> column_names = ['audio_audio.m4a', 'audio_countdown.m4a']
     >>> download_limit = 3  # None = download files from all rows
-    >>> output_path = '.'
+    >>> out_path = '.'
     >>> username = ''
     >>> password = ''
-    >>> table_data, files = read_synapse_table_files(synapse_table_id, column_names, download_limit, output_path, username, password)
+    >>> table_data, downloaded_files = read_synapse_table_files(synapse_table_id, column_names, download_limit, out_path, username, password)
 
     """
     import synapseclient
@@ -66,7 +66,7 @@ def read_synapse_table_files(synapse_table_id,
     query = "select * from {0}".format(synapse_table_id)
     results = syn.tableQuery(query)
     table_data = results.asDataFrame()
-    files = []
+    downloaded_files = []
 
     # Download Synapse files for fileIDs in specified table columns:
     if column_names:
@@ -93,15 +93,15 @@ def read_synapse_table_files(synapse_table_id,
                                                  rowId=irow,
                                                  versionNumber=0,
                                                  column=column_name,
-                                                 downloadLocation=output_path)
+                                                 downloadLocation=out_path)
                     if fileinfo:
                         files_per_column.append(fileinfo['path'])
                     else:
                         files_per_column.append('')
 
-            files.append(files_per_column)
+            downloaded_files.append(files_per_column)
 
-    return table_data, files
+    return table_data, downloaded_files
 
 
 def copy_synapse_table(synapse_table_id, synapse_project_id, table_name='',
@@ -197,15 +197,15 @@ def write_synapse_table(table_data, synapse_project_id, table_name='',
     Examples
     --------
     >>> from mhealthx.io_data import read_synapse_table_files, write_synapse_table
-    >>> input_synapse_table_id = 'syn4590865'
+    >>> in_synapse_table_id = 'syn4590865'
     >>> synapse_project_id = 'syn4899451'
     >>> column_names = []
     >>> download_limit = None
-    >>> output_path = '.'
+    >>> out_path = '.'
     >>> username = ''
     >>> password = ''
-    >>> table_data, files = read_synapse_table_files(input_synapse_table_id, column_names, download_limit, output_path, username, password)
-    >>> table_name = 'Contents of ' + input_synapse_table_id
+    >>> table_data, files = read_synapse_table_files(in_synapse_table_id, column_names, download_limit, out_path, username, password)
+    >>> table_name = 'Contents of ' + in_synapse_table_id
     >>> write_synapse_table(table_data, synapse_project_id, table_name, username, password)
 
     """
@@ -228,14 +228,14 @@ def write_synapse_table(table_data, synapse_project_id, table_name='',
     syn.store(Table(schema, table_data))
 
 
-def files_to_synapse_table(input_files, synapse_project_id, table_name,
+def files_to_synapse_table(in_files, synapse_project_id, table_name,
                            column_name='fileID', username='', password=''):
     """
     Upload files and file handle IDs to Synapse.
 
     Parameters
     ----------
-    input_files : list of strings
+    in_files : list of strings
         paths to files to upload to Synapse
     synapse_project_id : string
         Synapse ID for project to which table is to be written
@@ -250,24 +250,22 @@ def files_to_synapse_table(input_files, synapse_project_id, table_name,
 
     Returns
     -------
-    table_data : Pandas DataFrame
-        output table
     synapse_project_id : string
         Synapse ID for project
 
     Examples
     --------
     >>> from mhealthx.io_data import files_to_synapse_table
-    >>> input_files = ['/Users/arno/Local/wav/test1.wav']
+    >>> in_files = ['/Users/arno/Local/wav/test1.wav']
     >>> synapse_project_id = 'syn4899451'
     >>> table_name = 'Test to store files and file handle IDs'
     >>> column_name = 'fileID1'
     >>> username = ''
     >>> password = ''
-    >>> table_data, synapse_project_id = files_to_synapse_table(input_files, synapse_project_id, table_name, column_name, username, password)
+    >>> table_data, synapse_project_id = files_to_synapse_table(in_files, synapse_project_id, table_name, column_name, username, password)
     >>> #column_name = 'fileID2'
-    >>> #input_files = ['/Users/arno/Local/wav/test2.wav']
-    >>> #table_data, synapse_project_id = files_to_synapse_table(input_files, synapse_project_id, table_name, column_name, username, password)
+    >>> #in_files = ['/Users/arno/Local/wav/test2.wav']
+    >>> #table_data, synapse_project_id = files_to_synapse_table(in_files, synapse_project_id, table_name, column_name, username, password)
 
     """
     import synapseclient
@@ -284,8 +282,8 @@ def files_to_synapse_table(input_files, synapse_project_id, table_name,
 
     # Store file handle IDs:
     files_handles = []
-    for input_file in input_files:
-        file_handle = syn._chunkedUploadFile(input_file)
+    for in_file in in_files:
+        file_handle = syn._chunkedUploadFile(in_file)
         files_handles.append([file_handle['id']])
 
     # New column headers:
@@ -414,7 +412,7 @@ if __name__ == '__main__':
     # password = ''
     # column_name = 'audio_audio.wav'
     # download_limit = 3 # Test with first 3 rows or None for all rows
-    # output_path = '.'
+    # out_path = '.'
     # ffmpeg = '/home/arno/software/audio/ffmpeg/ffmpeg'
     # table_name = 'mPower phonation wav files and file handle IDs'
     # #table_name = 'mPower countdown wav files and file handle IDs'
@@ -422,7 +420,7 @@ if __name__ == '__main__':
     # # Download files:
     # table_data, files = read_synapse_table_files(synapse_table_id,
     #                                              column_name, download_limit,
-    #                                              output_path,
+    #                                              out_path,
     #                                              username, password)
     #
     # # Upload wav files and file handle IDs:
