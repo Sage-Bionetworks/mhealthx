@@ -96,12 +96,12 @@ def opensmile_features_to_synapse(in_files, synapse_project_id,
     Examples
     --------
     >>> from mhealthx.features import opensmile_features_to_synapse
-    >>> in_files = []
+    >>> in_files = ['/home/arno/smile/test1.wav.csv','/home/arno/smile/test2.wav.csv','/home/arno/smile/test3.wav.csv']
     >>> synapse_project_id = 'syn4899451'
     >>> table_name = 'Phonation openSMILE feature table'
     >>> username = ''
     >>> password = ''
-    >>> table_data, table_name, synapse_table_id = opensmile_features_to_synapse(in_files, synapse_project_id, table_name)
+    >>> table_data, table_name, synapse_table_id = opensmile_features_to_synapse(in_files, synapse_project_id, table_name, username, password)
 
     """
     import pandas as pd

@@ -203,18 +203,18 @@ if synID_phonation:
                  Sink, 'phonation.@features.openSMILE')
 
     #-------------------------------------------------------------------------
-    # Push openSMILE features to a Synapse table:
+    # Store openSMILE features to a Synapse table:
     #-------------------------------------------------------------------------
-    # SaveOpenSMILE = Node(name='save_openSMILE_features',
-    #                     interface=Fn(function=opensmile_features_to_synapse,
-    #                                  input_names=['in_files',
-    #                                               'synapse_project_id',
-    #                                               'table_name'],
-    #                                  output_names=['synapse_table_id']))
-    # Flow.add_nodes([SaveOpenSMILE])
-    # Flow.connect(RunOpenSMILE, 'feature_file', SaveOpenSMILE, 'in_files')
-    # SaveOpenSMILE.inputs.synapse_project_id = 'syn4899451'
-    # SaveOpenSMILE.inputs.table_name = 'Phonation openSMILE feature table'
+    SaveOpenSMILE = Node(name='save_openSMILE_features',
+                         interface=Fn(function=opensmile_features_to_synapse,
+                                      input_names=['in_files',
+                                                   'synapse_project_id',
+                                                   'table_name'],
+                                      output_names=['synapse_table_id']))
+    Flow.add_nodes([SaveOpenSMILE])
+    Flow.connect(RunOpenSMILE, 'feature_file', SaveOpenSMILE, 'in_files')
+    SaveOpenSMILE.inputs.synapse_project_id = 'syn4899451'
+    SaveOpenSMILE.inputs.table_name = 'Phonation openSMILE feature table'
 
     # #-------------------------------------------------------------------------
     # # Copy original Synapse table to an mPower phonation file table:
