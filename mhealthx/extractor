@@ -165,8 +165,9 @@ if synID_phonation:
     # GetPhonationFiles.inputs.username = ''
     # GetPhonationFiles.inputs.password = ''
 
-    def dummy(in_files):
-        return in_files
+    def dummy(wav_files):
+        downloaded_files = wav_files
+        return downloaded_files
 
     GetPhonationFiles = Node(name='retrieve_phonation_files',
                              interface=Fn(function=dummy,
@@ -181,11 +182,11 @@ if synID_phonation:
     # Run openSMILE feature extraction on voice data:
     #-------------------------------------------------------------------------
     RunOpenSMILE = MapNode(name='openSMILE',
-                           iterfield=['in_file'],
+                           iterfield=['wav_file'],
                            interface=Fn(function=opensmile,
                                         input_names=['wav_file',
                                                      'config_file',
-                                                     'out_append',
+                                                     'file_append',
                                                      'command'],
                                         output_names=['feature_file']))
     Flow.add_nodes([RunOpenSMILE])
@@ -195,7 +196,7 @@ if synID_phonation:
     RunOpenSMILE.inputs.config_file = os.path.join(thirdparty,
                                                    'openSMILE','config',
                                                    'IS13_ComParE.conf')
-    RunOpenSMILE.inputs.out_append = '.csv'
+    RunOpenSMILE.inputs.file_append = '.csv'
     RunOpenSMILE.inputs.command = os.path.join(thirdparty,
                                                'openSMILE','SMILExtract')
     Flow.connect(RunOpenSMILE, 'feature_file',
