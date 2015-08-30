@@ -9,63 +9,6 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
-def opensmile(wav_file, config_file, file_append='.csv',
-              command='SMILExtract'):
-    """
-    Run openSMILE's SMILExtract on input file to extract audio features.
-
-    SMILExtract -C config/my_configfile.conf -I input.wav -O output.csv
-
-    Parameters
-    ----------
-    wav_file : string
-        full path to the input file
-    command : string
-        command without arguments
-    config_file : string
-        path to openSMILE configuration file
-    file_append : string
-        append to each file name to indicate output file format (e.g., '.csv')
-    command : string
-        executable command without arguments
-
-    Returns
-    -------
-    feature_file : string
-        output table of features (full path)
-
-    Examples
-    --------
-    >>> from mhealthx.features import opensmile
-    >>> wav_file = ['/home/arno/mhealthx_working/mHealthX/phonation_files/test.wav']
-    >>> config_file = '/home/arno/software/audio/openSMILE/config/IS13_ComParE.conf'
-    >>> file_append = '.csv'
-    >>> command = '/home/arno/software/audio/openSMILE/SMILExtract'
-    >>> feature_file = opensmile(wav_file, config_file, file_append, command)
-
-    """
-    import os
-    from nipype.interfaces.base import CommandLine
-
-    if not os.path.exists(wav_file):
-        raise(IOError(wav_file + " not found"))
-    else:
-        feature_file = wav_file + file_append
-
-        # Nipype command line wrapper over openSMILE:
-        cli = CommandLine(command = command)
-        cli.inputs.args = ' '.join(['-C', config_file,
-                                    '-I', wav_file,
-                                    '-O', feature_file])
-        cli.cmdline
-        cli.run()
-
-        if not os.path.exists(feature_file):
-            raise(IOError(feature_file + " not found"))
-
-    return feature_file
-
-
 def opensmile_features_to_synapse(in_files, synapse_project_id,
                                   table_name, username, password):
     """
