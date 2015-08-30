@@ -9,6 +9,64 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
+def run_command(command, flags=[], args=[], closing=''):
+    """
+    Run a generic command.
+
+    Parameters
+    ----------
+    command : string
+        name of command: "SMILExtract"
+    flags : string or list of strings
+        command line flags precede their respective args: ["-C", "-I", "-O"]
+    args : string or list of strings
+        command line arguments: ["config.conf", "input.wav", "output.csv"]
+    closing : string
+        closing string in command
+
+    Returns
+    -------
+    command_line : string
+        full command line
+    args : list of strings
+        command line arguments
+
+    Examples
+    --------
+    >>> from mhealthx.utils import run_command
+    >>> command = 'ls'
+    >>> flags = ['-l', '']
+    >>> args = ['/software', '/desk']
+    >>> closing = '> test.txt'
+    >>> command_line, args = run_command(command, flags, args, closing)
+
+    """
+    from nipype.interfaces.base import CommandLine
+
+    # Join flags with args:
+    if type(flags) == list and type(args) == list:
+        flag_arg_tuples = zip(flags, args)
+        flags_args = ''
+        for flag_arg_tuple in flag_arg_tuples:
+            flags_args = ' '.join([flags_args, ' '.join(flag_arg_tuple)])
+    elif type(flags) == str and type(args) == str:
+        flags_args = ' '.join([flags, args])
+    else:
+        raise IOError("-flags and -args should both be strings or lists")
+
+    options = ' '.join([flags_args, closing])
+    command_line = ' '.join([command, options])
+
+    # Nipype command line wrapper:
+    cli = CommandLine(command=command)
+    cli.inputs.args = options
+    cli.cmdline
+    cli.run()
+
+    # Return args:
+    return command_line, args
+
+
 def convert_audio_files(input_files, file_append, command='ffmpeg',
                         input_args='-i', output_args='-ac 2'):
     """
