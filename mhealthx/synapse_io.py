@@ -40,7 +40,7 @@ def read_synapse_table_files(synapse_table_id,
 
     Examples
     --------
-    >>> from mhealthx.io_data import read_synapse_table_files
+    >>> from mhealthx.synapse_io import read_synapse_table_files
     >>> synapse_table_id = 'syn4590865' #'syn4907789'
     >>> column_names = ['audio_audio.m4a', 'audio_countdown.m4a']
     >>> download_limit = 3  # None = download files from all rows
@@ -135,7 +135,7 @@ def copy_synapse_table(synapse_table_id, synapse_project_id, table_name='',
 
     Examples
     --------
-    >>> from mhealthx.io_data import copy_synapse_table
+    >>> from mhealthx.synapse_io import copy_synapse_table
     >>> synapse_table_id = 'syn4590865'
     >>> synapse_project_id = 'syn4899451'
     >>> table_name = 'Copy of ' + synapse_table_id
@@ -196,7 +196,7 @@ def write_synapse_table(table_data, synapse_project_id, table_name='',
 
     Examples
     --------
-    >>> from mhealthx.io_data import read_synapse_table_files, write_synapse_table
+    >>> from mhealthx.synapse_io import read_synapse_table_files, write_synapse_table
     >>> in_synapse_table_id = 'syn4590865'
     >>> synapse_project_id = 'syn4899451'
     >>> column_names = []
@@ -255,7 +255,7 @@ def files_to_synapse_table(in_files, synapse_project_id, table_name,
 
     Examples
     --------
-    >>> from mhealthx.io_data import files_to_synapse_table
+    >>> from mhealthx.synapse_io import files_to_synapse_table
     >>> in_files = ['/Users/arno/Local/wav/test1.wav']
     >>> synapse_project_id = 'syn4899451'
     >>> table_name = 'Test to store files and file handle IDs'
@@ -324,20 +324,21 @@ def files_to_synapse_table(in_files, synapse_project_id, table_name,
     #                      rows=[Row(r) for r in files_handles]))
 
 
-def concatenate_tables_to_synapse_table(frames, synapse_project_id,
+def concatenate_tables_to_synapse_table(tables, synapse_project_id,
                                         table_name, username='', password=''):
     """
-    Concatenate multiple dataframes and store as a Synapse table.
+    Concatenate multiple table files or dataframes
+    and store as a Synapse table.
 
-    Reuse the indices from the original DataFrame,
-    increasing number of columns.
+    Reuse the indices from the original file or DataFrame,
+    increasing the number of columns.
 
     Parameters
     ----------
-    frames : list of pandas DataFrames
-        paths to files to upload to Synapse
+    tables : list of strings or pandas DataFrames
+        DataFrames or paths to files
     synapse_project_id : string
-        Synapse ID for project to which table is to be written
+        Synapse ID for project to which output is to be written
     table_name : string
         schema name of table
     username : string
@@ -348,14 +349,19 @@ def concatenate_tables_to_synapse_table(frames, synapse_project_id,
     Returns
     -------
     table_data : Pandas DataFrame
-        output table
+        output table data
+    table_name : string
+        schema name of table
+    synapse_table_id : string
+        Synapse ID for table
     synapse_project_id : string
         Synapse ID for project
 
     Examples
     --------
     >>> import pandas as pd
-    >>> from mhealthx.io_data import concatenate_tables_to_synapse_table
+    >>> from mhealthx.synapse_io import concatenate_tables_to_synapse_table
+    >>> # Example with DataFrames:
     >>> df1 = pd.DataFrame({'A': ['A0', 'A1', 'A2', 'A3'],
     >>>                     'B': ['B0', 'B1', 'B2', 'B3'],
     >>>                     'C': ['C0', 'C1', 'C2', 'C3'],
@@ -366,12 +372,16 @@ def concatenate_tables_to_synapse_table(frames, synapse_project_id,
     >>>                     'G': ['C4', 'C5', 'C6', 'C7'],
     >>>                     'H': ['D4', 'D5', 'D6', 'D7']},
     >>>                     index=[0, 1, 2, 3])
-    >>> frames = [df1, df2]
+    >>> tables = [df1, df2]
+    >>>
+    >>> # Example with csv files:
+    >>> tables = ['/Users/arno/csv/test1.csv', '/Users/arno/csv/test2.csv']
+    >>>
     >>> synapse_project_id = 'syn4899451'
     >>> table_name = 'Test to join tables'
     >>> username = ''
     >>> password = ''
-    >>> table_data, synapse_project_id = concatenate_tables_to_synapse_table(frames, synapse_project_id, table_name, username, password)
+    >>> table_data, table_name, synapse_table_id, synapse_project_id = concatenate_tables_to_synapse_table(tables, synapse_project_id, table_name, username, password)
     """
     import pandas as pd
     import synapseclient
@@ -385,9 +395,20 @@ def concatenate_tables_to_synapse_table(frames, synapse_project_id,
     else:
         syn.login()
 
-    # Concatenate dataframes: reuse the indices from the original DataFrame,
+    # Raise an error if tables are not strings or pandas DataFrames:
+    if not type(tables[0]) == str and not type(tables[0]) == pd.DataFrame:
+        raise IOError("'tables' should contain file path strings"
+                      " or pandas DataFrames.")
+    # Concatenate table files:
+    elif type(tables[0]) == str:
+        dfs = []
+        for table_file in tables:
+            dfs.append(pd.read_table(table_file, index_col=False))
+        tables = dfs
+
+    # Concatenate DataFrames: reuse the indices from the original DataFrame,
     # increasing number of columns:
-    table_data = pd.concat(frames, axis=1) #, join_axes=[frames[0].index])
+    table_data = pd.concat(tables, axis=1, join_axes=[tables[0].index])
 
     # Create table schema:
     schema = Schema(name=table_name, columns=as_table_columns(table_data),
@@ -395,8 +416,9 @@ def concatenate_tables_to_synapse_table(frames, synapse_project_id,
 
     # Store as Synapse table:
     table = syn.store(Table(schema, table_data))
+    synapse_table_id = table.tableId
 
-    return table_data, synapse_project_id
+    return table_data, table_name, synapse_table_id, synapse_project_id
 
 
 # ============================================================================

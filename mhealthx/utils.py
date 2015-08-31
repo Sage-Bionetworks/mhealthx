@@ -162,7 +162,7 @@ def convert_audio_files(input_files, file_append, command='ffmpeg',
 
     Examples
     --------
-    >>> from mhealthx.io_data import convert_audio_files
+    >>> from mhealthx.synapse_io import convert_audio_files
     >>> input_files = ['/Users/arno/mhealthx_working/mHealthX/phonation_files/test.m4a']
     >>> file_append = '.wav'
     >>> command = '/home/arno/software/audio/ffmpeg/ffmpeg'

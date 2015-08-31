@@ -31,7 +31,7 @@ from nipype import config, logging
 from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node, MapNode
-from mhealthx.io_data import read_synapse_table_files
+from mhealthx.synapse_io import read_synapse_table_files
 from mhealthx.utils import run_command, change_filenames
 from mhealthx.features import opensmile_features_to_synapse
 
@@ -215,16 +215,16 @@ if synID_phonation:
     #-------------------------------------------------------------------------
     # Store openSMILE features to a Synapse table:
     #-------------------------------------------------------------------------
-    # SaveOpenSMILE = Node(name='save_openSMILE_features',
-    #                      interface=Fn(function=opensmile_features_to_synapse,
-    #                                   input_names=['in_files',
-    #                                                'synapse_project_id',
-    #                                                'table_name'],
-    #                                   output_names=['synapse_table_id']))
-    # Flow.add_nodes([SaveOpenSMILE])
-    # Flow.connect(OpenSMILE, 'feature_file', SaveOpenSMILE, 'in_files')
-    # SaveOpenSMILE.inputs.synapse_project_id = 'syn4899451'
-    # SaveOpenSMILE.inputs.table_name = 'Phonation openSMILE feature table'
+    SaveOpenSMILE = Node(name='save_openSMILE_features',
+                         interface=Fn(function=opensmile_features_to_synapse,
+                                      input_names=['in_files',
+                                                   'synapse_project_id',
+                                                   'table_name'],
+                                      output_names=['synapse_table_id']))
+    Flow.add_nodes([SaveOpenSMILE])
+    Flow.connect(OpenSMILE, 'feature_file', SaveOpenSMILE, 'in_files')
+    SaveOpenSMILE.inputs.synapse_project_id = 'syn4899451'
+    SaveOpenSMILE.inputs.table_name = 'Phonation openSMILE feature table'
 
     # #-------------------------------------------------------------------------
     # # Copy original Synapse table to an mPower phonation file table:
