@@ -40,7 +40,7 @@ def read_synapse_table_files(synapse_table_id,
 
     Examples
     --------
-    >>> from mhealthx.synapse_io import read_synapse_table_files
+    >>> from mhealthx.data_io import read_synapse_table_files
     >>> synapse_table_id = 'syn4590865' #'syn4907789'
     >>> column_names = ['audio_audio.m4a', 'audio_countdown.m4a']
     >>> download_limit = 3  # None = download files from all rows
@@ -135,7 +135,7 @@ def copy_synapse_table(synapse_table_id, synapse_project_id, table_name='',
 
     Examples
     --------
-    >>> from mhealthx.synapse_io import copy_synapse_table
+    >>> from mhealthx.data_io import copy_synapse_table
     >>> synapse_table_id = 'syn4590865'
     >>> synapse_project_id = 'syn4899451'
     >>> table_name = 'Copy of ' + synapse_table_id
@@ -196,7 +196,7 @@ def write_synapse_table(table_data, synapse_project_id, table_name='',
 
     Examples
     --------
-    >>> from mhealthx.synapse_io import read_synapse_table_files, write_synapse_table
+    >>> from mhealthx.data_io import read_synapse_table_files, write_synapse_table
     >>> in_synapse_table_id = 'syn4590865'
     >>> synapse_project_id = 'syn4899451'
     >>> column_names = []
@@ -228,21 +228,17 @@ def write_synapse_table(table_data, synapse_project_id, table_name='',
     syn.store(Table(schema, table_data))
 
 
-def files_to_synapse_table(in_files, synapse_project_id, table_name,
-                           column_name='fileID', username='', password=''):
+def file_to_synapse_table(in_file, synapse_table_id,
+                          username='', password=''):
     """
     Upload files and file handle IDs to Synapse.
 
     Parameters
     ----------
-    in_files : list of strings
-        paths to files to upload to Synapse
-    synapse_project_id : string
-        Synapse ID for project to which table is to be written
-    table_name : string
-        schema name of table
-    column_name : string
-        header for column of fileIDs
+    in_file : strings
+        path to file to upload to Synapse
+    synapse_table_id : string
+        Synapse table ID for table to store file handle ID
     username : string
         Synapse username (only needed once on a given machine)
     password : string
@@ -250,27 +246,24 @@ def files_to_synapse_table(in_files, synapse_project_id, table_name,
 
     Returns
     -------
-    synapse_project_id : string
-        Synapse ID for project
+    file_handle_ID : string
+        Synapse file handle ID for stored file
+    synapse_table_id : string
+        Synapse table ID where Synapse file handle ID stored
 
     Examples
     --------
-    >>> from mhealthx.synapse_io import files_to_synapse_table
+    >>> from mhealthx.data_io import file_to_synapse_table
     >>> in_files = ['/Users/arno/Local/wav/test1.wav']
-    >>> synapse_project_id = 'syn4899451'
-    >>> table_name = 'Test to store files and file handle IDs'
-    >>> column_name = 'fileID1'
+    >>> synapse_table_id = 'syn4899451'
     >>> username = ''
     >>> password = ''
-    >>> table_data, synapse_project_id = files_to_synapse_table(in_files, synapse_project_id, table_name, column_name, username, password)
-    >>> #column_name = 'fileID2'
-    >>> #in_files = ['/Users/arno/Local/wav/test2.wav']
-    >>> #table_data, synapse_project_id = files_to_synapse_table(in_files, synapse_project_id, table_name, column_name, username, password)
+    >>> file_handle_ID, synapse_table_id = file_to_synapse_table(in_files, synapse_table_id, username, password)
 
     """
     import synapseclient
     from synapseclient import Schema
-    from synapseclient.table import Column, RowSet, Row
+    from synapseclient.table import Table
 
     syn = synapseclient.Synapse()
 
@@ -280,160 +273,79 @@ def files_to_synapse_table(in_files, synapse_project_id, table_name,
     else:
         syn.login()
 
-    # Store file handle IDs:
-    files_handles = []
-    for in_file in in_files:
-        file_handle = syn._chunkedUploadFile(in_file)
-        files_handles.append([file_handle['id']])
+    # Check to see if Synapse table exists:
+    tex = list(syn.chunkedQuery("select id from Table where parentId=='{0}'"
+                                " and name=='{1}'".format(synapse_project_id,
+                                                          table_name)))
+    if not tex:
+        raise IOError("Table '{0}' for Synapse project {1} does not exist!".
+                      format(table_name, synapse_project_id))
 
-    # New column headers:
-    new_column_header = Column(name=column_name, columnType='FILEHANDLEID')
+    # Store file handle ID:
+    file_handle = syn._chunkedUploadFile(in_file)
+    file_handle_ID = file_handle['id']
 
-    # See if Synapse table exists:
-    # tex = list(syn.chunkedQuery("select id from Table where parentId=='{0}'"
-    #                             " and name=='{1}'".format(synapse_project_id,
-    #                                                       table_name)))
-    # If Synapse table does not exist, create table schema:
-    # if not tex:
+    # Download Synapse table schema and table_data:
+    synapse_table_id = tex[0]['Table.id']
+    schema = syn.get(synapse_table_id)
 
-    # Create table schema:
-    schema = syn.store(Schema(name=table_name,
-                              columns=[new_column_header],
-                              parent=synapse_project_id))
+    new_rows = [["Qux1", "4", 201001, 202001, "+", False],
+                ["Qux2", "4", 203001, 204001, "+", False]]
+    table = syn.store(Table(schema, new_rows))
 
-    # Upload files and file handle IDs with new schema:
-    syn.store(RowSet(columns=[new_column_header], schema=schema,
-                     rows=[Row(r) for r in files_handles]))
-
-    # If Synapse table exists, get table ID and update table schema:
-    # else:
-    #
-    #     # Download Synapse table schema and table_data:
-    #     schema = syn.get(synapse_table_id)
-    #     results = syn.tableQuery("select * from {0}".format(synapse_table_id))
-    #     table_data = results.asDataFrame()
-    #
-    #     synapse_table_id = tex[0]['Table.id']
-    #     schema = syn.get(synapse_table_id)
-    #     new_column = syn.store(new_column_header)
-    #     schema.addColumn(new_column)
-    #     schema = syn.store(schema)
-    #
-    #     # Upload files and file handle IDs with new schema:
-    #     syn.store(RowSet(columns=[new_column_header], schema=schema,
-    #                      rows=[Row(r) for r in files_handles]))
+    return file_handle_ID, synapse_table_id
 
 
-def concatenate_tables_to_synapse_table(tables, synapse_project_id,
-                                        table_name,
-                                        transpose_tables=False, start_row=0,
-                                        username='', password=''):
+def dataframes_to_csv_file(dataframes, csv_file):
     """
-    Concatenate multiple table files or dataframes,
-    increasing the number of columns, and store as a Synapse table.
+    Concatenate multiple pandas DataFrames with the same column names,
+    and store as a csv table.
 
     Parameters
     ----------
-    tables : list of strings or pandas DataFrames
-        DataFrames or paths to files
-    synapse_project_id : string
-        Synapse ID for project to which output is to be written
-    table_name : string
-        schema name of table
-    transpose_tables : Boolean
-        transpose tables before concatenating?
-    start_row : integer
-        starting row for each table before concatenating
-        (use all rows for first table)
-    username : string
-        Synapse username (only needed once on a given machine)
-    password : string
-        Synapse password (only needed once on a given machine)
+    dataframes : list of pandas DataFrames
+        each dataframe has the same column names
+    csv_file : string
+        path of table file
 
     Returns
     -------
     table_data : Pandas DataFrame
         output table data
-    table_name : string
-        schema name of table
-    synapse_table_id : string
-        Synapse ID for table
-    synapse_project_id : string
-        Synapse ID for project
+    csv_file : string
+        path of table file
 
     Examples
     --------
     >>> import pandas as pd
-    >>> from mhealthx.synapse_io import concatenate_tables_to_synapse_table
-    >>> # Example with DataFrames:
+    >>> from mhealthx.io_data import dataframes_to_csv_file
     >>> df1 = pd.DataFrame({'A': ['A0', 'A1', 'A2', 'A3'],
     >>>                     'B': ['B0', 'B1', 'B2', 'B3'],
     >>>                     'C': ['C0', 'C1', 'C2', 'C3'],
     >>>                     'D': ['D0', 'D1', 'D2', 'D3']},
     >>>                    index=[0, 1, 2, 3])
-    >>> df2 = pd.DataFrame({'E': ['A4', 'A5', 'A6', 'A7'],
-    >>>                     'F': ['B4', 'B5', 'B6', 'B7'],
-    >>>                     'G': ['C4', 'C5', 'C6', 'C7'],
-    >>>                     'H': ['D4', 'D5', 'D6', 'D7']},
+    >>> df2 = pd.DataFrame({'A': ['A4', 'A5', 'A6', 'A7'],
+    >>>                     'B': ['B4', 'B5', 'B6', 'B7'],
+    >>>                     'C': ['C4', 'C5', 'C6', 'C7'],
+    >>>                     'D': ['D4', 'D5', 'D6', 'D7']},
     >>>                     index=[0, 1, 2, 3])
-    >>> tables = [df1, df2]
-    >>>
-    >>> # Example with csv files:
-    >>> #tables = ['/Users/arno/csv/test1.csv', '/Users/arno/csv/test2.csv']
-    >>>
-    >>> synapse_project_id = 'syn4899451'
-    >>> table_name = 'Test to join tables'
-    >>> transpose_tables = True
-    >>> start_row = 0
-    >>> username = ''
-    >>> password = ''
-    >>> table_data, table_name, synapse_table_id, synapse_project_id = concatenate_tables_to_synapse_table(tables, synapse_project_id, table_name, transpose_tables, start_row, username, password)
+    >>> dataframes = [df1, df2]
+    >>> csv_file = './test.csv'
+    >>> table_data, csv_file = dataframes_to_csv_file(dataframes, csv_file)
     """
     import pandas as pd
-    import synapseclient
-    from synapseclient import Schema, Table, as_table_columns
 
-    syn = synapseclient.Synapse()
+    # Raise an error if tables are not pandas DataFrames:
+    if not type(dataframes[0]) == pd.DataFrame:
+        raise IOError("'dataframes' should contain pandas DataFrames.")
 
-    # Log in to Synapse:
-    if username and password:
-        syn.login(username, password)
-    else:
-        syn.login()
+    # Concatenate DataFrames, increasing the number of rows:
+    table_data = pd.concat(dataframes, ignore_index=True)
 
-    # Raise an error if tables are not strings or pandas DataFrames:
-    if not type(tables[0]) == str and not type(tables[0]) == pd.DataFrame:
-        raise IOError("'tables' should contain file path strings"
-                      " or pandas DataFrames.")
-    # Concatenate table files:
-    elif type(tables[0]) == str:
-        dfs = []
-        first_table = True
-        for table_file in tables:
-            df = pd.read_table(table_file, index_col=False)
-            if transpose_tables:
-                df = df.transpose()
-            if start_row > 0 and not first_table:
-                if start_row > df.shape[0]:
-                    raise IOError("The start_row is bigger than the table!")
-                df = df[start_row:df.shape[0] + 1]
-            if first_table:
-                first_table = False
-            dfs.append(df)
-        tables = dfs
+    # Store as csv file:
+    table_data.to_csv(csv_file, index=False)
 
-    # Concatenate DataFrames, increasing the number of columns:
-    table_data = pd.concat(tables)
-
-    # Create table schema:
-    schema = Schema(name=table_name, columns=as_table_columns(table_data),
-                    parent=synapse_project_id)
-
-    # Store as Synapse table:
-    table = syn.store(Table(schema, table_data))
-    synapse_table_id = table.tableId
-
-    return table_data, table_name, synapse_table_id, synapse_project_id
+    return table_data, csv_file
 
 
 # ============================================================================
