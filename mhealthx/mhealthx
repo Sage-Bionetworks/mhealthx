@@ -31,9 +31,9 @@ from nipype import config, logging
 from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node, MapNode
-from mhealthx.data_io import read_synapse_table_files, \
-    dataframes_to_csv_file, file_to_synapse_table
-from mhealthx.utils import run_command, change_filenames
+from mhealthx.data_io import read_synapse_table_files, convert_audio_file, \
+    dataframes_to_csv_file
+from mhealthx.utils import rename_file, run_command
 from mhealthx.files_to_features import format_openSMILE_output
 
 # ============================================================================
@@ -146,108 +146,94 @@ if synID_phonation:
     phonFlow = Workflow(name='phonation')
 
     # ------------------------------------------------------------------------
-    # Read Synapse table:
+    # Retrieve audio files from Synapse table:
     # ------------------------------------------------------------------------
-    retrieve_local_files = False
-    if retrieve_local_files:
-        def dummy(input_files):
-            table_data = 'dummy_table'
-            downloaded_files = input_files
-            synapse_table_id = 'dummy_id'
-            return downloaded_files, synapse_table_id
-        GetPhonationFiles = Node(name='retrieve_phonation_files',
-                             interface=Fn(function=dummy,
-                                          input_names=['input_files'],
-                                          output_names=['table_data',
-                                                        'downloaded_files',
-                                                        'synapse_table_id']))
-        Flow.add_nodes([GetPhonationFiles])
-        GetPhonationFiles.inputs.input_files = ['~/wav/test1.wav',
-                                                '~/wav/test2.wav',
-                                                '~/wav/test3.wav']
-    else:
-        GetPhonationFiles = Node(name='retrieve_phonation_files',
-                             interface=Fn(function=read_synapse_table_files,
-                                          input_names=['synapse_table_id',
-                                                       'column_names',
-                                                       'download_limit',
-                                                       'out_path',
-                                                       'username',
-                                                       'password'],
-                                          output_names=['table_data',
-                                                        'downloaded_files',
-                                                        'synapse_table_id']))
-        Flow.add_nodes([GetPhonationFiles])
-        GetPhonationFiles.inputs.synapse_table_id = synID_phonation
-        GetPhonationFiles.inputs.column_names = ['audio_audio.m4a',
-                                                 'audio_countdown.m4a']
-        GetPhonationFiles.inputs.download_limit = 3  # None = all rows
-        GetPhonationFiles.inputs.out_path = phonation_file_path
-        GetPhonationFiles.inputs.username = ''
-        GetPhonationFiles.inputs.password = ''
+    GetPhonation = Node(name='retrieve_phonation_files',
+                        interface=Fn(function=read_synapse_table_files,
+                                     input_names=['synapse_table_id',
+                                                  'column_names',
+                                                  'download_limit',
+                                                  'out_path',
+                                                  'username',
+                                                  'password'],
+                                     output_names=['table_data',
+                                                   'downloaded_files',
+                                                   'synapse_table_id']))
+    Flow.add_nodes([GetPhonation])
+    GetPhonation.inputs.synapse_table_id = synID_phonation
+    GetPhonation.inputs.column_names = ['audio_audio.m4a',
+                                             'audio_countdown.m4a']
+    GetPhonation.inputs.download_limit = 3  # None = all rows
+    GetPhonation.inputs.out_path = phonation_file_path
+    GetPhonation.inputs.username = ''
+    GetPhonation.inputs.password = ''
 
     # ------------------------------------------------------------------------
     # Append file names with ".m4a":
     # ------------------------------------------------------------------------
-    RenamePhonationFiles = Node(name='rename_phonation_files',
-                                interface=Fn(function=change_filenames,
-                                             input_names=['input_files',
-                                                          'file_append'],
-                                             output_names=['output_files']))
-    Flow.add_nodes([RenamePhonationFiles])
-    Flow.connect(GetPhonationFiles, 'files',
-                 RenamePhonationFiles, 'input_files')
-    RenamePhonationFiles.inputs.file_append = '.m4a'
+    RenamePhonation = Node(name='rename_phonation_files',
+                           interface=Fn(function=rename_file,
+                                        input_names=['old_file',
+                                                     'new_path',
+                                                     'remove_path',
+                                                     'suffix'],
+                                        output_names=['renamed_file']))
+    Flow.add_nodes([RenamePhonation])
+    Flow.connect(GetPhonation, 'downloaded_files',
+                 RenamePhonation, 'old_file')
+    RenamePhonation.inputs.new_path = ''
+    RenamePhonation.inputs.remove_path = False
+    RenamePhonation.inputs.suffix = '.m4a'
 
     # ------------------------------------------------------------------------
     # Convert voice files to .wav format:
     # ------------------------------------------------------------------------
-    ConvertPhonationFiles = Node(name='convert_phonation_files',
-                                 interface=Fn(function=convert_audio_files,
-                                              input_names=['input_files',
-                                                           'file_append',
-                                                           'command',
-                                                           'input_args',
-                                                           'output_args'],
-                                              output_names=['output_files']))
-    Flow.add_nodes([ConvertPhonationFiles])
-    Flow.connect(RenamePhonationFiles, 'output_files',
-                 ConvertPhonationFiles, 'input_files')
-    ConvertPhonationFiles.inputs.file_append = '.wav'
-    ConvertPhonationFiles.inputs.command = os.path.join(thirdparty,
-                                                        'ffmpeg', 'ffmpeg')
-    ConvertPhonationFiles.inputs.input_args = '-i'
-    ConvertPhonationFiles.inputs.output_args = '-ac 2'
+    ConvertPhonation = Node(name='convert_phonation_files',
+                            interface=Fn(function=convert_audio_file,
+                                         input_names=['old_file',
+                                                      'file_append',
+                                                      'command',
+                                                      'input_arg',
+                                                      'output_arg'],
+                                         output_names=['converted_file']))
+    Flow.add_nodes([ConvertPhonation])
+    Flow.connect(RenamePhonation, 'renamed_file',
+                 ConvertPhonation, 'old_file')
+    ConvertPhonation.inputs.file_append = '.wav'
+    ConvertPhonation.inputs.command = os.path.join(thirdparty,
+                                                   'ffmpeg', 'ffmpeg')
+    ConvertPhonation.inputs.input_args = '-i'
+    ConvertPhonation.inputs.output_args = '-ac 2'
 
     #-------------------------------------------------------------------------
     # Process inputs to command:
     #-------------------------------------------------------------------------
-    OpenSMILE = MapNode(name='openSMILE',
-                        iterfield=['arg1', 'argN'],
-                        interface=Fn(function=run_command,
-                                     input_names=['command',
-                                                  'flag1',
-                                                  'arg1',
-                                                  'flags',
-                                                  'args',
-                                                  'flagN',
-                                                  'argN',
-                                                  'closing'],
-                                     output_names=['command_line',
-                                                   'args',
-                                                   'arg1',
-                                                   'argN']))
+    OpenSMILE = Node(name='openSMILE',
+                     iterfield=['arg1', 'argN'],
+                     interface=Fn(function=run_command,
+                                  input_names=['command',
+                                               'flag1',
+                                               'arg1',
+                                               'flags',
+                                               'args',
+                                               'flagN',
+                                               'argN',
+                                               'closing'],
+                                  output_names=['command_line',
+                                                'args',
+                                                'arg1',
+                                                'argN']))
     Flow.add_nodes([OpenSMILE])
     OpenSMILE.inputs.command = os.path.join(thirdparty, 'openSMILE',
                                             'SMILExtract')
     OpenSMILE.inputs.flag1 = '-I'
-    Flow.connect(GetPhonationFiles, 'downloaded_files', OpenSMILE, 'arg1')
+    Flow.connect(ConvertPhonation, 'converted_file', OpenSMILE, 'arg1')
     OpenSMILE.inputs.flags = '-C'
     OpenSMILE.inputs.args = os.path.join(thirdparty, 'openSMILE', 'config',
                                                      'IS13_ComParE.conf')
     OpenSMILE.inputs.flagN = '-O'
-    Flow.connect(GetPhonationFiles, ('downloaded_files', change_filenames,
-                                     phonation_file_path, False, '.csv'),
+    Flow.connect(ConvertPhonation, ('converted_file', rename_file,
+                                    phonation_file_path, False, '.csv'),
                  OpenSMILE, 'argN')
     OpenSMILE.inputs.closing = ''
     Flow.connect(OpenSMILE, 'argN', Sink, 'phonation.@features.openSMILE')
@@ -255,23 +241,22 @@ if synID_phonation:
     #-------------------------------------------------------------------------
     # Format openSMILE output:
     #-------------------------------------------------------------------------
-    FormatOpenSMILE = MapNode(name='format_openSMILE',
-                              iterfield=['in_file'],
-                              interface=Fn(function=format_openSMILE_output,
-                                           input_names=['in_file'],
-                                           output_names=['feature_table']))
+    FormatOpenSMILE = Node(name='format_openSMILE',
+                           interface=Fn(function=format_openSMILE_output,
+                                        input_names=['input_file'],
+                                        output_names=['feature_table']))
     Flow.add_nodes([FormatOpenSMILE])
-    Flow.connect(OpenSMILE, 'argN', FormatOpenSMILE, 'in_file')
+    Flow.connect(OpenSMILE, 'argN', FormatOpenSMILE, 'input_file')
 
     #-------------------------------------------------------------------------
     # Store openSMILE features to its own Synapse table:
     #-------------------------------------------------------------------------
-    SaveOpenSMILE = Node(name='save_openSMILE',
-                 interface=Fn(function=dataframes_to_csv_file,
-                              input_names=['dataframes',
-                                           'csv_file'],
-                              output_names=['table_data',
-                                            'csv_file']))
+    SaveOpenSMILE = MapNode(name='save_openSMILE',
+                            interface=Fn(function=dataframes_to_csv_file,
+                                         input_names=['dataframes',
+                                                      'csv_file'],
+                                         output_names=['table_data',
+                                                       'csv_file']))
     Flow.add_nodes([SaveOpenSMILE])
     Flow.connect(FormatOpenSMILE, 'feature_table',
                  SaveOpenSMILE, 'dataframes')
@@ -326,7 +311,7 @@ if synID_phonation:
     StoreOpenSMILE.inputs.source_file_id = ''
     Flow.connect(OpenSMILE, 'command_line',
                  StoreOpenSMILE, 'command_line')
-    Flow.connect(GetPhonationFiles, 'synapse_table_id',
+    Flow.connect(GetPhonation, 'synapse_table_id',
                  StoreOpenSMILE, 'synapse_table_id')
     StoreOpenSMILE.inputs.username = ''
     StoreOpenSMILE.inputs.password = ''
@@ -380,7 +365,7 @@ if __name__ == '__main__':
         else:
             Flow.run(plugin=args.plugin)
     elif nproc > 1:
-        Flow.run(plugin='MultiProc',
+        Flow.run(plugin='SGE',
                  plugin_args={'n_procs': nproc})
     else:
         Flow.run()  # Use all processors: Flow.run(plugin='MultiProc')

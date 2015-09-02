@@ -85,53 +85,49 @@ def run_command(command, flag1='', arg1='', flags=[], args=[],
     return command_line, args, arg1, argN
 
 
-def change_filenames(file_names, new_path='', remove_path=False, suffix=''):
-    """Change path, name, and add a suffix to files.
+def rename_file(old_file, new_filename='', new_path='', suffix=''):
+    """Rename file / path / suffix.
 
     Parameters
     ----------
-    file_names : list of strings
-        file names (full path)
+    old_file : string
+        old file name (full path)
+    new_filename : string
+        new file name (not the full path)
     new_path : string
         replacement path
-    remove_path : Boolean
-        remove path?
     suffix : string
         append to file names
 
     Returns
     -------
-    new_file_names : list of strings
-        new file names (full path, if remove_path not set)
+    renamed_file : string
+        new file name (full path, if remove_path not set)
 
     Examples
     --------
-    >>> from mhealthx.utils import change_filenames
-    >>> file_names = ['/home/arno/wav/test1.wav', '/home/arno/wav/test2.wav']
+    >>> from mhealthx.utils import rename_file
+    >>> old_file = '/home/arno/wav/test1.wav'
+    >>> new_filename = 'test1a.wav'
     >>> new_path = '/home/arno'
-    >>> remove_path = False
     >>> suffix = '.csv'
-    >>> new_file_names = change_filenames(file_names, new_path, remove_path, suffix)
+    >>> renamed_file = rename_file(old_file, new_filename, new_path, suffix)
     """
     import os
 
-    new_file_names = []
-    for i, file_name in enumerate(file_names):
+    old_path, base_file_name = os.path.split(old_file)
 
-        if remove_path or new_path:
-           base_file_name = os.path.basename(file_name)
+    if new_filename:
+        base_file_name = new_filename
 
-        if remove_path:
-            file_name = base_file_name
+    if new_path:
+        renamed_file = os.path.join(new_path, base_file_name)
+    else:
+        renamed_file = os.path.join(old_path, base_file_name)
 
-        if new_path:
-            file_name = os.path.join(new_path, base_file_name)
+    if suffix:
+        renamed_file = ''.join((renamed_file, suffix))
 
-        if suffix:
-            file_name = ''.join((file_name, suffix))
-
-        new_file_names.append(file_name)
-
-    return new_file_names
+    return renamed_file
 
 

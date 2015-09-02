@@ -43,7 +43,7 @@ def concatenate_dataframes_to_synapse_table(tables, synapse_project_id,
     Examples
     --------
     >>> import pandas as pd
-    >>> from mhealthx.unused import concatenate_dataframes_to_synapse_table
+    >>> from mhealthx.x import concatenate_dataframes_to_synapse_table
     >>> df1 = pd.DataFrame({'A': ['A0', 'A1', 'A2', 'A3'],
     >>>                     'B': ['B0', 'B1', 'B2', 'B3'],
     >>>                     'C': ['C0', 'C1', 'C2', 'C3'],

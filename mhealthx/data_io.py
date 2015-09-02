@@ -10,6 +10,76 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
+def convert_audio_file(old_file, file_append, command='ffmpeg',
+                       input_args='-i', output_args='-ac 2'):
+    """
+    Convert audio file to new format.
+
+    Calls python-audiotranscode (and faad2)
+
+    Parameters
+    ----------
+    old_file : list of strings
+        full path to the input files
+    file_append : string
+        append to each file name to indicate output file format (e.g., '.wav')
+    command : string
+        executable command without arguments
+    input_args : string
+        arguments preceding input file name in command
+    output_args : string
+        arguments preceding output file name in command
+
+    Returns
+    -------
+    converted_file : list of strings
+        each string is the full path to a renamed file
+
+    Examples
+    --------
+    >>> from mhealthx.unused import convert_audio_file
+    >>> old_file = ['/Users/arno/mhealthx_working/mHealthX/phonation_files/test.m4a']
+    >>> file_append = '.wav'
+    >>> command = '/home/arno/software/audio/ffmpeg/ffmpeg'
+    >>> input_args = '-i'
+    >>> output_args = '-ac 2'
+    >>> converted_file = convert_audio_file(old_file, file_append, command, input_args, output_args)
+
+    """
+    import os
+    from nipype.interfaces.base import CommandLine
+
+    converted_file = []
+
+    # Loop through input files:
+    for input_file in old_file:
+        if not os.path.exists(input_file):
+            raise(IOError(input_file + " not found"))
+        else:
+            # Don't convert file if file already has correct append:
+            if input_file.endswith(file_append):
+                converted_file.append(input_file)
+            # Convert file to new format:
+            else:
+                output_file = input_file + file_append
+                if os.path.exists(output_file):
+                    converted_file.append(output_file)
+                else:
+                    # Nipype command line wrapper:
+                    cli = CommandLine(command = command)
+                    cli.inputs.args = ' '.join([input_args, input_file,
+                                                output_args, output_file])
+                    cli.cmdline
+                    cli.run()
+
+                    if not os.path.exists(output_file):
+                        raise(IOError(output_file + " not found"))
+                    else:
+                        converted_file.append(output_file)
+
+    return converted_file
+
+
 def read_synapse_table_files(synapse_table_id,
                              column_names=[], download_limit=None,
                              out_path='.', username='', password=''):
@@ -37,6 +107,8 @@ def read_synapse_table_files(synapse_table_id,
         Synapse table contents
     downloaded_files : list of lists of strings
         files from Synapse table column(s) (full paths to downloaded files)
+    synapse_table_id : string
+        Synapse ID for source table
 
     Examples
     --------
@@ -47,7 +119,7 @@ def read_synapse_table_files(synapse_table_id,
     >>> out_path = '.'
     >>> username = ''
     >>> password = ''
-    >>> table_data, downloaded_files = read_synapse_table_files(synapse_table_id, column_names, download_limit, out_path, username, password)
+    >>> table_data, downloaded_files, synapse_table_id = read_synapse_table_files(synapse_table_id, column_names, download_limit, out_path, username, password)
 
     """
     import synapseclient
@@ -91,7 +163,7 @@ def read_synapse_table_files(synapse_table_id,
                 else:
                     fileinfo = syn.downloadTableFile(schema,
                                                  rowId=irow,
-                                                 versionNumber=0,
+                                                 versionNumber=        ????0,
                                                  column=column_name,
                                                  downloadLocation=out_path)
                     if fileinfo:
@@ -101,7 +173,7 @@ def read_synapse_table_files(synapse_table_id,
 
             downloaded_files.append(files_per_column)
 
-    return table_data, downloaded_files
+    return table_data, downloaded_files, synapse_table_id
 
 
 def copy_synapse_table(synapse_table_id, synapse_project_id, table_name='',
@@ -228,41 +300,49 @@ def write_synapse_table(table_data, synapse_project_id, table_name='',
     syn.store(Table(schema, table_data))
 
 
-def file_to_synapse_table(in_file, synapse_table_id,
-                          username='', password=''):
+def feature_file_to_synapse_table(feature_file, raw_feature_file,
+                                  source_file_id, provenance_activity_id,
+                                  command, command_line,
+                                  synapse_table_id, username='', password=''):
     """
     Upload files and file handle IDs to Synapse.
 
     Parameters
     ----------
-    in_file : strings
+    feature_file : string
         path to file to upload to Synapse
+    raw_feature_file : string
+        path to file to upload to Synapse
+    source_file_id : string
+        Synapse file handle ID to source file used to generate features
+    provenance_activity_id : string
+        Synapse provenance activity ID
+    command : string
+        name of command run to generate raw feature file
+    command_line : string
+        full command line run to generate raw feature file
     synapse_table_id : string
-        Synapse table ID for table to store file handle ID
+        Synapse table ID for table to store file handle IDs, etc.
     username : string
         Synapse username (only needed once on a given machine)
     password : string
         Synapse password (only needed once on a given machine)
 
-    Returns
-    -------
-    file_handle_ID : string
-        Synapse file handle ID for stored file
-    synapse_table_id : string
-        Synapse table ID where Synapse file handle ID stored
-
     Examples
     --------
-    >>> from mhealthx.data_io import file_to_synapse_table
-    >>> in_files = ['/Users/arno/Local/wav/test1.wav']
+    >>> from mhealthx.data_io import feature_file_to_synapse_table
+    >>> feature_file = '/Users/arno/Local/wav/test1.wav'
+    >>> raw_feature_file = '/Users/arno/Local/wav/test1.wav'
+    >>> source_file_id = ''
+    >>> provenance_activity_id = ''
+    >>> command_line = 'SMILExtract -C blah -I blah -O blah'
     >>> synapse_table_id = 'syn4899451'
     >>> username = ''
     >>> password = ''
-    >>> file_handle_ID, synapse_table_id = file_to_synapse_table(in_files, synapse_table_id, username, password)
+    >>> feature_file_to_synapse_table(feature_file, raw_feature_file, source_file_id, provenance_activity_id, command_line, synapse_table_id, username, password)
 
     """
     import synapseclient
-    from synapseclient import Schema
     from synapseclient.table import Table
 
     syn = synapseclient.Synapse()
@@ -273,27 +353,19 @@ def file_to_synapse_table(in_file, synapse_table_id,
     else:
         syn.login()
 
-    # Check to see if Synapse table exists:
-    tex = list(syn.chunkedQuery("select id from Table where parentId=='{0}'"
-                                " and name=='{1}'".format(synapse_project_id,
-                                                          table_name)))
-    if not tex:
-        raise IOError("Table '{0}' for Synapse project {1} does not exist!".
-                      format(table_name, synapse_project_id))
+    # Store feature and raw feature files and get file handle IDs:
+    file_handle = syn._chunkedUploadFile(feature_file)
+    file_id = file_handle['id']
+    raw_file_handle = syn._chunkedUploadFile(raw_feature_file)
+    raw_file_id = raw_file_handle['id']
 
-    # Store file handle ID:
-    file_handle = syn._chunkedUploadFile(in_file)
-    file_handle_ID = file_handle['id']
-
-    # Download Synapse table schema and table_data:
-    synapse_table_id = tex[0]['Table.id']
+    # Add new row to Synapse table:
+    new_rows = [[file_id, raw_file_id, source_file_id,
+                 provenance_activity_id, command, command_line]]
     schema = syn.get(synapse_table_id)
-
-    new_rows = [["Qux1", "4", 201001, 202001, "+", False],
-                ["Qux2", "4", 203001, 204001, "+", False]]
     table = syn.store(Table(schema, new_rows))
 
-    return file_handle_ID, synapse_table_id
+    return synapse_table_id
 
 
 def dataframes_to_csv_file(dataframes, csv_file):
