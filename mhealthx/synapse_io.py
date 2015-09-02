@@ -325,13 +325,12 @@ def files_to_synapse_table(in_files, synapse_project_id, table_name,
 
 
 def concatenate_tables_to_synapse_table(tables, synapse_project_id,
-                                        table_name, username='', password=''):
+                                        table_name,
+                                        transpose_tables=False, start_row=0,
+                                        username='', password=''):
     """
-    Concatenate multiple table files or dataframes
-    and store as a Synapse table.
-
-    Reuse the indices from the original file or DataFrame,
-    increasing the number of columns.
+    Concatenate multiple table files or dataframes,
+    increasing the number of columns, and store as a Synapse table.
 
     Parameters
     ----------
@@ -341,6 +340,11 @@ def concatenate_tables_to_synapse_table(tables, synapse_project_id,
         Synapse ID for project to which output is to be written
     table_name : string
         schema name of table
+    transpose_tables : Boolean
+        transpose tables before concatenating?
+    start_row : integer
+        starting row for each table before concatenating
+        (use all rows for first table)
     username : string
         Synapse username (only needed once on a given machine)
     password : string
@@ -375,13 +379,15 @@ def concatenate_tables_to_synapse_table(tables, synapse_project_id,
     >>> tables = [df1, df2]
     >>>
     >>> # Example with csv files:
-    >>> tables = ['/Users/arno/csv/test1.csv', '/Users/arno/csv/test2.csv']
+    >>> #tables = ['/Users/arno/csv/test1.csv', '/Users/arno/csv/test2.csv']
     >>>
     >>> synapse_project_id = 'syn4899451'
     >>> table_name = 'Test to join tables'
+    >>> transpose_tables = True
+    >>> start_row = 0
     >>> username = ''
     >>> password = ''
-    >>> table_data, table_name, synapse_table_id, synapse_project_id = concatenate_tables_to_synapse_table(tables, synapse_project_id, table_name, username, password)
+    >>> table_data, table_name, synapse_table_id, synapse_project_id = concatenate_tables_to_synapse_table(tables, synapse_project_id, table_name, transpose_tables, start_row, username, password)
     """
     import pandas as pd
     import synapseclient
@@ -402,13 +408,22 @@ def concatenate_tables_to_synapse_table(tables, synapse_project_id,
     # Concatenate table files:
     elif type(tables[0]) == str:
         dfs = []
+        first_table = True
         for table_file in tables:
-            dfs.append(pd.read_table(table_file, index_col=False))
+            df = pd.read_table(table_file, index_col=False)
+            if transpose_tables:
+                df = df.transpose()
+            if start_row > 0 and not first_table:
+                if start_row > df.shape[0]:
+                    raise IOError("The start_row is bigger than the table!")
+                df = df[start_row:df.shape[0] + 1]
+            if first_table:
+                first_table = False
+            dfs.append(df)
         tables = dfs
 
-    # Concatenate DataFrames: reuse the indices from the original DataFrame,
-    # increasing number of columns:
-    table_data = pd.concat(tables, axis=1, join_axes=[tables[0].index])
+    # Concatenate DataFrames, increasing the number of columns:
+    table_data = pd.concat(tables)
 
     # Create table schema:
     schema = Schema(name=table_name, columns=as_table_columns(table_data),
