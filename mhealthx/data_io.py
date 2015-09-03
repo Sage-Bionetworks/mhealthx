@@ -86,25 +86,35 @@ def read_files_from_row(synapse_table, row_as_map, column_names, out_path=None):
 
     Parameters
     ----------
-    synapse_table : string containging a synapse ID or synapse table Schema object
-    row_as_map : a row of a table converted to a map with column names as keys
-    column_names : a list of names of file handle columns
-    out_path : a local path in which to store downloaded files. If None, stores them in (~/.synapseCache)
+    synapse_table : string or Schema
+        a synapse ID or synapse table Schema object
+    row_as_map : dict
+        a row of a table converted to a map with column names as keys
+    column_names : list of strings
+        a list of names of file handle columns
+    out_path : string
+        a local path in which to store downloaded files. If None, stores them in (~/.synapseCache)
 
+    Returns
+    -------
+    row_as_map : dict
+        same as passed in: a row of a table converted to a map with column names as keys
+    filepath_map : dict
+        a map from file handle ID to a path on the local file system to the downloaded file
 
     Examples
     --------
-    table_id = 'syn4590865'
-    results = syn.tableQuery('select * from {0}'.format(table_id))
-    headers = {header['name']:i for i,header in enumerate(results.headers)}
-
-    for row in results:
-        row_as_map = {col:row[i] for col,i in headers.iteritems()}
-        row_as_map, filepath_map = read_files_from_row(
-            table_id,
-            row_as_map,
-            column_names=['audio_audio.m4a', 'audio_countdown.m4a'])
-        print "\nRecordID:", row_as_map['recordId'], "\n", filepath_map, "\n"
+    >>> table_id = 'syn4590865'
+    >>> results = syn.tableQuery('select * from {0}'.format(table_id))
+    >>> headers = {header['name']:i for i,header in enumerate(results.headers)}
+    >>> 
+    >>> for row in results:
+    >>>     row_as_map = {col:row[i] for col,i in headers.iteritems()}
+    >>>     row_as_map, filepath_map = read_files_from_row(
+    >>>         table_id,
+    >>>         row_as_map,
+    >>>         column_names=['audio_audio.m4a', 'audio_countdown.m4a'])
+    >>>     print "\nRecordID:", row_as_map['recordId'], "\n", filepath_map, "\n"
 
     """
 
