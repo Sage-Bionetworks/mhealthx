@@ -393,39 +393,104 @@ def feature_file_to_synapse_table(feature_file, raw_feature_file,
     return synapse_table_id
 
 
-def getCSVFromArff(fileNameArff):
+def arff_to_csv(arff_file, csv_file):
     """
-    :param fileNameArff:
-    :return:
-    http://biggyani.blogspot.com/2014/08/converting-back-and-forth-between-weka.html
+    Convert an arff file to csv format.
+
+    Column headers include lines that start with '@attribute ',
+    include 'numeric', and whose intervening string is not exception_string.
+    The function raises an error if the number of resulting columns does
+    not equal the number of numeric values.
+
+    Example input: arff output from openSMILE's SMILExtract command
+
+    Adapted some formatting from:
+    http://biggyani.blogspot.com/2014/08/
+    converting-back-and-forth-between-weka.html
+
+    Parameters
+    ----------
+    arff_file : string
+        arff file (full path)
+    csv_file : string
+        csv file (full path)
+
+    Returns
+    -------
+    csv_file : string
+        csv file (full path)
+
+    Examples
+    --------
+    >>> from mhealthx.data_io import arff_to_csv
+    >>> arff_file = '/Users/arno/csv/test1.csv'
+    >>> csv_file = 'test.csv'
+    >>> csv_file = arff_to_csv(arff_file, csv_file)
 
     """
+    import os
 
-    with open(fileNameArff, 'r') as fin:
-        data = fin.read().splitlines(True)
+    # String not included as a header:
+    exception_string = 'class'
+    # Remove items from the left and right in the '@data' row:
+    data_from_left = 1
+    data_from_right = 1
 
+    # Check to make sure arff_file exists:
+    if type(arff_file) != str or not os.path.isfile(arff_file):
+        raise IOError("The arff file {0} does not exist.".format(arff_file))
 
-    i = 0
+    # Open arff_file:
+    with open(arff_file, 'r') as fid:
+        lines = fid.readlines()
+
+    # Loop through lines of the arff file:
     cols = []
-    for line in data:
-        if ('@data' in line):
-            i += 1
+    first_numeric = False
+    last_numeric = False
+    for iline, line in enumerate(lines):
+        if '@data' in line:
             break
         else:
-            #print line
-            i+= 1
-            if (line.startswith('@attribute')):
-                if('{' in line):
-                    cols.append(line[11:line.index('{')-1])
+
+            # If line starts with '@attribute ' and contains 'numeric',
+            # append intervening string as a column name, and
+            # store index as first line of column names:
+            if line.startswith('@attribute ') and 'numeric' in line:
+                if '{' in line:
+                    interstring = line[11:line.index('{') - 1]
                 else:
-                    cols.append(line[11:line.index('numeric')-1])
+                    interstring = line[11:line.index('numeric') - 1]
 
+                # If intervening string between '@attribute ' and 'numeric'
+                # is not the exception_string, include as a column header:
+                if interstring != exception_string:
+                    cols.append(interstring)
+                    if not first_numeric:
+                        first_numeric = True
+
+            # Else break if past first line with '@attribute ' and 'numeric':
+            elif first_numeric:
+                break
+
+    # Remove left and right (first and last) data items:
+    data = lines[len(lines)-1].split(',')
+    data = data[data_from_left:-data_from_right]
+
+    if len(data) != len(cols):
+        raise Exception('The arff file does not conform to expected format.')
+
+    # Write csv file:
     headers = ",".join(cols)
-
-    with open(fileNameArff + '.csv', 'w') as fout:
+    data_string = ', '.join(data) + '\n'
+    if not csv_file:
+        csv_file = arff_file + '.csv'
+    with open(csv_file, 'w') as fout:
         fout.write(headers)
         fout.write('\n')
-        fout.writelines(data[i:])
+        fout.writelines(data_string)
+
+    return csv_file
 
 
 def dataframes_to_csv_file(dataframes, csv_file):

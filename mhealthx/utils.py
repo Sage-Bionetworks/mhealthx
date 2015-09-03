@@ -85,8 +85,9 @@ def run_command(command, flag1='', arg1='', flags=[], args=[],
     return command_line, args, arg1, argN
 
 
-def rename_file(old_file, new_filename='', new_path='', suffix=''):
-    """Rename (a copy of a) file / path / suffix.
+def rename_file(old_file, new_filename='', new_path='', suffix='',
+                copy_file=False):
+    """Rename (and optionally copy) a file / path / suffix.
 
     Parameters
     ----------
@@ -98,10 +99,12 @@ def rename_file(old_file, new_filename='', new_path='', suffix=''):
         replacement path
     suffix : string
         append to file names
+    copy_file : Boolean
+        copy file (or just create a string)?
 
     Returns
     -------
-    renamed_file : string
+    new_file_name : string
         new file name (full path, if remove_path not set)
 
     Examples
@@ -111,7 +114,8 @@ def rename_file(old_file, new_filename='', new_path='', suffix=''):
     >>> new_filename = ''
     >>> new_path = '/home/arno'
     >>> suffix = '.csv'
-    >>> renamed_file = rename_file(old_file, new_filename, new_path, suffix)
+    >>> copy_file = False
+    >>> new_file_name = rename_file(old_file, new_filename, new_path, suffix, copy_file)
     """
     import os
     from shutil import copyfile
@@ -122,15 +126,16 @@ def rename_file(old_file, new_filename='', new_path='', suffix=''):
         base_file_name = new_filename
 
     if new_path:
-        renamed_file = os.path.join(new_path, base_file_name)
+        new_file_name = os.path.join(new_path, base_file_name)
     else:
-        renamed_file = os.path.join(old_path, base_file_name)
+        new_file_name = os.path.join(old_path, base_file_name)
 
     if suffix:
-        renamed_file = ''.join((renamed_file, suffix))
+        new_file_name = ''.join((new_file_name, suffix))
 
-    copyfile(old_file, renamed_file)
+    if copy_file:
+        copyfile(old_file, new_file_name)
 
-    return renamed_file
+    return new_file_name
 
 

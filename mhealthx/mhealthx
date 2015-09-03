@@ -32,9 +32,8 @@ from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node, MapNode, JoinNode
 from mhealthx.data_io import extract_rows, read_files_from_row, \
-    convert_audio_file #, dataframes_to_csv_file
+    convert_audio_file, arff_to_csv #, dataframes_to_csv_file
 from mhealthx.utils import rename_file, run_command
-from mhealthx.files_to_features import format_openSMILE_output
 
 # ============================================================================
 #
@@ -143,27 +142,7 @@ if not os.path.isdir(args.cache):
 #
 # ============================================================================
 if synID_phonation:
-    phonFlow = Workflow(name='phonation')
-
-    # ------------------------------------------------------------------------
-    # Use a list of files:
-    # ------------------------------------------------------------------------
-    # retrieve_local_files = False
-    # if retrieve_local_files:
-    #     def dummy(input_files):
-    #         downloaded_files = input_files
-    #         return downloaded_files
-    #     GetPhonationFiles = Node(name='retrieve_phonation_files',
-    #                              interface=Fn(function=dummy,
-    #                                        input_names=['input_files'],
-    #                                        output_names=['downloaded_files']))
-    #     Flow.add_nodes([GetPhonationFiles])
-    #     GetPhonationFiles.inputs.input_files = ['~/wav/test1.wav',
-    #                                             '~/wav/test2.wav',
-    #                                             '~/wav/test3.wav']
-    #     input_files = ['~/wav/test1.wav',
-    #                                             '~/wav/test2.wav',
-    #                                             '~/wav/test3.wav']
+    #phonFlow = Workflow(name='mhealthx phonation pipeline')
 
     # ------------------------------------------------------------------------
     # Retrieve audio files from Synapse table:
@@ -211,13 +190,15 @@ if synID_phonation:
                                            input_names=['old_file',
                                                         'new_filename',
                                                         'new_path',
-                                                        'suffix'],
+                                                        'suffix',
+                                                        'copy_file'],
                                            output_names=['renamed_file']))
     Flow.add_nodes([RenamePhonation])
     Flow.connect(GetPhonation, 'filepath', RenamePhonation, 'old_file')
     RenamePhonation.inputs.new_filename = ''
     RenamePhonation.inputs.new_path = ''
     RenamePhonation.inputs.suffix = '.m4a'
+    RenamePhonation.inputs.copy_file = True
 
     # ------------------------------------------------------------------------
     # Convert voice files to .wav format:
@@ -249,65 +230,84 @@ if synID_phonation:
                                             input_names=['old_file',
                                                          'new_filename',
                                                          'new_path',
-                                                         'suffix'],
-                                            output_names=['renamed_file']))
+                                                         'suffix',
+                                                         'copy_file'],
+                                            output_names=['new_file_name']))
     Flow.add_nodes([RenamePhonation2])
     Flow.connect(ConvertPhonation, 'converted_file',
                  RenamePhonation2, 'old_file')
     RenamePhonation2.inputs.new_filename = ''
     RenamePhonation2.inputs.new_path = ''
     RenamePhonation2.inputs.suffix = '.csv'
+    RenamePhonation2.inputs.copy_file = False
 
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
     # Process inputs to command:
-    #-------------------------------------------------------------------------
-    # OpenSMILE = MapNode(name='openSMILE',
-    #                     iterfield=['arg1', 'argN'],
-    #                     interface=Fn(function=run_command,
-    #                                  input_names=['command',
-    #                                               'flag1',
-    #                                               'arg1',
-    #                                               'flags',
-    #                                               'args',
-    #                                               'flagN',
-    #                                               'argN',
-    #                                               'closing'],
-    #                                  output_names=['command_line',
-    #                                                'args',
-    #                                                'arg1',
-    #                                                'argN']))
-    # Flow.add_nodes([OpenSMILE])
-    # OpenSMILE.inputs.command = os.path.join(thirdparty, 'openSMILE',
-    #                                         'SMILExtract')
-    # OpenSMILE.inputs.flag1 = '-I'
-    # Flow.connect(ConvertPhonation, 'converted_file', OpenSMILE, 'arg1')
-    # OpenSMILE.inputs.flags = '-C'
-    # OpenSMILE.inputs.args = os.path.join(thirdparty, 'openSMILE', 'config',
-    #                                                  'IS13_ComParE.conf')
-    # OpenSMILE.inputs.flagN = '-O'
-    # Flow.connect(RenamePhonation2, 'renamed_file', OpenSMILE, 'argN')
-    # # Flow.connect(ConvertPhonation, ('converted_file', rename_file,
-    # #                                 'ssss', './', '.csv'),
-    # #              OpenSMILE, 'argN')
-    # OpenSMILE.inputs.closing = ''
-    # #Flow.connect(OpenSMILE, 'argN', Sink, 'phonation.@rawfeatures.openSMILE')
+    # ------------------------------------------------------------------------
+    OpenSMILE = MapNode(name='openSMILE',
+                        iterfield=['arg1', 'argN'],
+                        interface=Fn(function=run_command,
+                                     input_names=['command',
+                                                  'flag1',
+                                                  'arg1',
+                                                  'flags',
+                                                  'args',
+                                                  'flagN',
+                                                  'argN',
+                                                  'closing'],
+                                     output_names=['command_line',
+                                                   'args',
+                                                   'arg1',
+                                                   'argN']))
+    Flow.add_nodes([OpenSMILE])
+    OpenSMILE.inputs.command = os.path.join(thirdparty, 'openSMILE',
+                                            'SMILExtract')
+    OpenSMILE.inputs.flag1 = '-I'
+    Flow.connect(ConvertPhonation, 'converted_file', OpenSMILE, 'arg1')
+    OpenSMILE.inputs.flags = '-C'
+    OpenSMILE.inputs.args = os.path.join(thirdparty, 'openSMILE', 'config',
+                                                     'IS13_ComParE.conf')
+    OpenSMILE.inputs.flagN = '-O'
+    Flow.connect(RenamePhonation2, 'new_file_name', OpenSMILE, 'argN')
+    # Flow.connect(ConvertPhonation, ('converted_file', rename_file,
+    #                                 'ssss', './', '.csv'),
+    #              OpenSMILE, 'argN')
+    OpenSMILE.inputs.closing = ''
+    #Flow.connect(OpenSMILE, 'argN', Sink, 'phonation.@rawfeatures.openSMILE')
 
-
-
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
     # Format openSMILE output:
-    #-------------------------------------------------------------------------
-    # FormatOpenSMILE = MapNode(name='format_openSMILE',
-    #                           iterfield=['input_file'],
-    #                           interface=Fn(function=format_openSMILE_output,
-    #                                        input_names=['input_file'],
-    #                                        output_names=['feature_table']))
-    # Flow.add_nodes([FormatOpenSMILE])
-    # Flow.connect(OpenSMILE, 'argN', FormatOpenSMILE, 'input_file')
+    # ------------------------------------------------------------------------
+    FormatOpenSMILE = MapNode(name='format_openSMILE',
+                              iterfield=['arff_file'],
+                              interface=Fn(function=arff_to_csv,
+                                           input_names=['arff_file',
+                                                        'csv_file'],
+                                           output_names=['csv_file']))
+    Flow.add_nodes([FormatOpenSMILE])
+    Flow.connect(OpenSMILE, 'argN', FormatOpenSMILE, 'arff_file')
+    FormatOpenSMILE.inputs.csv_file = ''
 
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
     # Store openSMILE features to its own Synapse table:
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
+    SaveOpenSMILE = Node(name='save_openSMILE',
+                         joinsource='OpenSMILE',
+                         joinfield='dataframes',
+                         interface=Fn(function=dataframes_to_csv_file,
+                                      input_names=['dataframes',
+                                                   'csv_file'],
+                                      output_names=['table_data',
+                                                    'csv_file']))
+    Flow.add_nodes([SaveOpenSMILE])
+    Flow.connect(FormatOpenSMILE, 'feature_table',
+                 SaveOpenSMILE, 'dataframes')
+    SaveOpenSMILE.inputs.csv_file = 'openSMILE_IS13_ComParE.csv'
+    Flow.connect(SaveOpenSMILE, 'csv_file', Sink, 'phonation.@features')
+
+    # ------------------------------------------------------------------------
+    # Store openSMILE features to its own Synapse table:
+    # ------------------------------------------------------------------------
     # SaveOpenSMILE = JoinNode(name='save_openSMILE',
     #                          joinsource='OpenSMILE',
     #                          joinfield='dataframes',
@@ -322,10 +322,10 @@ if synID_phonation:
     # SaveOpenSMILE.inputs.csv_file = 'openSMILE_IS13_ComParE.csv'
     # Flow.connect(SaveOpenSMILE, 'csv_file', Sink, 'phonation.@features')
 
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
     # Store openSMILE features to its own Synapse table:
     # FIX: WOULD NEED TO REORGANIZE: | feature | statistical summary | value |
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
     # SaveOpenSMILE = Node(name='save_openSMILE',
     #              interface=Fn(function=concatenate_tables_to_synapse_table,
     #                           input_names=['tables',
@@ -344,9 +344,9 @@ if synID_phonation:
     # SaveOpenSMILE.inputs.username = ''
     # SaveOpenSMILE.inputs.password = ''
 
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
     # Store openSMILE output file handle to the mPower phonation file table:
-    #-------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
     # StoreOpenSMILE = Node(name='store_openSMILE',
     #                       interface=Fn(function=file_to_synapse_table,
     #                                    input_names=['feature_file',
