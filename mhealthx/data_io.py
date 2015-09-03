@@ -102,6 +102,7 @@ def read_synapse_table_files(synapse_table_id,
         Synapse password (only needed once on a given machine)
 
     Returns
+
     -------
     table_data : Pandas DataFrame
         Synapse table contents

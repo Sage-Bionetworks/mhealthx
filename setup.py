@@ -64,7 +64,7 @@ def main(**extra_args):
           packages = ['mhealthx'],
                       #'mhealthx.thirdparty',
                       #'mhealthx.thirdparty.autotranscode'],
-          scripts = [pjoin('mhealthx', 'extractor')],
+          scripts = [pjoin('mhealthx', 'mhealthx')],
           **extra_args
          )
 

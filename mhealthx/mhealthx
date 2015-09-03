@@ -148,25 +148,42 @@ if synID_phonation:
     # ------------------------------------------------------------------------
     # Retrieve audio files from Synapse table:
     # ------------------------------------------------------------------------
-    GetPhonation = Node(name='retrieve_phonation_files',
-                        interface=Fn(function=read_synapse_table_files,
-                                     input_names=['synapse_table_id',
-                                                  'column_names',
-                                                  'download_limit',
-                                                  'out_path',
-                                                  'username',
-                                                  'password'],
-                                     output_names=['table_data',
-                                                   'downloaded_files',
-                                                   'synapse_table_id']))
-    Flow.add_nodes([GetPhonation])
-    GetPhonation.inputs.synapse_table_id = synID_phonation
-    GetPhonation.inputs.column_names = ['audio_audio.m4a',
-                                             'audio_countdown.m4a']
-    GetPhonation.inputs.download_limit = 3  # None = all rows
-    GetPhonation.inputs.out_path = phonation_file_path
-    GetPhonation.inputs.username = ''
-    GetPhonation.inputs.password = ''
+    retrieve_local_files = True
+    if retrieve_local_files:
+        def dummy(input_files):
+            downloaded_files = input_files
+            return downloaded_files
+        GetPhonationFiles = Node(name='retrieve_phonation_files',
+                                 interface=Fn(function=dummy,
+                                           input_names=['input_files'],
+                                           output_names=['downloaded_files']))
+        Flow.add_nodes([GetPhonationFiles])
+        GetPhonationFiles.inputs.input_files = ['~/wav/test1.wav',
+                                                '~/wav/test2.wav',
+                                                '~/wav/test3.wav']
+        input_files = ['~/wav/test1.wav',
+                                                '~/wav/test2.wav',
+                                                '~/wav/test3.wav']
+    else:
+        GetPhonation = Node(name='retrieve_phonation_file',
+                            interface=Fn(function=read_synapse_table_files,
+                                         input_names=['synapse_table_id',
+                                                      'column_names',
+                                                      'download_limit',
+                                                      'out_path',
+                                                      'username',
+                                                      'password'],
+                                         output_names=['table_data',
+                                                       'downloaded_files',
+                                                       'synapse_table_id']))
+        Flow.add_nodes([GetPhonation])
+        GetPhonation.inputs.synapse_table_id = synID_phonation
+        GetPhonation.inputs.column_names = ['audio_audio.m4a']
+                                            #, 'audio_countdown.m4a']
+        GetPhonation.inputs.download_limit = 3  # None = all rows
+        GetPhonation.inputs.out_path = phonation_file_path
+        GetPhonation.inputs.username = ''
+        GetPhonation.inputs.password = ''
 
     # ------------------------------------------------------------------------
     # Append file names with ".m4a":
@@ -179,6 +196,11 @@ if synID_phonation:
                                                      'suffix'],
                                         output_names=['renamed_file']))
     Flow.add_nodes([RenamePhonation])
+
+
+    RenamePhonation.iterables = ("old_file", input_files)
+
+
     Flow.connect(GetPhonation, 'downloaded_files',
                  RenamePhonation, 'old_file')
     RenamePhonation.inputs.new_path = ''
@@ -251,12 +273,14 @@ if synID_phonation:
     #-------------------------------------------------------------------------
     # Store openSMILE features to its own Synapse table:
     #-------------------------------------------------------------------------
-    SaveOpenSMILE = MapNode(name='save_openSMILE',
-                            interface=Fn(function=dataframes_to_csv_file,
-                                         input_names=['dataframes',
-                                                      'csv_file'],
-                                         output_names=['table_data',
-                                                       'csv_file']))
+    SaveOpenSMILE = JoinNode(name='save_openSMILE',
+                             joinsource='OpenSMILE',
+                             joinfield='dataframes',
+                             interface=Fn(function=dataframes_to_csv_file,
+                                          input_names=['dataframes',
+                                                       'csv_file'],
+                                          output_names=['table_data',
+                                                        'csv_file']))
     Flow.add_nodes([SaveOpenSMILE])
     Flow.connect(FormatOpenSMILE, 'feature_table',
                  SaveOpenSMILE, 'dataframes')
