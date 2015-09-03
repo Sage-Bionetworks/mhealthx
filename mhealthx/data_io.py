@@ -393,6 +393,41 @@ def feature_file_to_synapse_table(feature_file, raw_feature_file,
     return synapse_table_id
 
 
+def getCSVFromArff(fileNameArff):
+    """
+    :param fileNameArff:
+    :return:
+    http://biggyani.blogspot.com/2014/08/converting-back-and-forth-between-weka.html
+
+    """
+
+    with open(fileNameArff, 'r') as fin:
+        data = fin.read().splitlines(True)
+
+
+    i = 0
+    cols = []
+    for line in data:
+        if ('@data' in line):
+            i += 1
+            break
+        else:
+            #print line
+            i+= 1
+            if (line.startswith('@attribute')):
+                if('{' in line):
+                    cols.append(line[11:line.index('{')-1])
+                else:
+                    cols.append(line[11:line.index('numeric')-1])
+
+    headers = ",".join(cols)
+
+    with open(fileNameArff + '.csv', 'w') as fout:
+        fout.write(headers)
+        fout.write('\n')
+        fout.writelines(data[i:])
+
+
 def dataframes_to_csv_file(dataframes, csv_file):
     """
     Concatenate multiple pandas DataFrames with the same column names,
