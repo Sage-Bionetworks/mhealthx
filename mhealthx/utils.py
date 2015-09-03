@@ -86,7 +86,7 @@ def run_command(command, flag1='', arg1='', flags=[], args=[],
 
 
 def rename_file(old_file, new_filename='', new_path='', suffix=''):
-    """Rename file / path / suffix.
+    """Rename (a copy of a) file / path / suffix.
 
     Parameters
     ----------
@@ -108,12 +108,13 @@ def rename_file(old_file, new_filename='', new_path='', suffix=''):
     --------
     >>> from mhealthx.utils import rename_file
     >>> old_file = '/home/arno/wav/test1.wav'
-    >>> new_filename = 'test1a.wav'
+    >>> new_filename = ''
     >>> new_path = '/home/arno'
     >>> suffix = '.csv'
     >>> renamed_file = rename_file(old_file, new_filename, new_path, suffix)
     """
     import os
+    from shutil import copyfile
 
     old_path, base_file_name = os.path.split(old_file)
 
@@ -127,6 +128,8 @@ def rename_file(old_file, new_filename='', new_path='', suffix=''):
 
     if suffix:
         renamed_file = ''.join((renamed_file, suffix))
+
+    copyfile(old_file, renamed_file)
 
     return renamed_file
 

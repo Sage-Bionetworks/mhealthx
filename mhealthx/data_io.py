@@ -15,8 +15,6 @@ def convert_audio_file(old_file, file_append, command='ffmpeg',
     """
     Convert audio file to new format.
 
-    Calls python-audiotranscode (and faad2)
-
     Parameters
     ----------
     old_file : list of strings
@@ -32,13 +30,13 @@ def convert_audio_file(old_file, file_append, command='ffmpeg',
 
     Returns
     -------
-    converted_file : list of strings
-        each string is the full path to a renamed file
+    converted_file : string
+        full path to the converted file
 
     Examples
     --------
     >>> from mhealthx.unused import convert_audio_file
-    >>> old_file = ['/Users/arno/mhealthx_working/mHealthX/phonation_files/test.m4a']
+    >>> old_file = '/Users/arno/mhealthx_working/mHealthX/phonation_files/test.m4a'
     >>> file_append = '.wav'
     >>> command = '/home/arno/software/audio/ffmpeg/ffmpeg'
     >>> input_args = '-i'
@@ -49,132 +47,67 @@ def convert_audio_file(old_file, file_append, command='ffmpeg',
     import os
     from nipype.interfaces.base import CommandLine
 
-    converted_file = []
-
-    # Loop through input files:
-    for input_file in old_file:
-        if not os.path.exists(input_file):
-            raise(IOError(input_file + " not found"))
+    if not os.path.exists(old_file):
+        raise(IOError(old_file + " not found"))
+    else:
+        # Don't convert file if file already has correct append:
+        if old_file.endswith(file_append):
+            converted_file = old_file
+        # Convert file to new format:
         else:
-            # Don't convert file if file already has correct append:
-            if input_file.endswith(file_append):
-                converted_file.append(input_file)
-            # Convert file to new format:
+            output_file = old_file + file_append
+            if os.path.exists(output_file):
+                converted_file = output_file
             else:
-                output_file = input_file + file_append
-                if os.path.exists(output_file):
-                    converted_file.append(output_file)
-                else:
-                    # Nipype command line wrapper:
-                    cli = CommandLine(command = command)
-                    cli.inputs.args = ' '.join([input_args, input_file,
-                                                output_args, output_file])
-                    cli.cmdline
-                    cli.run()
+                # Nipype command line wrapper:
+                cli = CommandLine(command = command)
+                cli.inputs.args = ' '.join([input_args, old_file,
+                                            output_args, output_file])
+                cli.cmdline
+                cli.run()
 
-                    if not os.path.exists(output_file):
-                        raise(IOError(output_file + " not found"))
-                    else:
-                        converted_file.append(output_file)
+                if not os.path.exists(output_file):
+                    raise(IOError(output_file + " not found"))
+                else:
+                    converted_file = output_file
 
     return converted_file
 
 
-def read_files_from_row(synapse_table, row_as_map, column_names, out_path=None):
+def extract_rows(synapse_table, limit=None, username='', password=''):
     """
-    Read data from a row of a synapse table.
+    Extract rows from a Synapse table.
 
     Parameters
     ----------
     synapse_table : string or Schema
         a synapse ID or synapse table Schema object
-    row_as_map : dict
-        a row of a table converted to a map with column names as keys
-    column_names : list of strings
-        a list of names of file handle columns
-    out_path : string
-        a local path in which to store downloaded files. If None, stores them in (~/.synapseCache)
-
-    Returns
-    -------
-    row_as_map : dict
-        same as passed in: a row of a table converted to a map with column names as keys
-    filepath_map : dict
-        a map from file handle ID to a path on the local file system to the downloaded file
-
-    Examples
-    --------
-    >>> table_id = 'syn4590865'
-    >>> results = syn.tableQuery('select * from {0}'.format(table_id))
-    >>> headers = {header['name']:i for i,header in enumerate(results.headers)}
-    >>> 
-    >>> for row in results:
-    >>>     row_as_map = {col:row[i] for col,i in headers.iteritems()}
-    >>>     row_as_map, filepath_map = read_files_from_row(
-    >>>         table_id,
-    >>>         row_as_map,
-    >>>         column_names=['audio_audio.m4a', 'audio_countdown.m4a'])
-    >>>     print "\nRecordID:", row_as_map['recordId'], "\n", filepath_map, "\n"
-
-    """
-
-    filepath_map = {}
-    for column_name in column_names:
-        fileinfo = syn.downloadTableFile(synapse_table,
-                                         rowId=row_as_map['ROW_ID'],
-                                         versionNumber=row_as_map['ROW_VERSION'],
-                                         column=column_name,
-                                         downloadLocation=out_path)
-        filepath_map[row_as_map[column_name]] = fileinfo['path']
-
-    return row_as_map, filepath_map
-
-
-def read_synapse_table_files(synapse_table_id,
-                             column_names=[], download_limit=None,
-                             out_path='.', username='', password=''):
-    """
-    Read data from a Synapse table. If column_names specified, download files.
-
-    Parameters
-    ----------
-    synapse_table_id : string
-        Synapse ID for table
-    column_names : list of strings
-        column headers for columns with fileIDs (if wish to download files)
-    download_limit : int
-        limit file downloads to this number of rows (None = all rows)
-    out_path : string
-        output path to store column_name files
+    limit : integer or None
+        limit to number of rows returned by the query
     username : string
         Synapse username (only needed once on a given machine)
     password : string
         Synapse password (only needed once on a given machine)
 
     Returns
-
     -------
-    table_data : Pandas DataFrame
-        Synapse table contents
-    downloaded_files : list of lists of strings
-        files from Synapse table column(s) (full paths to downloaded files)
-    synapse_table_id : string
-        Synapse ID for source table
+    row_as_map_list : list of dicts
+        multiple rows of a table converted to a map with column names as keys
 
     Examples
     --------
-    >>> from mhealthx.data_io import read_synapse_table_files
-    >>> synapse_table_id = 'syn4590865' #'syn4907789'
-    >>> column_names = ['audio_audio.m4a', 'audio_countdown.m4a']
-    >>> download_limit = 3  # None = download files from all rows
-    >>> out_path = '.'
+    >>> from mhealthx.data_io import extract_rows
+    >>> import synapseclient
+    >>> syn = synapseclient.Synapse()
+    >>> syn.login()
+    >>> synapse_table = 'syn4590865'
+    >>> limit = 3
     >>> username = ''
     >>> password = ''
-    >>> table_data, downloaded_files, synapse_table_id = read_synapse_table_files(synapse_table_id, column_names, download_limit, out_path, username, password)
+    >>> row_as_map_list = extract_rows(synapse_table, limit, username='', password='')
 
     """
     import synapseclient
-    import numpy as np
 
     syn = synapseclient.Synapse()
 
@@ -184,47 +117,88 @@ def read_synapse_table_files(synapse_table_id,
     else:
         syn.login()
 
-    # Download Synapse table schema and table_data:
-    schema = syn.get(synapse_table_id)
-    query = "select * from {0}".format(synapse_table_id)
-    results = syn.tableQuery(query)
-    table_data = results.asDataFrame()
-    downloaded_files = []
+    if limit:
+        results = syn.tableQuery('select * from {0} limit {1}'.
+                                 format(synapse_table, limit))
+    else:
+        results = syn.tableQuery('select * from {0}'.
+                                 format(synapse_table))
 
-    # Download Synapse files for fileIDs in specified table columns:
-    if column_names:
+    headers = {header['name']:i for i,header in enumerate(results.headers)}
 
-        # Set the number of rows to loop through:
-        if type(download_limit) != int:
-            download_limit = table_data.shape[0]
+    row_as_map_list = []
+    for row in results:
+         row_as_map_list.append({col:row[i] for col,i in headers.iteritems()})
 
-        # Loop through specified columns:
-        for column_name in column_names:
-            column_data = table_data[column_name]
+    return row_as_map_list
 
-            # Loop through specified number of rows:
-            files_per_column = []
-            for irow in range(download_limit):
 
-                # If there is no file in that row, save None:
-                if np.isnan(column_data[irow]):
-                    files_per_column.append(None)
+def read_files_from_row(synapse_table, row_as_map, column_name,
+                        out_path='.', username='', password=''):
+    """
+    Read data from a row of a synapse table.
 
-                # Download the file:
-                else:
-                    fileinfo = syn.downloadTableFile(schema,
-                                                 rowId=irow,
-                                                 versionNumber=        ????0,
-                                                 column=column_name,
-                                                 downloadLocation=out_path)
-                    if fileinfo:
-                        files_per_column.append(fileinfo['path'])
-                    else:
-                        files_per_column.append('')
+    Parameters
+    ----------
+    synapse_table : string or Schema
+        a synapse ID or synapse table Schema object
+    row_as_map : dict
+        a row of a table converted to a map with column names as keys
+    column_name : strings
+        name of file handle column
+    out_path : string
+        a local path in which to store downloaded files. If None, stores them in (~/.synapseCache)
 
-            downloaded_files.append(files_per_column)
+    Returns
+    -------
+    row_as_map : dict
+        same as passed in: a row of a table converted to a map with column names as keys
+    filepath_map : dict
+        a map from file handle ID to a path on the local file system to the downloaded file
+    filepath : string
+        downloaded file (full path)
 
-    return table_data, downloaded_files, synapse_table_id
+    Examples
+    --------
+    >>> from mhealthx.data_io import read_files_from_row
+    >>> import synapseclient
+    >>> syn = synapseclient.Synapse()
+    >>> syn.login()
+    >>> table_id = 'syn4590865'
+    >>> results = syn.tableQuery('select * from {0} limit 10'.format(table_id))
+    >>> headers = {header['name']:i for i,header in enumerate(results.headers)}
+    >>> column_name = 'audio_audio.m4a' #, 'audio_countdown.m4a']
+    >>> out_path = '.'
+    >>> username = ''
+    >>> password = ''
+    >>>
+    >>> for row in results:
+    >>>     row_as_map = {col:row[i] for col,i in headers.iteritems()}
+    >>>     row_as_map, filepath_map, filepath = read_files_from_row(table_id, row_as_map, column_name, out_path, username, password)
+    >>>     print('\nRecordID: {0}\n {1}\n'.format(row_as_map['recordId'], filepath_map))
+
+    """
+    import synapseclient
+
+    syn = synapseclient.Synapse()
+
+    # Log in to Synapse:
+    if username and password:
+        syn.login(username, password)
+    else:
+        syn.login()
+
+    filepath_map = {}
+    fileinfo = syn.downloadTableFile(synapse_table,
+                                     rowId=row_as_map['ROW_ID'],
+                                     versionNumber=row_as_map['ROW_VERSION'],
+                                     column=column_name,
+                                     downloadLocation=out_path)
+    filepath_map[row_as_map[column_name]] = fileinfo['path']
+
+    filepath = fileinfo['path']
+
+    return row_as_map, filepath_map, filepath
 
 
 def copy_synapse_table(synapse_table_id, synapse_project_id, table_name='',
