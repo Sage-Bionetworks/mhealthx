@@ -30,9 +30,9 @@ import argparse
 from nipype import config, logging
 from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
-from nipype.pipeline.engine import Workflow, Node, MapNode, JoinNode
-from mhealthx.data_io import extract_rows, read_files_from_row, \
-    convert_audio_file, arff_to_csv #, dataframes_to_csv_file
+from nipype.pipeline.engine import Workflow, Node, MapNode
+from mhealthx.data_io import convert_audio_file, arff_to_csv, tables_to_csv
+from mhealthx.synapse_io import extract_rows, read_files_from_row
 from mhealthx.utils import rename_file, run_command
 
 # ============================================================================
@@ -278,7 +278,7 @@ if synID_phonation:
     # ------------------------------------------------------------------------
     # Format openSMILE output:
     # ------------------------------------------------------------------------
-    FormatOpenSMILE = MapNode(name='format_openSMILE',
+    FormatOpenSMILE = MapNode(name='format_openSMILE_output',
                               iterfield=['arff_file'],
                               interface=Fn(function=arff_to_csv,
                                            input_names=['arff_file',
@@ -289,21 +289,20 @@ if synID_phonation:
     FormatOpenSMILE.inputs.csv_file = ''
 
     # ------------------------------------------------------------------------
-    # Store openSMILE features to its own Synapse table:
+    # Create one feature table from the formatted openSMILE output files:
     # ------------------------------------------------------------------------
-    SaveOpenSMILE = Node(name='save_openSMILE',
-                         joinsource='OpenSMILE',
-                         joinfield='dataframes',
-                         interface=Fn(function=dataframes_to_csv_file,
-                                      input_names=['dataframes',
+    SaveOpenSMILE = Node(name='combine_openSMILE_outputs',
+                         interface=Fn(function=tables_to_csv,
+                                      input_names=['tables',
                                                    'csv_file'],
                                       output_names=['table_data',
                                                     'csv_file']))
     Flow.add_nodes([SaveOpenSMILE])
-    Flow.connect(FormatOpenSMILE, 'feature_table',
-                 SaveOpenSMILE, 'dataframes')
-    SaveOpenSMILE.inputs.csv_file = 'openSMILE_IS13_ComParE.csv'
+    Flow.connect(FormatOpenSMILE, 'csv_file', SaveOpenSMILE, 'tables')
+    SaveOpenSMILE.inputs.csv_file = 'openSMILE_IS13_ComParE_features.csv'
     Flow.connect(SaveOpenSMILE, 'csv_file', Sink, 'phonation.@features')
+
+
 
     # ------------------------------------------------------------------------
     # Store openSMILE features to its own Synapse table:

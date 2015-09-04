@@ -1,28 +1,31 @@
+# Installation of mhealthx and dependencies.
+#
+# by Arno Klein, 2015  (arno@sagebase.org)  http://binarybottle.com
+#
+# Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
+
+# Set bin path:
+mkdir /shared/software/bin
+PATH="/shared/software/bin:$PATH"
+
+# Install Continuum's miniconda Python distribution and some Python libraries:
 wget -nc http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -P /shared/software
 chmod +x /shared/software/Miniconda-latest-Linux-x86_64.sh
 bash /shared/software/Miniconda-latest-Linux-x86_64.sh -b -f -p /shared/software/anaconda
-/shared/software/anaconda/bin/conda install --yes numpy scipy matplotlib pandas nose networkx traits ipython
+/shared/software/anaconda/bin/conda install --yes numpy scipy pandas nose networkx traits ipython # matplotlib
+
+# Install nipype pipeline framework:
 pip install nipype
 
-cd /shared/software
-git clone git@github.com:binarybottle/mhealthx.git
-cd /shared/software/mhealthx
-python setup.py install
-
-mkdir /shared/software/bin
-PATH="/shared/software/bin:$PATH"
-cd /shared/software
-
-# https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu
+# Install ffmpeg dependencies:
+# (from https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu)
 mkdir /shared/software/ffmpeg
 mkdir /shared/software/ffmpeg/ffmpeg_sources
 mkdir /shared/software/ffmpeg/ffmpeg_build
-
-# ffmpeg dependencies:
 sudo apt-get update
 sudo apt-get -y --force-yes install autoconf automake build-essential libass-dev libfreetype6-dev libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev pkg-config texi2html zlib1g-dev
 
-# yasm:
+# Install yasm (ffmpeg dependency):
 cd /shared/software/ffmpeg/ffmpeg_sources
 wget -nc http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz
 tar xzvf yasm-1.3.0.tar.gz
@@ -32,7 +35,7 @@ make
 make install
 make distclean
 
-# ffmpeg:
+# Install ffmpeg:
 cd /shared/software/ffmpeg/ffmpeg_sources
 wget -nc http://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
 tar xjvf ffmpeg-snapshot.tar.bz2
@@ -43,10 +46,17 @@ make
 make install
 PATH="/shared/software/ffmpeg/ffmpeg_sources/ffmpeg:$PATH"
 
-# openSMILE:
+# Install openSMILE:
 cd /shared/software
 wget -nc http://binarybottle.com/software/openSMILE-2.1.0.tar.gz
 tar xvf openSMILE-2.1.0.tar.gz
 cd openSMILE-2.1.0
 bash buildStandalone.sh -p /shared/software
 PATH="/shared/software/bin:$PATH"
+
+# Install mhealthx nipype workflow for feature extraction:
+cd /shared/software
+git clone git@github.com:binarybottle/mhealthx.git
+cd /shared/software/mhealthx
+python setup.py install
+PATH="/shared/software/mhealthx/mhealthx:$PATH"
