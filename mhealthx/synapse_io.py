@@ -27,8 +27,12 @@ def extract_rows(synapse_table, limit=None, username='', password=''):
 
     Returns
     -------
-    row_as_map_list : list of dicts
-        multiple rows of a table converted to a map with column names as keys
+    row_maps : list of dicts
+        Synapse table rows, each converted to a map with column names as keys
+    row_dataframes : list of pandas DataFrames
+        each row of a Synapse table converted to a dataframe
+    data_table: pandas DataFrame
+        concatenated form of row_dataframes
 
     Examples
     --------
@@ -40,9 +44,10 @@ def extract_rows(synapse_table, limit=None, username='', password=''):
     >>> limit = 3
     >>> username = ''
     >>> password = ''
-    >>> row_as_map_list = extract_rows(synapse_table, limit, username='', password='')
+    >>> row_maps, row_dataframes, data_table = extract_rows(synapse_table, limit, username='', password='')
 
     """
+    import pandas as pd
     import synapseclient
 
     syn = synapseclient.Synapse()
@@ -62,14 +67,23 @@ def extract_rows(synapse_table, limit=None, username='', password=''):
 
     headers = {header['name']:i for i,header in enumerate(results.headers)}
 
-    row_as_map_list = []
+    row_maps = []
     for row in results:
-         row_as_map_list.append({col:row[i] for col,i in headers.iteritems()})
+        row_maps.append({col:row[i] for col,i in headers.iteritems()})
 
-    return row_as_map_list
+    row_dataframes = []
+    for row in row_maps:
+        columns = row.keys()
+        values = [unicode(x) for x in row.values()]
+        df = pd.DataFrame(values, columns)
+        row_dataframes.append(df.transpose())
+
+    data_table = pd.concat(row_dataframes, ignore_index=True)
+
+    return row_maps, row_dataframes, data_table
 
 
-def read_files_from_row(synapse_table, row_as_map, column_name,
+def read_files_from_row(synapse_table, row_dataframe, column_name,
                         out_path='.', username='', password=''):
     """
     Read data from a row of a Synapse table.
@@ -78,8 +92,8 @@ def read_files_from_row(synapse_table, row_as_map, column_name,
     ----------
     synapse_table : string or Schema
         a synapse ID or synapse table Schema object
-    row_as_map : dict
-        a row of a table converted to a map with column names as keys
+    row_dataframe : pandas DataFrame
+        row of a Synapse table converted to a dataframe
     column_name : strings
         name of file handle column
     out_path : string
@@ -87,8 +101,8 @@ def read_files_from_row(synapse_table, row_as_map, column_name,
 
     Returns
     -------
-    row_as_map : dict
-        same as passed in: a row of a table converted to a map with column names as keys
+    row_dataframe : pandas DataFrame
+        same as passed in: row of a Synapse table converted to a dataframe
     filepath_map : dict
         a map from file handle ID to a path on the local file system to the downloaded file
     filepath : string
@@ -96,22 +110,22 @@ def read_files_from_row(synapse_table, row_as_map, column_name,
 
     Examples
     --------
-    >>> from mhealthx.synapse_io import read_files_from_row
+    >>> from mhealthx.synapse_io import extract_rows, read_files_from_row
     >>> import synapseclient
     >>> syn = synapseclient.Synapse()
     >>> syn.login()
-    >>> table_id = 'syn4590865'
-    >>> results = syn.tableQuery('select * from {0} limit 10'.format(table_id))
-    >>> headers = {header['name']:i for i,header in enumerate(results.headers)}
-    >>> column_name = 'audio_audio.m4a' #, 'audio_countdown.m4a']
-    >>> out_path = '.'
+    >>> synapse_table = 'syn4590865'
+    >>> limit = 3
     >>> username = ''
     >>> password = ''
-    >>>
-    >>> for row in results:
-    >>>     row_as_map = {col:row[i] for col,i in headers.iteritems()}
-    >>>     row_as_map, filepath_map, filepath = read_files_from_row(table_id, row_as_map, column_name, out_path, username, password)
-    >>>     print('\nRecordID: {0}\n {1}\n'.format(row_as_map['recordId'], filepath_map))
+    >>> row_maps, row_dataframes, data_table = extract_rows(synapse_table, limit, username='', password='')
+    >>> column_name = 'audio_audio.m4a' #, 'audio_countdown.m4a']
+    >>> out_path = '.'
+    >>> for i in range(3):
+    >>>     row_dataframe = row_dataframes[i]
+    >>>     row_dataframe, filepath_map, filepath = read_files_from_row(synapse_table, row_dataframe, column_name, out_path, username, password)
+    >>>     print(row_dataframe)
+    >>>     print(filepath_map)
 
     """
     import synapseclient
@@ -126,15 +140,15 @@ def read_files_from_row(synapse_table, row_as_map, column_name,
 
     filepath_map = {}
     fileinfo = syn.downloadTableFile(synapse_table,
-                                     rowId=row_as_map['ROW_ID'],
-                                     versionNumber=row_as_map['ROW_VERSION'],
-                                     column=column_name,
-                                     downloadLocation=out_path)
-    filepath_map[row_as_map[column_name]] = fileinfo['path']
+                                rowId=row_dataframe['ROW_ID'][0],
+                                versionNumber=row_dataframe['ROW_VERSION'][0],
+                                column=column_name,
+                                downloadLocation=out_path)
+    filepath_map[row_dataframe[column_name][0]] = fileinfo['path']
 
     filepath = fileinfo['path']
 
-    return row_as_map, filepath_map, filepath
+    return row_dataframe, filepath_map, filepath
 
 
 def copy_synapse_table(synapse_table_id, synapse_project_id, table_name='',

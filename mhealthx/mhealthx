@@ -29,9 +29,10 @@ import os
 import argparse
 from nipype import config, logging
 from nipype.interfaces.io import DataSink
-from nipype.interfaces.utility import Function as Fn
+from nipype.interfaces.utility import Function as Fn, Merge
 from nipype.pipeline.engine import Workflow, Node, MapNode
-from mhealthx.data_io import convert_audio_file, arff_to_csv, tables_to_csv
+from mhealthx.data_io import convert_audio_file, arff_to_csv, \
+    concatenate_tables_vertically, concatenate_tables_horizontally
 from mhealthx.synapse_io import extract_rows, read_files_from_row
 from mhealthx.utils import rename_file, run_command
 
@@ -54,6 +55,9 @@ parser.add_argument("-v", "--version", help="version number",
 parser.add_argument("-n", "--numproc",
                     help=('number of processors (default: 1)'),
                     type=int, default=1, metavar='INT')
+parser.add_argument("-s", "--stop",
+                    help=('stop at this many rows of the Synapse tables'),
+                    type=int, metavar='INT')
 parser.add_argument("-g", "--graph",
                     help=('plot workflow graph: "hier", "flat", "exec"'),
                     choices=['hier', 'flat', 'exec'], metavar='STR')
@@ -96,6 +100,7 @@ outputs_group.add_argument("-c", "--cache",
 args = parser.parse_args()
 username = args.username
 password = args.password
+limit_rows = args.stop
 thirdparty = args.thirdparty
 synID_phonation = args.phonation
 synID_balance = args.balance
@@ -144,7 +149,7 @@ if synID_phonation:
     #phonFlow = Workflow(name='mhealthx phonation pipeline')
 
     # ------------------------------------------------------------------------
-    # Retrieve audio files from Synapse table:
+    # Retrieve information about all audio files in Synapse table:
     # ------------------------------------------------------------------------
     GetPhonationRows = Node(name='retrieve_phonation_rows',
                             interface=Fn(function=extract_rows,
@@ -152,36 +157,41 @@ if synID_phonation:
                                                       'limit',
                                                       'username',
                                                       'password'],
-                                         output_names=['row_as_map_list']))
+                                         output_names=['row_maps',
+                                                       'row_dataframes',
+                                                       'data_table']))
     Flow.add_nodes([GetPhonationRows])
     GetPhonationRows.inputs.synapse_table = synID_phonation
-    GetPhonationRows.inputs.limit = 3
+    GetPhonationRows.inputs.limit = limit_rows
     GetPhonationRows.inputs.username = ''
     GetPhonationRows.inputs.password = ''
 
+    # ------------------------------------------------------------------------
+    # Retrieve each audio file from Synapse table:
+    # ------------------------------------------------------------------------
     GetPhonation = MapNode(name='retrieve_phonation_file',
-                           iterfield='row_as_map',
+                           iterfield='row_dataframe',
                            interface=Fn(function=read_files_from_row,
                                         input_names=['synapse_table',
-                                                     'row_as_map',
+                                                     'row_dataframe',
                                                      'column_name',
                                                      'out_path',
                                                      'username',
                                                      'password'],
-                                        output_names=['row_as_map',
+                                        output_names=['row_dataframe',
                                                       'filepath_map',
                                                       'filepath']))
     Flow.add_nodes([GetPhonation])
     GetPhonation.inputs.synapse_table = synID_phonation
-    Flow.connect(GetPhonationRows, 'row_as_map_list',
-                 GetPhonation, 'row_as_map')
+    Flow.connect(GetPhonationRows, 'row_dataframes',
+                 GetPhonation, 'row_dataframe')
     GetPhonation.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
     GetPhonation.inputs.out_path = '.' #phonation_file_path
     GetPhonation.inputs.username = ''
     GetPhonation.inputs.password = ''
 
     # ------------------------------------------------------------------------
-    # Append file names with ".m4a":
+    # Append file name with ".m4a":
     # ------------------------------------------------------------------------
     RenamePhonation = MapNode(name='rename_phonation_file',
                               iterfield='old_file',
@@ -200,7 +210,7 @@ if synID_phonation:
     RenamePhonation.inputs.create_file = True
 
     # ------------------------------------------------------------------------
-    # Convert voice files to .wav format:
+    # Convert voice file to .wav format:
     # ------------------------------------------------------------------------
     ConvertPhonation = MapNode(name='convert_phonation_file',
                                iterfield='old_file',
@@ -222,7 +232,7 @@ if synID_phonation:
     ConvertPhonation.inputs.output_args = '-ac 2'
 
     # ------------------------------------------------------------------------
-    # Append file names with ".csv":
+    # Append file name with ".csv":
     # ------------------------------------------------------------------------
     RenamePhonation2 = MapNode(name='rename_converted_phonation_file',
                                iterfield='old_file',
@@ -242,7 +252,7 @@ if synID_phonation:
     RenamePhonation2.inputs.create_file = False
 
     # ------------------------------------------------------------------------
-    # Process inputs to command:
+    # Process openSMILE command:
     # ------------------------------------------------------------------------
     OpenSMILE = MapNode(name='openSMILE',
                         iterfield=['arg1', 'argN'],
@@ -288,19 +298,50 @@ if synID_phonation:
     FormatOpenSMILE.inputs.csv_file = ''
 
     # ------------------------------------------------------------------------
-    # Create one feature table from the formatted openSMILE output files:
+    # Create a list of formatted openSMILE output files:
     # ------------------------------------------------------------------------
-    SaveOpenSMILE = Node(name='combine_openSMILE_outputs',
-                         interface=Fn(function=tables_to_csv,
-                                      input_names=['tables',
-                                                   'csv_file'],
-                                      output_names=['table_data',
-                                                    'csv_file']))
-    Flow.add_nodes([SaveOpenSMILE])
-    Flow.connect(FormatOpenSMILE, 'csv_file', SaveOpenSMILE, 'tables')
-    SaveOpenSMILE.inputs.csv_file = os.path.join(feature_table_file_path,
-                            'phonation_features_openSMILE_IS13_ComParE.csv')
-    Flow.connect(SaveOpenSMILE, 'csv_file', Sink, 'feature_tables.@features')
+    def dummy_func(input):
+        output = input
+        return output
+    CombineOpenSMILE = Node(name='combine_openSMILE_outputs',
+                            interface=Fn(function=dummy_func,
+                                         input_names=['input'],
+                                         output_names=['output']))
+    Flow.add_nodes([CombineOpenSMILE])
+    Flow.connect(FormatOpenSMILE, 'csv_file', CombineOpenSMILE, 'input')
+
+
+    # ------------------------------------------------------------------------
+    # Combine metadata list and openSMILE list into one list:
+    # ------------------------------------------------------------------------
+    def merge_func(in1, in2):
+        output = [in1, in2]
+        return output
+    MergePhonation = Node(name='merge_metadata_and_openSMILE',
+                          interface=Fn(function=merge_func,
+                                       input_names=['in1', 'in2'],
+                                       output_names=['output']))
+    Flow.add_nodes([MergePhonation])
+    Flow.connect(GetPhonationRows, 'row_dataframes',
+                 MergePhonation, 'in1')
+    Flow.connect(CombineOpenSMILE, 'output', MergePhonation, 'in2')
+
+    # ------------------------------------------------------------------------
+    # Create a feature table from the original metadata and openSMILE outputs:
+    # ------------------------------------------------------------------------
+    TableOpenSMILE = Node(name='construct_openSMILE_feature_table',
+                        interface=Fn(function=concatenate_tables_horizontally,
+                                     input_names=['tables',
+                                                  'output_csv_file'],
+                                     output_names=['table_data',
+                                                   'output_csv_file']))
+    Flow.add_nodes([TableOpenSMILE])
+    Flow.connect(MergePhonation, 'output', TableOpenSMILE, 'tables')
+    TableOpenSMILE.inputs.output_csv_file = os.path.join(
+        feature_table_file_path,
+        'phonation_features_openSMILE_IS13_ComParE.csv')
+    Flow.connect(TableOpenSMILE, 'output_csv_file',
+                 Sink, 'feature_tables.@features')
 
 
 

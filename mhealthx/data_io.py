@@ -184,12 +184,12 @@ def arff_to_csv(arff_file, csv_file):
 
 def concatenate_tables_vertically(tables, output_csv_file=None):
     """
-    Vertically concatenate multiple table files or pandas DataFrames or dicts
+    Vertically concatenate multiple table files or pandas DataFrames
     with the same column names and store as a csv table.
 
     Parameters
     ----------
-    tables : list of table files or pandas DataFrames or dicts
+    tables : list of table files or pandas DataFrames
         each table or dataframe has the same column names
     output_csv_file : string or None
         output table file (full path)
@@ -215,7 +215,6 @@ def concatenate_tables_vertically(tables, output_csv_file=None):
     >>>                     index=[0, 1, 2, 3])
     >>> tables = [df1, df2]
     >>> tables = ['/Users/arno/csv/table1.csv', '/Users/arno/csv/table2.csv']
-    >>> tables = [{'A':[1,2,3,4],'B':[5,6,7,8],'C':[9,10,11,12]}, {'A':[10,20,30,40],'B':[50,60,70,80],'C':[90,100,110,120]}]
     >>> output_csv_file = None #'./test.csv'
     >>> table_data, output_csv_file = concatenate_tables_vertically(tables, output_csv_file)
     """
@@ -224,9 +223,8 @@ def concatenate_tables_vertically(tables, output_csv_file=None):
 
     # Raise an error if tables are not strings or pandas DataFrames or dicts:
     type0 = type(tables[0])
-    if type0 not in [str, pd.DataFrame, dict]:
-        raise IOError("'tables' should contain strings or pandas DataFrames "
-                      "or dictionaries.")
+    if type0 not in [str, pd.DataFrame]:
+        raise IOError("'tables' should contain strings or pandas DataFrames.")
 
     # pandas DataFrames:
     if type(tables[0]) == pd.DataFrame:
@@ -241,14 +239,14 @@ def concatenate_tables_vertically(tables, output_csv_file=None):
                 raise IOError('{0} is not a file.'.format(table))
         tables = tables_from_files
     # dicts:
-    elif type(tables[0]) == dict:
-        tables_from_dicts = []
-        for table in tables:
-            if type(table) == dict:
-                tables_from_dicts.append(pd.DataFrame.from_dict(table))
-            else:
-                raise IOError("'table' doesn't contain all dictionaries.")
-        tables = tables_from_dicts
+    # elif type(tables[0]) == dict:
+    #     tables_from_dicts = []
+    #     for table in tables:
+    #         if type(table) == dict:
+    #             tables_from_dicts.append(pd.DataFrame(table)) #, index=[0]))
+    #         else:
+    #             raise IOError("'table' doesn't contain all dictionaries.")
+    #     tables = tables_from_dicts
 
     # Vertically concatenate tables:
     table_data = pd.concat(tables, ignore_index=True)
@@ -294,9 +292,7 @@ def concatenate_tables_horizontally(tables, output_csv_file=None):
     >>>                     'B': ['B4', 'B5', 'B6', 'B7'],
     >>>                     'C': ['C4', 'C5', 'C6', 'C7']},
     >>>                     index=[0, 1, 2, 3])
-    >>> tables1 = [df1, df2]
-    >>> tables2 = [{'A':[1,2,3,4],'B':[5,6,7,8],'C':[9,10,11,12]}, {'A':[10,20,30,40],'B':[50,60,70,80],'C':[90,100,110,120]}]
-    >>> tables = [tables1, tables2]
+    >>> tables = [df1, df2]
     >>> output_csv_file = None #'./test.csv'
     >>> table_data, output_csv_file = concatenate_tables_horizontally(tables, output_csv_file)
     """
@@ -335,7 +331,7 @@ def concatenate_tables_horizontally(tables, output_csv_file=None):
             raise Exception("The tables have different numbers of rows!")
 
     # Horizontally concatenate tables:
-    table_data = pd.concat(tables, ignore_index=True, axis=0)
+    table_data = pd.concat(tables, axis=1)
 
     # Store as csv file:
     if output_csv_file:
