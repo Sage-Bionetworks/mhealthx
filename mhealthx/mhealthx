@@ -130,11 +130,10 @@ if not os.path.isdir(args.output):
 if not os.path.isdir(args.cache):
     print("Create missing cache directory: {0}".format(args.cache))
     os.makedirs(args.cache)
-# if synID_phonation:
-#     phonation_file_path = os.path.join(args.cache, main_workflow_name,
-#                                        'phonation_files')
-#     if not os.path.isdir(phonation_file_path):
-#         os.makedirs(phonation_file_path)
+feature_table_file_path = os.path.join(args.cache, main_workflow_name,
+                                       'feature_tables')
+if not os.path.isdir(feature_table_file_path):
+    os.makedirs(feature_table_file_path)
 
 # ============================================================================
 #
@@ -190,15 +189,15 @@ if synID_phonation:
                                            input_names=['old_file',
                                                         'new_filename',
                                                         'new_path',
-                                                        'suffix',
-                                                        'copy_file'],
+                                                        'file_append',
+                                                        'create_file'],
                                            output_names=['renamed_file']))
     Flow.add_nodes([RenamePhonation])
     Flow.connect(GetPhonation, 'filepath', RenamePhonation, 'old_file')
     RenamePhonation.inputs.new_filename = ''
     RenamePhonation.inputs.new_path = ''
-    RenamePhonation.inputs.suffix = '.m4a'
-    RenamePhonation.inputs.copy_file = True
+    RenamePhonation.inputs.file_append = '.m4a'
+    RenamePhonation.inputs.create_file = True
 
     # ------------------------------------------------------------------------
     # Convert voice files to .wav format:
@@ -208,6 +207,7 @@ if synID_phonation:
                                interface=Fn(function=convert_audio_file,
                                             input_names=['old_file',
                                                          'file_append',
+                                                         'new_file',
                                                          'command',
                                                          'input_args',
                                                          'output_args'],
@@ -216,8 +216,8 @@ if synID_phonation:
     Flow.connect(RenamePhonation, 'renamed_file',
                  ConvertPhonation, 'old_file')
     ConvertPhonation.inputs.file_append = '.wav'
-    ConvertPhonation.inputs.command = os.path.join(thirdparty,
-                                                   'ffmpeg', 'ffmpeg')
+    ConvertPhonation.inputs.new_file = ''
+    ConvertPhonation.inputs.command = 'ffmpeg'
     ConvertPhonation.inputs.input_args = '-i'
     ConvertPhonation.inputs.output_args = '-ac 2'
 
@@ -230,16 +230,16 @@ if synID_phonation:
                                             input_names=['old_file',
                                                          'new_filename',
                                                          'new_path',
-                                                         'suffix',
-                                                         'copy_file'],
+                                                         'file_append',
+                                                         'create_file'],
                                             output_names=['new_file_name']))
     Flow.add_nodes([RenamePhonation2])
     Flow.connect(ConvertPhonation, 'converted_file',
                  RenamePhonation2, 'old_file')
     RenamePhonation2.inputs.new_filename = ''
     RenamePhonation2.inputs.new_path = ''
-    RenamePhonation2.inputs.suffix = '.csv'
-    RenamePhonation2.inputs.copy_file = False
+    RenamePhonation2.inputs.file_append = '.csv'
+    RenamePhonation2.inputs.create_file = False
 
     # ------------------------------------------------------------------------
     # Process inputs to command:
@@ -260,13 +260,12 @@ if synID_phonation:
                                                    'arg1',
                                                    'argN']))
     Flow.add_nodes([OpenSMILE])
-    OpenSMILE.inputs.command = os.path.join(thirdparty, 'openSMILE',
-                                            'SMILExtract')
+    OpenSMILE.inputs.command = 'SMILExtract'
     OpenSMILE.inputs.flag1 = '-I'
     Flow.connect(ConvertPhonation, 'converted_file', OpenSMILE, 'arg1')
     OpenSMILE.inputs.flags = '-C'
-    OpenSMILE.inputs.args = os.path.join(thirdparty, 'openSMILE', 'config',
-                                                     'IS13_ComParE.conf')
+    OpenSMILE.inputs.args = os.path.join(thirdparty, 'openSMILE-2.1.0',
+                                         'config', 'IS13_ComParE.conf')
     OpenSMILE.inputs.flagN = '-O'
     Flow.connect(RenamePhonation2, 'new_file_name', OpenSMILE, 'argN')
     # Flow.connect(ConvertPhonation, ('converted_file', rename_file,
@@ -299,8 +298,9 @@ if synID_phonation:
                                                     'csv_file']))
     Flow.add_nodes([SaveOpenSMILE])
     Flow.connect(FormatOpenSMILE, 'csv_file', SaveOpenSMILE, 'tables')
-    SaveOpenSMILE.inputs.csv_file = 'openSMILE_IS13_ComParE_features.csv'
-    Flow.connect(SaveOpenSMILE, 'csv_file', Sink, 'phonation.@features')
+    SaveOpenSMILE.inputs.csv_file = os.path.join(feature_table_file_path,
+                            'phonation_features_openSMILE_IS13_ComParE.csv')
+    Flow.connect(SaveOpenSMILE, 'csv_file', Sink, 'feature_tables.@features')
 
 
 

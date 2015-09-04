@@ -85,9 +85,9 @@ def run_command(command, flag1='', arg1='', flags=[], args=[],
     return command_line, args, arg1, argN
 
 
-def rename_file(old_file, new_filename='', new_path='', suffix='',
-                copy_file=False):
-    """Rename (and optionally copy) a file / path / suffix.
+def rename_file(old_file, new_filename='', new_path='', file_append='',
+                create_file=False):
+    """Rename (and optionally copy) a file / path / file_append.
 
     Parameters
     ----------
@@ -97,9 +97,9 @@ def rename_file(old_file, new_filename='', new_path='', suffix='',
         new file name (not the full path)
     new_path : string
         replacement path
-    suffix : string
+    file_append : string
         append to file names
-    copy_file : Boolean
+    create_file : Boolean
         copy file (or just create a string)?
 
     Returns
@@ -110,12 +110,12 @@ def rename_file(old_file, new_filename='', new_path='', suffix='',
     Examples
     --------
     >>> from mhealthx.utils import rename_file
-    >>> old_file = '/home/arno/wav/test1.wav'
+    >>> old_file = '/homedir/wav/test1.wav'
     >>> new_filename = ''
-    >>> new_path = '/home/arno'
-    >>> suffix = '.csv'
-    >>> copy_file = False
-    >>> new_file_name = rename_file(old_file, new_filename, new_path, suffix, copy_file)
+    >>> new_path = '.'
+    >>> file_append = '.csv'
+    >>> create_file = True
+    >>> new_file_name = rename_file(old_file, new_filename, new_path, file_append, create_file)
     """
     import os
     from shutil import copyfile
@@ -130,10 +130,10 @@ def rename_file(old_file, new_filename='', new_path='', suffix='',
     else:
         new_file_name = os.path.join(old_path, base_file_name)
 
-    if suffix:
-        new_file_name = ''.join((new_file_name, suffix))
+    if file_append:
+        new_file_name = ''.join((new_file_name, file_append))
 
-    if copy_file:
+    if create_file:
         copyfile(old_file, new_file_name)
 
     return new_file_name

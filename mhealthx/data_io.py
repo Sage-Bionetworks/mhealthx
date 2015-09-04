@@ -12,17 +12,19 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
-def convert_audio_file(old_file, file_append, command='ffmpeg',
+def convert_audio_file(old_file, file_append, new_file='', command='ffmpeg',
                        input_args='-i', output_args='-ac 2'):
     """
     Convert audio file to new format.
 
     Parameters
     ----------
-    old_file : list of strings
-        full path to the input files
+    old_file : string
+        full path to the input file
     file_append : string
-        append to each file name to indicate output file format (e.g., '.wav')
+        append to file name to indicate output file format (e.g., '.wav')
+    new_file : string
+        full path to the output file (optional)
     command : string
         executable command without arguments
     input_args : string
@@ -37,19 +39,20 @@ def convert_audio_file(old_file, file_append, command='ffmpeg',
 
     Examples
     --------
-    >>> from mhealthx.unused import convert_audio_file
+    >>> from mhealthx.data_io import convert_audio_file
     >>> old_file = '/Users/arno/mhealthx_working/mHealthX/phonation_files/test.m4a'
     >>> file_append = '.wav'
-    >>> command = '/home/arno/software/audio/ffmpeg/ffmpeg'
+    >>> new_file = 'test.m4a'
+    >>> command = 'ffmpeg'
     >>> input_args = '-i'
     >>> output_args = '-ac 2'
-    >>> converted_file = convert_audio_file(old_file, file_append, command, input_args, output_args)
+    >>> converted_file = convert_audio_file(old_file, file_append, new_file, command, input_args, output_args)
 
     """
     import os
     from nipype.interfaces.base import CommandLine
 
-    if not os.path.exists(old_file):
+    if not os.path.isfile(old_file):
         raise(IOError(old_file + " not found"))
     else:
         # Don't convert file if file already has correct append:
@@ -57,8 +60,12 @@ def convert_audio_file(old_file, file_append, command='ffmpeg',
             converted_file = old_file
         # Convert file to new format:
         else:
-            output_file = old_file + file_append
-            if os.path.exists(output_file):
+            if new_file:
+                output_file = new_file + file_append
+            else:
+                output_file = old_file + file_append
+            # Don't convert file if output file already exists:
+            if os.path.isfile(output_file):
                 converted_file = output_file
             else:
                 # Nipype command line wrapper:
@@ -68,7 +75,7 @@ def convert_audio_file(old_file, file_append, command='ffmpeg',
                 cli.cmdline
                 cli.run()
 
-                if not os.path.exists(output_file):
+                if not os.path.isfile(output_file):
                     raise(IOError(output_file + " not found"))
                 else:
                     converted_file = output_file
@@ -130,7 +137,6 @@ def arff_to_csv(arff_file, csv_file):
     # Loop through lines of the arff file:
     cols = []
     first_numeric = False
-    last_numeric = False
     for iline, line in enumerate(lines):
         if '@data' in line:
             break
@@ -176,52 +182,57 @@ def arff_to_csv(arff_file, csv_file):
     return csv_file
 
 
-def tables_to_csv(tables, csv_file):
+def concatenate_tables_vertically(tables, output_csv_file=None):
     """
-    Concatenate multiple table files or pandas DataFrames
+    Vertically concatenate multiple table files or pandas DataFrames or dicts
     with the same column names and store as a csv table.
 
     Parameters
     ----------
-    tables : list of table files or list of pandas DataFrames
+    tables : list of table files or pandas DataFrames or dicts
         each table or dataframe has the same column names
-    csv_file : string
-        path of table file
+    output_csv_file : string or None
+        output table file (full path)
 
     Returns
     -------
     table_data : Pandas DataFrame
         output table data
-    csv_file : string
-        path of table file
+    output_csv_file : string or None
+        output table file (full path)
 
     Examples
     --------
     >>> import pandas as pd
-    >>> from mhealthx.data_io import tables_to_csv
+    >>> from mhealthx.data_io import concatenate_tables_vertically
     >>> df1 = pd.DataFrame({'A': ['A0', 'A1', 'A2', 'A3'],
     >>>                     'B': ['B0', 'B1', 'B2', 'B3'],
-    >>>                     'C': ['C0', 'C1', 'C2', 'C3'],
-    >>>                     'D': ['D0', 'D1', 'D2', 'D3']},
+    >>>                     'C': ['C0', 'C1', 'C2', 'C3']},
     >>>                    index=[0, 1, 2, 3])
     >>> df2 = pd.DataFrame({'A': ['A4', 'A5', 'A6', 'A7'],
     >>>                     'B': ['B4', 'B5', 'B6', 'B7'],
-    >>>                     'C': ['C4', 'C5', 'C6', 'C7'],
-    >>>                     'D': ['D4', 'D5', 'D6', 'D7']},
+    >>>                     'C': ['C4', 'C5', 'C6', 'C7']},
     >>>                     index=[0, 1, 2, 3])
     >>> tables = [df1, df2]
     >>> tables = ['/Users/arno/csv/table1.csv', '/Users/arno/csv/table2.csv']
-    >>> csv_file = './test.csv'
-    >>> table_data, csv_file = tables_to_csv(tables, csv_file)
+    >>> tables = [{'A':[1,2,3,4],'B':[5,6,7,8],'C':[9,10,11,12]}, {'A':[10,20,30,40],'B':[50,60,70,80],'C':[90,100,110,120]}]
+    >>> output_csv_file = None #'./test.csv'
+    >>> table_data, output_csv_file = concatenate_tables_vertically(tables, output_csv_file)
     """
     import os
     import pandas as pd
 
-    # Raise an error if tables are not pandas DataFrames:
-    if type(tables[0]) != str and type(tables[0]) != pd.DataFrame:
-        raise IOError("'tables' should contain strings or pandas DataFrames.")
+    # Raise an error if tables are not strings or pandas DataFrames or dicts:
+    type0 = type(tables[0])
+    if type0 not in [str, pd.DataFrame, dict]:
+        raise IOError("'tables' should contain strings or pandas DataFrames "
+                      "or dictionaries.")
 
-    if type(tables[0]) == str:
+    # pandas DataFrames:
+    if type(tables[0]) == pd.DataFrame:
+        pass
+    # file strings:
+    elif type(tables[0]) == str:
         tables_from_files = []
         for table in tables:
             if os.path.isfile(table):
@@ -229,40 +240,112 @@ def tables_to_csv(tables, csv_file):
             else:
                 raise IOError('{0} is not a file.'.format(table))
         tables = tables_from_files
+    # dicts:
+    elif type(tables[0]) == dict:
+        tables_from_dicts = []
+        for table in tables:
+            if type(table) == dict:
+                tables_from_dicts.append(pd.DataFrame.from_dict(table))
+            else:
+                raise IOError("'table' doesn't contain all dictionaries.")
+        tables = tables_from_dicts
 
-    # Concatenate tables, increasing the number of rows:
+    # Vertically concatenate tables:
     table_data = pd.concat(tables, ignore_index=True)
 
     # Store as csv file:
-    table_data.to_csv(csv_file, index=False)
+    if output_csv_file:
+        table_data.to_csv(output_csv_file, index=False)
 
-    return table_data, csv_file
+    return table_data, output_csv_file
 
 
-# ============================================================================
-# Run above functions to convert all voice files to wav and upload to Synapse:
+def concatenate_tables_horizontally(tables, output_csv_file=None):
+    """
+    Horizontally concatenate multiple table files or pandas DataFrames or
+    dictionaries that have the same number of rows and store as a csv table.
+
+    If any one of the members of the tables list is itself a list,
+    call concatenate_tables_vertically() on this list.
+
+    Parameters
+    ----------
+    tables : list of strings, pandas DataFrames, and/or lists of dicts
+        each component table has the same number of rows
+    output_csv_file : string or None
+        output table file (full path)
+
+    Returns
+    -------
+    table_data : Pandas DataFrame
+        output table data
+    output_csv_file : string or None
+        output table file (full path)
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from mhealthx.data_io import concatenate_tables_horizontally
+    >>> df1 = pd.DataFrame({'A': ['A0', 'A1', 'A2', 'A3'],
+    >>>                     'B': ['B0', 'B1', 'B2', 'B3'],
+    >>>                     'C': ['C0', 'C1', 'C2', 'C3']},
+    >>>                    index=[0, 1, 2, 3])
+    >>> df2 = pd.DataFrame({'A': ['A4', 'A5', 'A6', 'A7'],
+    >>>                     'B': ['B4', 'B5', 'B6', 'B7'],
+    >>>                     'C': ['C4', 'C5', 'C6', 'C7']},
+    >>>                     index=[0, 1, 2, 3])
+    >>> tables1 = [df1, df2]
+    >>> tables2 = [{'A':[1,2,3,4],'B':[5,6,7,8],'C':[9,10,11,12]}, {'A':[10,20,30,40],'B':[50,60,70,80],'C':[90,100,110,120]}]
+    >>> tables = [tables1, tables2]
+    >>> output_csv_file = None #'./test.csv'
+    >>> table_data, output_csv_file = concatenate_tables_horizontally(tables, output_csv_file)
+    """
+    import os
+    import pandas as pd
+
+    from mhealthx.data_io import concatenate_tables_vertically as cat_vert
+
+    # Create a list of pandas DataFrames:
+    tables_to_combine = []
+    for table in tables:
+        # pandas DataFrame:
+        if type(table) == pd.DataFrame:
+            tables_to_combine.append(table)
+        # file string:
+        elif type(table) == str:
+            if os.path.isfile(table):
+                table_from_file = pd.DataFrame.from_csv(table)
+                tables_to_combine.append(table_from_file)
+            else:
+                raise IOError('{0} is not a file.'.format(table))
+        # list of tables to be vertically concatenated:
+        elif type(table) == list:
+            out_file = None
+            subtable, out_file = cat_vert(table, out_file)
+            tables_to_combine.append(subtable)
+        else:
+            raise IOError("'tables' members are not the right types.")
+    tables = tables_to_combine
+
+    # Raise an error if tables are not pandas DataFrames of the same height:
+    table0 = tables[0]
+    nrows = table0.shape[0]
+    for table in tables:
+        if table.shape[0] != nrows:
+            raise Exception("The tables have different numbers of rows!")
+
+    # Horizontally concatenate tables:
+    table_data = pd.concat(tables, ignore_index=True, axis=0)
+
+    # Store as csv file:
+    if output_csv_file:
+        table_data.to_csv(output_csv_file, index=False)
+
+    return table_data, output_csv_file
+
+
+
 # ============================================================================
 if __name__ == '__main__':
 
     pass
-    # # Setup:
-    # synapse_table_id = 'syn4590865'
-    # target_synapse_project_id = 'syn4899451'
-    # username = ''
-    # password = ''
-    # column_name = 'audio_audio.wav'
-    # download_limit = 3 # Test with first 3 rows or None for all rows
-    # out_path = '.'
-    # ffmpeg = '/home/arno/software/audio/ffmpeg/ffmpeg'
-    # table_name = 'mPower phonation wav files and file handle IDs'
-    # #table_name = 'mPower countdown wav files and file handle IDs'
-    #
-    # # Download files:
-    # table_data, files = read_synapse_table_files(synapse_table_id,
-    #                                              column_name, download_limit,
-    #                                              out_path,
-    #                                              username, password)
-    #
-    # # Upload wav files and file handle IDs:
-    # files_to_synapse_table(files, target_synapse_project_id,
-    #                                 table_name, username, password)
