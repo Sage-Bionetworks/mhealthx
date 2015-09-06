@@ -50,35 +50,50 @@ def extract_rows(synapse_table, limit=None, username='', password=''):
     import pandas as pd
     import synapseclient
 
-    syn = synapseclient.Synapse()
-
-    # Log in to Synapse:
-    if username and password:
-        syn.login(username, password)
+    if not synapse_table:
+        row_maps = None
+        row_dataframes = None
+        data_table = None
     else:
-        syn.login()
+        try:
+            # Log in to Synapse:
+            syn = synapseclient.Synapse()
+            if username and password:
+                syn.login(username, password)
+            else:
+                syn.login()
 
-    if limit:
-        results = syn.tableQuery('select * from {0} limit {1}'.
-                                 format(synapse_table, limit))
-    else:
-        results = syn.tableQuery('select * from {0}'.
-                                 format(synapse_table))
+            if limit:
+                results = syn.tableQuery('select * from {0} limit {1}'.
+                                         format(synapse_table, limit))
+            else:
+                results = syn.tableQuery('select * from {0}'.
+                                         format(synapse_table))
 
-    headers = {header['name']:i for i,header in enumerate(results.headers)}
+            headers = {header['name']:i for i, header
+                       in enumerate(results.headers)}
 
-    row_maps = []
-    for row in results:
-        row_maps.append({col:row[i] for col,i in headers.iteritems()})
+            row_maps = []
+            for row in results:
+                row_maps.append({col:row[i] for col,i in headers.iteritems()})
 
-    row_dataframes = []
-    for row in row_maps:
-        columns = row.keys()
-        values = [unicode(x) for x in row.values()]
-        df = pd.DataFrame(values, columns)
-        row_dataframes.append(df.transpose())
+            row_dataframes = []
+            for row in row_maps:
+                columns = row.keys()
+                values = [unicode(x) for x in row.values()]
+                df = pd.DataFrame(values, columns)
+                row_dataframes.append(df.transpose())
 
-    data_table = pd.concat(row_dataframes, ignore_index=True)
+            if row_dataframes:
+                data_table = pd.concat(row_dataframes, ignore_index=True)
+            else:
+                row_maps = None
+                row_dataframes = None
+                data_table = None
+        except:
+            row_maps = None
+            row_dataframes = None
+            data_table = None
 
     return row_maps, row_dataframes, data_table
 
@@ -94,7 +109,7 @@ def read_files_from_row(synapse_table, row_dataframe, column_name,
         a synapse ID or synapse table Schema object
     row_dataframe : pandas DataFrame
         row of a Synapse table converted to a dataframe
-    column_name : strings
+    column_name : string
         name of file handle column
     out_path : string
         a local path in which to store downloaded files. If None, stores them in (~/.synapseCache)
@@ -130,25 +145,39 @@ def read_files_from_row(synapse_table, row_dataframe, column_name,
     """
     import synapseclient
 
-    syn = synapseclient.Synapse()
-
-    # Log in to Synapse:
-    if username and password:
-        syn.login(username, password)
+    if synapse_table is None or row_dataframe is None or row_dataframe.empty:
+        row_dataframe = None
+        filepath_map = None
+        filepath = None
     else:
-        syn.login()
+        # Log in to Synapse:
+        syn = synapseclient.Synapse()
+        if username and password:
+            syn.login(username, password)
+        else:
+            syn.login()
 
-    filepath_map = {}
-    fileinfo = syn.downloadTableFile(synapse_table,
+        try:
+            filepath_map = {}
+            fileinfo = syn.downloadTableFile(synapse_table,
                                 rowId=row_dataframe['ROW_ID'][0],
                                 versionNumber=row_dataframe['ROW_VERSION'][0],
                                 column=column_name,
                                 downloadLocation=out_path)
-    filepath_map[row_dataframe[column_name][0]] = fileinfo['path']
-
-    filepath = fileinfo['path']
+            filepath_map[row_dataframe[column_name][0]] = fileinfo['path']
+            filepath = fileinfo['path']
+        except:
+            row_dataframe = None
+            filepath_map = None
+            filepath = None
 
     return row_dataframe, filepath_map, filepath
+
+
+
+
+
+
 
 
 def copy_synapse_table(synapse_table_id, synapse_project_id, table_name='',

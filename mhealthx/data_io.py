@@ -40,7 +40,7 @@ def convert_audio_file(old_file, file_append, new_file='', command='ffmpeg',
     Examples
     --------
     >>> from mhealthx.data_io import convert_audio_file
-    >>> old_file = '/Users/arno/mhealthx_working/mHealthX/phonation_files/test.m4a'
+    >>> old_file = '/Users/arno/mhealthx_cache/mhealthx/feature_files/test.m4a'
     >>> file_append = '.wav'
     >>> new_file = 'test.m4a'
     >>> command = 'ffmpeg'
@@ -52,33 +52,34 @@ def convert_audio_file(old_file, file_append, new_file='', command='ffmpeg',
     import os
     from nipype.interfaces.base import CommandLine
 
-    if not os.path.isfile(old_file):
-        raise(IOError(old_file + " not found"))
+    if old_file is None:
+        converted_file = None
     else:
-        # Don't convert file if file already has correct append:
-        if old_file.endswith(file_append):
-            converted_file = old_file
-        # Convert file to new format:
+        if not os.path.isfile(old_file):
+            converted_file = None
         else:
-            if new_file:
-                output_file = new_file + file_append
-            else:
-                output_file = old_file + file_append
-            # Don't convert file if output file already exists:
-            if os.path.isfile(output_file):
-                converted_file = output_file
-            else:
+            try:
+                ## Don't convert file if file already has correct append:
+                #if old_file.endswith(file_append): converted_file=old_file
+
+                # Convert file to new format:
+                if new_file:
+                    output_file = new_file + file_append
+                else:
+                    output_file = old_file + file_append
+
+                # Don't convert file if output file already exists:
+                #if os.path.isfile(output_file): converted_file=output_file
+
                 # Nipype command line wrapper:
                 cli = CommandLine(command = command)
                 cli.inputs.args = ' '.join([input_args, old_file,
                                             output_args, output_file])
                 cli.cmdline
                 cli.run()
-
-                if not os.path.isfile(output_file):
-                    raise(IOError(output_file + " not found"))
-                else:
-                    converted_file = output_file
+                converted_file = output_file
+            except:
+                converted_file = None
 
     return converted_file
 
@@ -120,64 +121,66 @@ def arff_to_csv(arff_file, csv_file):
     """
     import os
 
-    # String not included as a header:
-    exception_string = 'class'
-    # Remove items from the left and right in the '@data' row:
-    data_from_left = 1
-    data_from_right = 1
+    if arff_file is None:
+        csv_file = None
+    else:
+        try:
+            # String not included as a header:
+            exception_string = 'class'
+            # Remove items from the left and right in the '@data' row:
+            data_from_left = 1
+            data_from_right = 1
 
-    # Check to make sure arff_file exists:
-    if type(arff_file) != str or not os.path.isfile(arff_file):
-        raise IOError("The arff file {0} does not exist.".format(arff_file))
+            # Open arff_file:
+            with open(arff_file, 'r') as fid:
+                lines = fid.readlines()
 
-    # Open arff_file:
-    with open(arff_file, 'r') as fid:
-        lines = fid.readlines()
-
-    # Loop through lines of the arff file:
-    cols = []
-    first_numeric = False
-    for iline, line in enumerate(lines):
-        if '@data' in line:
-            break
-        else:
-
-            # If line starts with '@attribute ' and contains 'numeric',
-            # append intervening string as a column name, and
-            # store index as first line of column names:
-            if line.startswith('@attribute ') and 'numeric' in line:
-                if '{' in line:
-                    interstring = line[11:line.index('{') - 1]
+            # Loop through lines of the arff file:
+            cols = []
+            first_numeric = False
+            for iline, line in enumerate(lines):
+                if '@data' in line:
+                    break
                 else:
-                    interstring = line[11:line.index('numeric') - 1]
 
-                # If intervening string between '@attribute ' and 'numeric'
-                # is not the exception_string, include as a column header:
-                if interstring != exception_string:
-                    cols.append(interstring)
-                    if not first_numeric:
-                        first_numeric = True
+                    # If line starts with '@attribute' and contains 'numeric',
+                    # append intervening string as a column name,
+                    # and store index as first line of column names:
+                    if line.startswith('@attribute ') and 'numeric' in line:
+                        if '{' in line:
+                            interstring = line[11:line.index('{') - 1]
+                        else:
+                            interstring = line[11:line.index('numeric') - 1]
 
-            # Else break if past first line with '@attribute ' and 'numeric':
-            elif first_numeric:
-                break
+                        # If intervening string between '@attribute ' and 'numeric'
+                        # is not the exception_string, include as a column header:
+                        if interstring != exception_string:
+                            cols.append(interstring)
+                            if not first_numeric:
+                                first_numeric = True
 
-    # Remove left and right (first and last) data items:
-    data = lines[len(lines)-1].split(',')
-    data = data[data_from_left:-data_from_right]
+                    # Else break if past first line with '@attribute ' and 'numeric':
+                    elif first_numeric:
+                        break
 
-    if len(data) != len(cols):
-        raise Exception('The arff file does not conform to expected format.')
+            # Remove left and right (first and last) data items:
+            data = lines[len(lines)-1].split(',')
+            data = data[data_from_left:-data_from_right]
 
-    # Write csv file:
-    headers = ",".join(cols)
-    data_string = ', '.join(data) + '\n'
-    if not csv_file:
-        csv_file = arff_file + '.csv'
-    with open(csv_file, 'w') as fout:
-        fout.write(headers)
-        fout.write('\n')
-        fout.writelines(data_string)
+            if len(data) != len(cols):
+                raise Warning("arff file doesn't conform to expected format.")
+
+            # Write csv file:
+            headers = ",".join(cols)
+            data_string = ', '.join(data) + '\n'
+            if not csv_file:
+                csv_file = arff_file + '.csv'
+            with open(csv_file, 'w') as fout:
+                fout.write(headers)
+                fout.write('\n')
+                fout.writelines(data_string)
+        except:
+            csv_file = None
 
     return csv_file
 
@@ -221,39 +224,36 @@ def concatenate_tables_vertically(tables, output_csv_file=None):
     import os
     import pandas as pd
 
-    # Raise an error if tables are not strings or pandas DataFrames or dicts:
-    type0 = type(tables[0])
-    if type0 not in [str, pd.DataFrame]:
-        raise IOError("'tables' should contain strings or pandas DataFrames.")
-
-    # pandas DataFrames:
-    if type(tables[0]) == pd.DataFrame:
-        pass
-    # file strings:
-    elif type(tables[0]) == str:
-        tables_from_files = []
-        for table in tables:
-            if os.path.isfile(table):
-                tables_from_files.append(pd.read_csv(table))
+    if not tables:
+        table_data = None
+        output_csv_file = None
+    else:
+        try:
+            # pandas DataFrames:
+            if type(tables[0]) == pd.DataFrame:
+                pass
+            # file strings:
+            elif type(tables[0]) == str:
+                tables_from_files = []
+                for table in tables:
+                    if os.path.isfile(table):
+                        tables_from_files.append(pd.read_csv(table))
+                    else:
+                        raise Warning('{0} is not a file.'.format(table))
+                tables = tables_from_files
             else:
-                raise IOError('{0} is not a file.'.format(table))
-        tables = tables_from_files
-    # dicts:
-    # elif type(tables[0]) == dict:
-    #     tables_from_dicts = []
-    #     for table in tables:
-    #         if type(table) == dict:
-    #             tables_from_dicts.append(pd.DataFrame(table)) #, index=[0]))
-    #         else:
-    #             raise IOError("'table' doesn't contain all dictionaries.")
-    #     tables = tables_from_dicts
+                raise Warning("'tables' should contain strings or "
+                              "pandas DataFrames.")
 
-    # Vertically concatenate tables:
-    table_data = pd.concat(tables, ignore_index=True)
+            # Vertically concatenate tables:
+            table_data = pd.concat(tables, ignore_index=True)
 
-    # Store as csv file:
-    if output_csv_file:
-        table_data.to_csv(output_csv_file, index=False)
+            # Store as csv file:
+            if output_csv_file:
+                table_data.to_csv(output_csv_file, index=False)
+        except:
+            table_data = None
+            output_csv_file = None
 
     return table_data, output_csv_file
 
@@ -301,44 +301,111 @@ def concatenate_tables_horizontally(tables, output_csv_file=None):
 
     from mhealthx.data_io import concatenate_tables_vertically as cat_vert
 
-    # Create a list of pandas DataFrames:
-    tables_to_combine = []
-    for table in tables:
-        # pandas DataFrame:
-        if type(table) == pd.DataFrame:
-            tables_to_combine.append(table)
-        # file string:
-        elif type(table) == str:
-            if os.path.isfile(table):
-                table_from_file = pd.DataFrame.from_csv(table)
-                tables_to_combine.append(table_from_file)
-            else:
-                raise IOError('{0} is not a file.'.format(table))
-        # list of tables to be vertically concatenated:
-        elif type(table) == list:
-            out_file = None
-            subtable, out_file = cat_vert(table, out_file)
-            tables_to_combine.append(subtable)
-        else:
-            raise IOError("'tables' members are not the right types.")
-    tables = tables_to_combine
+    if tables is None:
+        table_data = None
+        output_csv_file = None
+    else:
+#        try:
+            # Create a list of pandas DataFrames:
+            tables_to_combine = []
+            for table in tables:
+                # pandas DataFrame:
+                if type(table) == pd.DataFrame:
+                    tables_to_combine.append(table)
+                # file string:
+                elif type(table) == str:
+                    if os.path.isfile(table):
+                        table_from_file = pd.DataFrame.from_csv(table)
+                        tables_to_combine.append(table_from_file)
+                    else:
+                        raise Warning('{0} is not a file.'.format(table))
+                # list of tables to be vertically concatenated:
+                elif type(table) == list:
+                    out_file = None
+                    subtable, out_file = cat_vert(table, out_file)
+                    tables_to_combine.append(subtable)
+                else:
+                    raise Warning("'tables' members are not the right types.")
+            tables = tables_to_combine
 
-    # Raise an error if tables are not pandas DataFrames of the same height:
-    table0 = tables[0]
-    nrows = table0.shape[0]
-    for table in tables:
-        if table.shape[0] != nrows:
-            raise Exception("The tables have different numbers of rows!")
+            # Raise an error if tables are not equal height pandas DataFrames:
+            table0 = tables[0]
+            nrows = table0.shape[0]
+            for table in tables:
+                if table.shape[0] != nrows:
+                    raise Warning("The tables have different numbers"
+                                  " of rows!")
 
-    # Horizontally concatenate tables:
-    table_data = pd.concat(tables, axis=1)
+            # Horizontally concatenate tables:
+            table_data = pd.concat(tables, axis=1)
 
-    # Store as csv file:
-    if output_csv_file:
-        table_data.to_csv(output_csv_file, index=False)
+            # Store as csv file:
+            if output_csv_file:
+                table_data.to_csv(output_csv_file, index=False)
+#        except:
+#            table_data = None
+#            output_csv_file = None
 
     return table_data, output_csv_file
 
+
+def Nones_to_empty_csvs_in_list(csv_files):
+    """
+    Create an empty csv file of equal size as other inputs.
+
+    Parameters
+    ----------
+    csv_files : list of strings
+        each file should have the same number of rows, except for 'None'
+
+    Returns
+    -------
+    output_csv_files : list of strings or None
+        same as csv_files, except that Nones are replaced by empty csv files
+
+    Examples
+    --------
+    >>> from mhealthx.data_io import Nones_to_empty_csvs_in_list
+    >>> csv_files = ['/Users/arno/mhealthx_cache/mhealthx/retrieve_phonation_file/mapflow/_retrieve_phonation_file1/audio_audio.m4a-10349c95-7326-42de-a57f-08d228398d9d2367289341070419184.tmp.m4a.wav.csv.csv', '/Users/arno/mhealthx_cache/mhealthx/retrieve_phonation_file/mapflow/_retrieve_phonation_file1/audio_audio.m4a-10349c95-7326-42de-a57f-08d228398d9d2367289341070419184.tmp.m4a.wav.csv.csv']
+    >>> output_csv_files = Nones_to_empty_csvs_in_list(csv_files)
+
+    """
+    import numpy as np
+    import pandas as pd
+
+    if csv_files is None:
+        output_csv_files = None
+    else:
+        try:
+            # Select an example csv file:
+            example_csv = None
+            for input in csv_files:
+                if input is not None:
+                    example_csv = input
+                break
+
+            # Create an empty csv file with the same dimensions and columns:
+            if example_csv:
+                df = pd.read_csv(example_csv)
+                nan_row = np.empty(df.shape)
+                nan_row.fill('nan')
+                dfnew = pd.DataFrame(nan_row, columns=df.columns)
+                empty_csv_file = 'empty_table.csv'
+                dfnew.to_csv(empty_csv_file)
+
+                # Loop through csv files, replacing None with the empty table:
+                output_csv_files = []
+                for csv in csv_files:
+                    if csv is None:
+                        output_csv_files.append(empty_csv_file)
+                    else:
+                        output_csv_files.append(csv)
+            else:
+                output_csv_files = None
+        except:
+            output_csv_files = None
+
+        return output_csv_files
 
 
 # ============================================================================
