@@ -302,10 +302,13 @@ if synID_phonation:
     # ------------------------------------------------------------------------
     CombineOpenSMILE = Node(name='combine_openSMILE_outputs',
                             interface=Fn(function=Nones_to_empty_csvs_in_list,
-                                         input_names=['csv_files'],
+                                         input_names=['csv_files',
+                                                      'empty_csv_file'],
                                          output_names=['output_csv_files']))
     Flow.add_nodes([CombineOpenSMILE])
     Flow.connect(FormatOpenSMILE, 'csv_file', CombineOpenSMILE, 'csv_files')
+    CombineOpenSMILE.inputs.empty_csv_file = os.path.join(
+        feature_table_file_path, 'empty_table.csv')
 
     # ------------------------------------------------------------------------
     # Combine metadata list and openSMILE list into one list:

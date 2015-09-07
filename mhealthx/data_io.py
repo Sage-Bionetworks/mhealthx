@@ -305,7 +305,7 @@ def concatenate_tables_horizontally(tables, output_csv_file=None):
         table_data = None
         output_csv_file = None
     else:
-#        try:
+        try:
             # Create a list of pandas DataFrames:
             tables_to_combine = []
             for table in tables:
@@ -332,7 +332,7 @@ def concatenate_tables_horizontally(tables, output_csv_file=None):
             table0 = tables[0]
             nrows = table0.shape[0]
             for table in tables:
-                if table.shape[0] != nrows:
+                if not table or table.shape[0] != nrows:
                     raise Warning("The tables have different numbers"
                                   " of rows!")
 
@@ -342,14 +342,14 @@ def concatenate_tables_horizontally(tables, output_csv_file=None):
             # Store as csv file:
             if output_csv_file:
                 table_data.to_csv(output_csv_file, index=False)
-#        except:
-#            table_data = None
-#            output_csv_file = None
+        except:
+            table_data = None
+            output_csv_file = None
 
     return table_data, output_csv_file
 
 
-def Nones_to_empty_csvs_in_list(csv_files):
+def Nones_to_empty_csvs_in_list(csv_files, empty_csv_file=None):
     """
     Create an empty csv file of equal size as other inputs.
 
@@ -357,6 +357,8 @@ def Nones_to_empty_csvs_in_list(csv_files):
     ----------
     csv_files : list of strings
         each file should have the same number of rows, except for 'None'
+    empty_csv_file : string
+        name of empty csv file to create with the same shape as the others
 
     Returns
     -------
@@ -367,6 +369,7 @@ def Nones_to_empty_csvs_in_list(csv_files):
     --------
     >>> from mhealthx.data_io import Nones_to_empty_csvs_in_list
     >>> csv_files = ['/Users/arno/mhealthx_cache/mhealthx/retrieve_phonation_file/mapflow/_retrieve_phonation_file1/audio_audio.m4a-10349c95-7326-42de-a57f-08d228398d9d2367289341070419184.tmp.m4a.wav.csv.csv', '/Users/arno/mhealthx_cache/mhealthx/retrieve_phonation_file/mapflow/_retrieve_phonation_file1/audio_audio.m4a-10349c95-7326-42de-a57f-08d228398d9d2367289341070419184.tmp.m4a.wav.csv.csv']
+    >>> empty_csv_file = 'empty_table.csv'
     >>> output_csv_files = Nones_to_empty_csvs_in_list(csv_files)
 
     """
@@ -390,7 +393,8 @@ def Nones_to_empty_csvs_in_list(csv_files):
                 nan_row = np.empty(df.shape)
                 nan_row.fill('nan')
                 dfnew = pd.DataFrame(nan_row, columns=df.columns)
-                empty_csv_file = 'empty_table.csv'
+                if not empty_csv_file:
+                    empty_csv_file = 'empty_table.csv'
                 dfnew.to_csv(empty_csv_file)
 
                 # Loop through csv files, replacing None with the empty table:
