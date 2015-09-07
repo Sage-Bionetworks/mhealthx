@@ -332,7 +332,7 @@ def concatenate_tables_horizontally(tables, output_csv_file=None):
             table0 = tables[0]
             nrows = table0.shape[0]
             for table in tables:
-                if not table or table.shape[0] != nrows:
+                if table is None or table.shape[0] != nrows:
                     raise Warning("The tables have different numbers"
                                   " of rows!")
 
