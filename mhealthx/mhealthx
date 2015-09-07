@@ -313,11 +313,11 @@ if synID_phonation:
     # ------------------------------------------------------------------------
     # Combine metadata list and openSMILE list into one list:
     # ------------------------------------------------------------------------
-    def merge_func(in1, in2):
+    def merge_list_func(in1, in2):
         output = [in1, in2]
         return output
-    MergePhonation = Node(name='merge_metadata_and_openSMILE',
-                          interface=Fn(function=merge_func,
+    MergePhonation = Node(name='list_metadata_and_openSMILE',
+                          interface=Fn(function=merge_list_func,
                                        input_names=['in1', 'in2'],
                                        output_names=['output']))
     Flow.add_nodes([MergePhonation])
