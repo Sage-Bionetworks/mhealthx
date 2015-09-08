@@ -135,7 +135,8 @@ if not os.path.isdir(args.output):
 if not os.path.isdir(args.cache):
     print("Create missing cache directory: {0}".format(args.cache))
     os.makedirs(args.cache)
-row_path = os.path.join(args.cache, 'mhealthxprep', 'row_files')
+row_path1 = os.path.join(args.cache, 'mhealthxprep', 'row_files')
+row_path2 = os.path.join(args.cache, 'mhealthx', 'rows')
 feature_table_file_path = os.path.join(args.cache, main_workflow_name,
                                        'feature_tables')
 if not os.path.isdir(feature_table_file_path):
@@ -164,12 +165,12 @@ if synID_phonation:
                                                    'filepath']))
     Flow.add_nodes([GetPhonation])
     GetPhonation.inputs.synapse_table = synID_phonation
-    row_files = [os.path.join(row_path, f)
-                 for f in os.listdir(row_path)
-                 if os.path.isfile(os.path.join(row_path,f))]
+    row_files = [os.path.join(row_path1, f)
+                 for f in os.listdir(row_path1)
+                 if os.path.isfile(os.path.join(row_path1,f))]
     GetPhonation.iterables = ("row", row_files)
     GetPhonation.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
-    GetPhonation.inputs.out_path = '.' #row_path #phonation_file_path
+    GetPhonation.inputs.out_path = row_path2
     GetPhonation.inputs.username = ''
     GetPhonation.inputs.password = ''
 
