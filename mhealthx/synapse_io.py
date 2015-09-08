@@ -10,7 +10,8 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
-def extract_rows(synapse_table, limit=None, username='', password=''):
+def extract_rows(synapse_table, save_path=None, limit=None,
+                 username='', password=''):
     """
     Extract rows from a Synapse table.
 
@@ -18,6 +19,8 @@ def extract_rows(synapse_table, limit=None, username='', password=''):
     ----------
     synapse_table : string or Schema
         a synapse ID or synapse table Schema object
+    save_path : string
+        save rows as separate files in this path, unless empty or None
     limit : integer or None
         limit to number of rows returned by the query
     username : string
@@ -27,12 +30,10 @@ def extract_rows(synapse_table, limit=None, username='', password=''):
 
     Returns
     -------
-    row_maps : list of dicts
-        Synapse table rows, each converted to a map with column names as keys
     row_dataframes : list of pandas DataFrames
         each row of a Synapse table converted to a dataframe
-    data_table: pandas DataFrame
-        concatenated form of row_dataframes
+    row_files: list of strings
+        file names corresponding to each of the row_dataframes
 
     Examples
     --------
@@ -41,19 +42,20 @@ def extract_rows(synapse_table, limit=None, username='', password=''):
     >>> syn = synapseclient.Synapse()
     >>> syn.login()
     >>> synapse_table = 'syn4590865'
+    >>> save_path = '.'
     >>> limit = 3
     >>> username = ''
     >>> password = ''
-    >>> row_maps, row_dataframes, data_table = extract_rows(synapse_table, limit, username='', password='')
+    >>> row_dataframes, row_files = extract_rows(synapse_table, save_path, limit, username='', password='')
 
     """
+    import os
     import pandas as pd
     import synapseclient
 
     if not synapse_table:
-        row_maps = None
         row_dataframes = None
-        data_table = None
+        row_files = None
     else:
         try:
             # Log in to Synapse:
@@ -73,32 +75,28 @@ def extract_rows(synapse_table, limit=None, username='', password=''):
             headers = {header['name']:i for i, header
                        in enumerate(results.headers)}
 
-            row_maps = []
-            for row in results:
-                row_maps.append({col:row[i] for col,i in headers.iteritems()})
-
             row_dataframes = []
-            for row in row_maps:
-                columns = row.keys()
-                values = [unicode(x) for x in row.values()]
+            row_files = []
+            for irow, row in enumerate(results):
+                row_map = {col:row[i] for col,i in headers.iteritems()}
+                columns = row_map.keys()
+                values = [unicode(x) for x in row_map.values()]
                 df = pd.DataFrame(values, columns)
-                row_dataframes.append(df.transpose())
-
-            if row_dataframes:
-                data_table = pd.concat(row_dataframes, ignore_index=True)
-            else:
-                row_maps = None
-                row_dataframes = None
-                data_table = None
+                row_dataframe = df.transpose()
+                row_dataframes.append(row_dataframe)
+                if save_path:
+                    csv_file = "row{0}.csv".format(irow)
+                    csv_file = os.path.join(save_path, csv_file)
+                    row_dataframe.to_csv(csv_file)
+                    row_files.append(csv_file)
         except:
-            row_maps = None
             row_dataframes = None
-            data_table = None
+            row_files = None
 
-    return row_maps, row_dataframes, data_table
+    return row_dataframes, row_files
 
 
-def read_files_from_row(synapse_table, row_dataframe, column_name,
+def read_files_from_row(synapse_table, row, column_name,
                         out_path='.', username='', password=''):
     """
     Read data from a row of a Synapse table.
@@ -107,8 +105,8 @@ def read_files_from_row(synapse_table, row_dataframe, column_name,
     ----------
     synapse_table : string or Schema
         a synapse ID or synapse table Schema object
-    row_dataframe : pandas DataFrame
-        row of a Synapse table converted to a dataframe
+    row : pandas DataFrame or string
+        row of a Synapse table converted to a dataframe or csv file
     column_name : string
         name of file handle column
     out_path : string
@@ -116,10 +114,8 @@ def read_files_from_row(synapse_table, row_dataframe, column_name,
 
     Returns
     -------
-    row_dataframe : pandas DataFrame
-        same as passed in: row of a Synapse table converted to a dataframe
-    filepath_map : dict
-        a map from file handle ID to a path on the local file system to the downloaded file
+    row : pandas DataFrame
+        same as passed in: row of a Synapse table as a file or dataframe
     filepath : string
         downloaded file (full path)
 
@@ -130,24 +126,23 @@ def read_files_from_row(synapse_table, row_dataframe, column_name,
     >>> syn = synapseclient.Synapse()
     >>> syn.login()
     >>> synapse_table = 'syn4590865'
+    >>> save_path = '.'
     >>> limit = 3
     >>> username = ''
     >>> password = ''
-    >>> row_maps, row_dataframes, data_table = extract_rows(synapse_table, limit, username='', password='')
+    >>> row_dataframes, row_files = extract_rows(synapse_table, save_path, limit, username='', password='')
     >>> column_name = 'audio_audio.m4a' #, 'audio_countdown.m4a']
     >>> out_path = '.'
     >>> for i in range(3):
-    >>>     row_dataframe = row_dataframes[i]
-    >>>     row_dataframe, filepath_map, filepath = read_files_from_row(synapse_table, row_dataframe, column_name, out_path, username, password)
-    >>>     print(row_dataframe)
-    >>>     print(filepath_map)
+    >>>     row = row_dataframes[i]
+    >>>     row, filepath = read_files_from_row(synapse_table, row, column_name, out_path, username, password)
+    >>>     print(row)
 
     """
     import synapseclient
 
-    if synapse_table is None or row_dataframe is None or row_dataframe.empty:
-        row_dataframe = None
-        filepath_map = None
+    if synapse_table is None or row is None or row.empty:
+        row = None
         filepath = None
     else:
         # Log in to Synapse:
@@ -158,20 +153,17 @@ def read_files_from_row(synapse_table, row_dataframe, column_name,
             syn.login()
 
         try:
-            filepath_map = {}
             fileinfo = syn.downloadTableFile(synapse_table,
-                                rowId=row_dataframe['ROW_ID'][0],
-                                versionNumber=row_dataframe['ROW_VERSION'][0],
+                                rowId=row['ROW_ID'][0],
+                                versionNumber=row['ROW_VERSION'][0],
                                 column=column_name,
                                 downloadLocation=out_path)
-            filepath_map[row_dataframe[column_name][0]] = fileinfo['path']
             filepath = fileinfo['path']
         except:
-            row_dataframe = None
-            filepath_map = None
+            row = None
             filepath = None
 
-    return row_dataframe, filepath_map, filepath
+    return row, filepath
 
 
 
