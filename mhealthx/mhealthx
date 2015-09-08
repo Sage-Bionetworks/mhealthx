@@ -273,8 +273,6 @@ if synID_phonation:
     Flow.connect(OpenSMILE, 'argN', FormatOpenSMILE, 'arff_file')
     Flow.connect(OpenSMILE, ('argN', rename_file, '', '', '.csv', True),
                  FormatOpenSMILE, 'csv_file')
-    Flow.connect(FormatOpenSMILE, ('csv_file', rename_file,
-                                   Sink, 'feature_tables.@openSMILE')
 
     # ------------------------------------------------------------------------
     # Create a list of formatted openSMILE output files:
