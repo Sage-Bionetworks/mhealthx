@@ -428,8 +428,8 @@ if __name__ == '__main__':
     # Workflow configuration: provenance tracking, content hashing, etc.:
     # ------------------------------------------------------------------------
     # config.enable_provenance()
-    Flow.config['execution']['hash_method'] = 'content'
-    # Flow.config['execution']['use_relative_paths'] = True
+    Flow.config['execution']['hash_method'] = 'timestamp'
+    Flow.config['execution']['local_hash_check'] = False
 
     # ------------------------------------------------------------------------
     # Generate a visual graph:
