@@ -139,12 +139,20 @@ def read_files_from_row(synapse_table, row, column_name,
     >>>     print(row)
 
     """
+    import pandas as pd
     import synapseclient
 
-    if synapse_table is None or row is None or row.empty:
+    if synapse_table is None or row is None:
         row = None
         filepath = None
     else:
+        if type(row) == pd.DataFrame:
+            pass
+        elif type(row) == str:
+            row = pd.read_csv(row)
+        else:
+            raise Warning("row should be a pandas DataFrame or a file string")
+
         # Log in to Synapse:
         syn = synapseclient.Synapse()
         if username and password:
@@ -152,6 +160,7 @@ def read_files_from_row(synapse_table, row, column_name,
         else:
             syn.login()
 
+        # Try to download file with column_name in row:
         try:
             fileinfo = syn.downloadTableFile(synapse_table,
                                 rowId=row['ROW_ID'][0],

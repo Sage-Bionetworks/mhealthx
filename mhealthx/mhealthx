@@ -169,52 +169,52 @@ if synID_phonation:
                  if os.path.isfile(os.path.join(row_path,f))]
     GetPhonation.iterables = ("row", row_files)
     GetPhonation.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
-    GetPhonation.inputs.out_path = '.' #phonation_file_path
+    GetPhonation.inputs.out_path = '.' #row_path #phonation_file_path
     GetPhonation.inputs.username = ''
     GetPhonation.inputs.password = ''
 
-    # # ------------------------------------------------------------------------
-    # # Append file name with ".m4a":
-    # # ------------------------------------------------------------------------
-    # RenamePhonation = Node(name='rename_phonation_file',
-    #                        interface=Fn(function=rename_file,
-    #                                     input_names=['old_file',
-    #                                                  'new_filename',
-    #                                                  'new_path',
-    #                                                  'file_append',
-    #                                                  'create_file'],
-    #                                     output_names=['renamed_file']))
-    # Flow.add_nodes([RenamePhonation])
-    # Flow.connect(GetPhonation, 'filepath', RenamePhonation, 'old_file')
-    # RenamePhonation.inputs.new_filename = ''
-    # RenamePhonation.inputs.new_path = ''
-    # RenamePhonation.inputs.file_append = '.m4a'
-    # RenamePhonation.inputs.create_file = True
-    #
-    # # ------------------------------------------------------------------------
-    # # Convert voice file to .wav format:
-    # # ------------------------------------------------------------------------
-    # ConvertPhonation = Node(name='convert_phonation_file',
-    #                         interface=Fn(function=convert_audio_file,
-    #                                      input_names=['old_file',
-    #                                                   'file_append',
-    #                                                   'new_file',
-    #                                                   'command',
-    #                                                   'input_args',
-    #                                                   'output_args'],
-    #                                      output_names=['converted_file']))
-    # Flow.add_nodes([ConvertPhonation])
-    # Flow.connect(RenamePhonation, 'renamed_file',
-    #              ConvertPhonation, 'old_file')
-    # ConvertPhonation.inputs.file_append = '.wav'
-    # ConvertPhonation.inputs.new_file = ''
-    # ConvertPhonation.inputs.command = 'ffmpeg'
-    # ConvertPhonation.inputs.input_args = '-i'
-    # ConvertPhonation.inputs.output_args = '-ac 2'
-    #
-    # # ------------------------------------------------------------------------
-    # # Append file name with ".csv":
-    # # ------------------------------------------------------------------------
+    # ------------------------------------------------------------------------
+    # Append file name with ".m4a":
+    # ------------------------------------------------------------------------
+    RenamePhonation = Node(name='rename_phonation_file',
+                           interface=Fn(function=rename_file,
+                                        input_names=['old_file',
+                                                     'new_filename',
+                                                     'new_path',
+                                                     'file_append',
+                                                     'create_file'],
+                                        output_names=['renamed_file']))
+    Flow.add_nodes([RenamePhonation])
+    Flow.connect(GetPhonation, 'filepath', RenamePhonation, 'old_file')
+    RenamePhonation.inputs.new_filename = ''
+    RenamePhonation.inputs.new_path = ''
+    RenamePhonation.inputs.file_append = '.m4a'
+    RenamePhonation.inputs.create_file = True
+
+    # ------------------------------------------------------------------------
+    # Convert voice file to .wav format:
+    # ------------------------------------------------------------------------
+    ConvertPhonation = Node(name='convert_phonation_file',
+                            interface=Fn(function=convert_audio_file,
+                                         input_names=['old_file',
+                                                      'file_append',
+                                                      'new_file',
+                                                      'command',
+                                                      'input_args',
+                                                      'output_args'],
+                                         output_names=['converted_file']))
+    Flow.add_nodes([ConvertPhonation])
+    Flow.connect(RenamePhonation, 'renamed_file',
+                 ConvertPhonation, 'old_file')
+    ConvertPhonation.inputs.file_append = '.wav'
+    ConvertPhonation.inputs.new_file = ''
+    ConvertPhonation.inputs.command = 'ffmpeg'
+    ConvertPhonation.inputs.input_args = '-i'
+    ConvertPhonation.inputs.output_args = '-ac 2'
+
+    # ------------------------------------------------------------------------
+    # Append file name with ".csv":
+    # ------------------------------------------------------------------------
     # RenamePhonation2 = Node(name='rename_converted_phonation_file',
     #                         interface=Fn(function=rename_file,
     #                                      input_names=['old_file',
@@ -230,50 +230,50 @@ if synID_phonation:
     # RenamePhonation2.inputs.new_path = ''
     # RenamePhonation2.inputs.file_append = '.csv'
     # RenamePhonation2.inputs.create_file = False
-    #
-    # # ------------------------------------------------------------------------
-    # # Process openSMILE command:
-    # # ------------------------------------------------------------------------
-    # OpenSMILE = Node(name='openSMILE',
-    #                  interface=Fn(function=run_command,
-    #                               input_names=['command',
-    #                                            'flag1',
-    #                                            'arg1',
-    #                                            'flags',
-    #                                            'args',
-    #                                            'flagN',
-    #                                            'argN',
-    #                                            'closing'],
-    #                               output_names=['command_line',
-    #                                             'args',
-    #                                             'arg1',
-    #                                             'argN']))
-    # Flow.add_nodes([OpenSMILE])
-    # OpenSMILE.inputs.command = 'SMILExtract'
-    # OpenSMILE.inputs.flag1 = '-I'
-    # Flow.connect(ConvertPhonation, 'converted_file', OpenSMILE, 'arg1')
-    # OpenSMILE.inputs.flags = '-C'
-    # OpenSMILE.inputs.args = os.path.join(thirdparty, 'openSMILE-2.1.0',
-    #                                      'config', 'IS13_ComParE.conf')
-    # OpenSMILE.inputs.flagN = '-O'
-    # Flow.connect(RenamePhonation2, 'new_file_name', OpenSMILE, 'argN')
-    # # Flow.connect(ConvertPhonation, ('converted_file', rename_file,
-    # #                                 'ssss', './', '.csv'),
-    # #              OpenSMILE, 'argN')
-    # OpenSMILE.inputs.closing = ''
-    # #Flow.connect(OpenSMILE, 'argN', Sink, 'phonation.@rawfeatures.openSMILE')
-    #
-    # # ------------------------------------------------------------------------
-    # # Format openSMILE output:
-    # # ------------------------------------------------------------------------
-    # FormatOpenSMILE = Node(name='format_openSMILE_output',
-    #                        interface=Fn(function=arff_to_csv,
-    #                                     input_names=['arff_file',
-    #                                                  'csv_file'],
-    #                                     output_names=['csv_file']))
-    # Flow.add_nodes([FormatOpenSMILE])
-    # Flow.connect(OpenSMILE, 'argN', FormatOpenSMILE, 'arff_file')
-    # FormatOpenSMILE.inputs.csv_file = ''
+
+    # ------------------------------------------------------------------------
+    # Process openSMILE command:
+    # ------------------------------------------------------------------------
+    OpenSMILE = Node(name='openSMILE',
+                     interface=Fn(function=run_command,
+                                  input_names=['command',
+                                               'flag1',
+                                               'arg1',
+                                               'flags',
+                                               'args',
+                                               'flagN',
+                                               'argN',
+                                               'closing'],
+                                  output_names=['command_line',
+                                                'args',
+                                                'arg1',
+                                                'argN']))
+    Flow.add_nodes([OpenSMILE])
+    OpenSMILE.inputs.command = 'SMILExtract'
+    OpenSMILE.inputs.flag1 = '-I'
+    Flow.connect(ConvertPhonation, 'converted_file', OpenSMILE, 'arg1')
+    OpenSMILE.inputs.flags = '-C'
+    OpenSMILE.inputs.args = os.path.join(thirdparty, 'openSMILE-2.1.0',
+                                         'config', 'IS13_ComParE.conf')
+    OpenSMILE.inputs.flagN = '-O'
+#    Flow.connect(RenamePhonation2, 'new_file_name', OpenSMILE, 'argN')
+    Flow.connect(ConvertPhonation, ('converted_file', rename_file,
+                                    '', '', '.csv', True),
+                 OpenSMILE, 'argN')
+    OpenSMILE.inputs.closing = ''
+    #Flow.connect(OpenSMILE, 'argN', Sink, 'phonation.@rawfeatures.openSMILE')
+
+    # ------------------------------------------------------------------------
+    # Format openSMILE output:
+    # ------------------------------------------------------------------------
+    FormatOpenSMILE = Node(name='format_openSMILE_output',
+                           interface=Fn(function=arff_to_csv,
+                                        input_names=['arff_file',
+                                                     'csv_file'],
+                                        output_names=['csv_file']))
+    Flow.add_nodes([FormatOpenSMILE])
+    Flow.connect(OpenSMILE, 'argN', FormatOpenSMILE, 'arff_file')
+    FormatOpenSMILE.inputs.csv_file = ''
 
     # ------------------------------------------------------------------------
     # Create a list of formatted openSMILE output files:
