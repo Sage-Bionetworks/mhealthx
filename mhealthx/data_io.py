@@ -119,7 +119,6 @@ def arff_to_csv(arff_file, csv_file):
     >>> csv_file = arff_to_csv(arff_file, csv_file)
 
     """
-    import os
 
     if arff_file is None:
         csv_file = None
