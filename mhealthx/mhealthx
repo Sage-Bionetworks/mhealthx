@@ -29,11 +29,11 @@ import os
 import argparse
 from nipype import config, logging
 from nipype.interfaces.io import DataSink
-from nipype.interfaces.utility import Function as Fn, Merge
+from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node, JoinNode
 from mhealthx.data_io import convert_audio_file, arff_to_csv, \
     concatenate_tables_vertically
-from mhealthx.synapse_io import extract_rows, read_files_from_row
+from mhealthx.synapse_io import read_files_from_row
 from mhealthx.utils import rename_file, run_command
 
 # ============================================================================
@@ -55,9 +55,9 @@ parser.add_argument("-v", "--version", help="version number",
 parser.add_argument("-n", "--numproc",
                     help=('number of processors (default: 1)'),
                     type=int, default=1, metavar='INT')
-parser.add_argument("-s", "--stop",
-                    help=('stop at this many rows of the Synapse tables'),
-                    type=int, metavar='INT')
+#parser.add_argument("-s", "--stop",
+#                    help=('stop at this many rows of the Synapse tables'),
+#                    type=int, metavar='INT')
 parser.add_argument("-g", "--graph",
                     help=('plot workflow graph: "hier", "flat", "exec"'),
                     choices=['hier', 'flat', 'exec'], metavar='STR')
@@ -100,10 +100,10 @@ outputs_group.add_argument("-c", "--cache",
 args = parser.parse_args()
 username = args.username
 password = args.password
-if args.stop:
-    limit_rows = args.stop
-else:
-    limit_rows = None
+#if args.stop:
+#    limit_rows = args.stop
+#else:
+#    limit_rows = None
 thirdparty = args.thirdparty
 synID_phonation = args.phonation
 synID_balance = args.balance
@@ -167,16 +167,15 @@ if synID_phonation:
                                                    'filepath']))
     Flow.add_nodes([GetPhonation])
     GetPhonation.inputs.synapse_table = synID_phonation
-    limit_rows = 100
-    if limit_rows:
-        row_files = [os.path.join(row_path, f)
-                     for ifile, f in enumerate(os.listdir(row_path))
-                     if os.path.isfile(os.path.join(row_path,f))
-                     and ifile < limit_rows]
-    else:
-        row_files = [os.path.join(row_path, f)
-                     for f in os.listdir(row_path)
-                     if os.path.isfile(os.path.join(row_path,f))]
+    # if limit_rows:
+    #     row_files = [os.path.join(row_path, f)
+    #                  for ifile, f in enumerate(os.listdir(row_path))
+    #                  if os.path.isfile(os.path.join(row_path,f))
+    #                  and ifile < limit_rows]
+    # else:
+    row_files = [os.path.join(row_path, f)
+                 for f in os.listdir(row_path)
+                 if os.path.isfile(os.path.join(row_path,f))]
 
     GetPhonation.iterables = ("row", row_files)
     GetPhonation.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
@@ -289,18 +288,19 @@ if synID_phonation:
     # Join metadata and openSMILE output into one pandas DataFrame:
     # ------------------------------------------------------------------------
     # Horizontally concatenate pandas DataFrame and csv file:
-    def join_df_csv(df, csv_file):
+    def concat_df_csv(df, csv_file):
         import pandas as pd
-        output = df.join(pd.DataFrame.from_csv(csv_file))
+        csv = pd.read_csv(csv_file)
+        output = pd.concat([df, csv], axis=1)
         return output
 
-    MergePhonation = Node(name='join_metadata_and_openSMILE_output',
-                          interface=Fn(function=join_df_csv,
-                                       input_names=['df', 'csv_file'],
-                                       output_names=['output']))
-    Flow.add_nodes([MergePhonation])
-    Flow.connect(GetPhonation, 'row', MergePhonation, 'df')
-    Flow.connect(FormatOpenSMILE, 'csv_file', MergePhonation, 'csv_file')
+    JoinPhonation = Node(name='join_metadata_and_openSMILE_output',
+                         interface=Fn(function=concat_df_csv,
+                                      input_names=['df', 'csv_file'],
+                                      output_names=['output']))
+    Flow.add_nodes([JoinPhonation])
+    Flow.connect(GetPhonation, 'row', JoinPhonation, 'df')
+    Flow.connect(FormatOpenSMILE, 'csv_file', JoinPhonation, 'csv_file')
 
     # ------------------------------------------------------------------------
     # Create a feature table from the original metadata and openSMILE outputs:
@@ -314,7 +314,7 @@ if synID_phonation:
                                      output_names=['table_data',
                                                    'output_csv_file']))
     Flow.add_nodes([TableOpenSMILE])
-    Flow.connect(MergePhonation, 'output', TableOpenSMILE, 'tables')
+    Flow.connect(JoinPhonation, 'output', TableOpenSMILE, 'tables')
     TableOpenSMILE.inputs.output_csv_file = os.path.join(
         feature_table_file_path,
         'phonation_features_openSMILE_IS13_ComParE.csv')
