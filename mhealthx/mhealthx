@@ -294,29 +294,21 @@ if synID_phonation:
     # ------------------------------------------------------------------------
     # Create a feature table from the original metadata and openSMILE outputs:
     # ------------------------------------------------------------------------
-    def dummy(inputs):
-        outputs=inputs
-        return outputs
-
     TableOpenSMILE = JoinNode(name='construct_openSMILE_feature_table',
                               joinsource=GetPhonation,
-                              joinfield=['inputs'],
-                        interface=Fn(function=dummy,
-                                     input_names=['inputs'],
-                                     output_names=['outputs']))
-                        # interface=Fn(function=concatenate_tables_vertically,
-                        #              input_names=['tables',
-                        #                           'output_csv_file'],
-                        #              output_names=['table_data',
-                        #                            'output_csv_file']))
+                              joinfield=['tables'],
+                        interface=Fn(function=concatenate_tables_vertically,
+                                     input_names=['tables',
+                                                  'output_csv_file'],
+                                     output_names=['table_data',
+                                                   'output_csv_file']))
     Flow.add_nodes([TableOpenSMILE])
-    Flow.connect(MergePhonation, 'output', TableOpenSMILE, 'inputs')
-    #Flow.connect(MergePhonation, 'output', TableOpenSMILE, 'tables')
-    #TableOpenSMILE.inputs.output_csv_file = os.path.join(
-    #    feature_table_file_path,
-    #    'phonation_features_openSMILE_IS13_ComParE.csv')
-    #Flow.connect(TableOpenSMILE, 'output_csv_file',
-    #             Sink, 'feature_tables.@features')
+    Flow.connect(MergePhonation, 'output', TableOpenSMILE, 'tables')
+    TableOpenSMILE.inputs.output_csv_file = os.path.join(
+        feature_table_file_path,
+        'phonation_features_openSMILE_IS13_ComParE.csv')
+    Flow.connect(TableOpenSMILE, 'output_csv_file',
+                 Sink, 'feature_tables.@features')
 
 
 
