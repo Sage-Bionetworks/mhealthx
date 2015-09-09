@@ -32,7 +32,7 @@ from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn, Merge
 from nipype.pipeline.engine import Workflow, Node, JoinNode
 from mhealthx.data_io import convert_audio_file, arff_to_csv, \
-    concatenate_tables_horizontally, Nones_to_empty_csvs_in_list
+    concatenate_tables_vertically
 from mhealthx.synapse_io import extract_rows, read_files_from_row
 from mhealthx.utils import rename_file, run_command
 
@@ -289,6 +289,44 @@ if synID_phonation:
     # CatOpenSMILE.inputs.empty_csv_file = os.path.join(workflow_path,
     #                                                   'empty_table.csv')
 
+    # ------------------------------------------------------------------------
+    # Join metadata and openSMILE output into one pandas DataFrame:
+    # ------------------------------------------------------------------------
+    # Horizontally concatenate pandas DataFrame and csv file:
+    def join_df_csv(df, csv_file):
+        import pandas as pd
+        output = df.join(pd.DataFrame.from_csv(csv_file))
+        return output
+
+    MergePhonation = Node(name='join_metadata_and_openSMILE_output',
+                          interface=Fn(function=join_df_csv,
+                                       input_names=['df', 'csv_file'],
+                                       output_names=['output']))
+    Flow.add_nodes([MergePhonation])
+    Flow.connect(GetPhonation, 'row', MergePhonation, 'df')
+    Flow.connect(FormatOpenSMILE, 'csv_file', MergePhonation, 'csv_file')
+
+    # ------------------------------------------------------------------------
+    # Create a feature table from the original metadata and openSMILE outputs:
+    # ------------------------------------------------------------------------
+    TableOpenSMILE = JoinNode(name='construct_openSMILE_feature_table',
+                              joinsource='MergePhonation',
+                              joinfield='tables',
+                        interface=Fn(function=concatenate_tables_vertically,
+                                     input_names=['tables',
+                                                  'output_csv_file'],
+                                     output_names=['table_data',
+                                                   'output_csv_file']))
+    Flow.add_nodes([TableOpenSMILE])
+    Flow.connect(MergePhonation, 'output', TableOpenSMILE, 'tables')
+    TableOpenSMILE.inputs.output_csv_file = os.path.join(
+        feature_table_file_path,
+        'phonation_features_openSMILE_IS13_ComParE.csv')
+    #Flow.connect(TableOpenSMILE, 'output_csv_file',
+    #             Sink, 'feature_tables.@features')
+
+
+
     # # ------------------------------------------------------------------------
     # # Combine metadata list and openSMILE list into one list:
     # # ------------------------------------------------------------------------
@@ -300,7 +338,7 @@ if synID_phonation:
     #                                    input_names=['in1', 'in2'],
     #                                    output_names=['output']))
     # Flow.add_nodes([MergePhonation])
-    # Flow.connect(GetPhonationRows, 'row_dataframes',
+    # Flow.connect(GetPhonation, 'row',
     #              MergePhonation, 'in1')
     # Flow.connect(CatOpenSMILE, 'output_csv_files', MergePhonation, 'in2')
     #
