@@ -100,7 +100,10 @@ outputs_group.add_argument("-c", "--cache",
 args = parser.parse_args()
 username = args.username
 password = args.password
-limit_rows = args.stop
+if args.stop:
+    limit_rows = args.stop
+else:
+    limit_rows = None
 thirdparty = args.thirdparty
 synID_phonation = args.phonation
 synID_balance = args.balance
@@ -164,9 +167,17 @@ if synID_phonation:
                                                    'filepath']))
     Flow.add_nodes([GetPhonation])
     GetPhonation.inputs.synapse_table = synID_phonation
-    row_files = [os.path.join(row_path, f)
-                 for f in os.listdir(row_path)
-                 if os.path.isfile(os.path.join(row_path,f))]
+    limit_rows = 100
+    if limit_rows:
+        row_files = [os.path.join(row_path, f)
+                     for ifile, f in enumerate(os.listdir(row_path))
+                     if os.path.isfile(os.path.join(row_path,f))
+                     and ifile < limit_rows]
+    else:
+        row_files = [os.path.join(row_path, f)
+                     for f in os.listdir(row_path)
+                     if os.path.isfile(os.path.join(row_path,f))]
+
     GetPhonation.iterables = ("row", row_files)
     GetPhonation.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
     GetPhonation.inputs.out_path = '.'
@@ -307,8 +318,8 @@ if synID_phonation:
     TableOpenSMILE.inputs.output_csv_file = os.path.join(
         feature_table_file_path,
         'phonation_features_openSMILE_IS13_ComParE.csv')
-    Flow.connect(TableOpenSMILE, 'output_csv_file',
-                 Sink, 'feature_tables.@features')
+    #Flow.connect(TableOpenSMILE, 'output_csv_file',
+    #             Sink, 'feature_tables.@features')
 
 
 

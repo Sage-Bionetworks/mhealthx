@@ -97,7 +97,8 @@ outputs_group.add_argument("-c", "--cache",
 args = parser.parse_args()
 username = args.username
 password = args.password
-limit_rows = args.stop
+if args.stop:
+    limit_rows = args.stop
 thirdparty = args.thirdparty
 synID_phonation = args.phonation
 synID_balance = args.balance
@@ -159,7 +160,10 @@ if synID_phonation:
     Flow.add_nodes([GetPhonationRows])
     GetPhonationRows.inputs.synapse_table = synID_phonation
     GetPhonationRows.inputs.save_path = row_file_path
-    GetPhonationRows.inputs.limit = limit_rows
+    if args.stop:
+        GetPhonationRows.inputs.limit = limit_rows
+    else:
+        GetPhonationRows.inputs.limit = None
     GetPhonationRows.inputs.username = ''
     GetPhonationRows.inputs.password = ''
 
