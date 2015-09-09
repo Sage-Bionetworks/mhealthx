@@ -25,7 +25,7 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 
 """
 
-import os
+import os, sys
 import argparse
 from nipype import config, logging
 from nipype.interfaces.io import DataSink
@@ -55,9 +55,9 @@ parser.add_argument("-v", "--version", help="version number",
 parser.add_argument("-n", "--numproc",
                     help=('number of processors (default: 1)'),
                     type=int, default=1, metavar='INT')
-#parser.add_argument("-s", "--stop",
-#                    help=('stop at this many rows of the Synapse tables'),
-#                    type=int, metavar='INT')
+parser.add_argument("-s", "--stop",
+                   help=('stop at this many rows of the Synapse tables'),
+                   type=int, metavar='INT', default=sys.maxint)
 parser.add_argument("-g", "--graph",
                     help=('plot workflow graph: "hier", "flat", "exec"'),
                     choices=['hier', 'flat', 'exec'], metavar='STR')
@@ -174,8 +174,8 @@ if synID_phonation:
     #                  and ifile < limit_rows]
     # else:
     row_files = [os.path.join(row_path, f)
-                 for f in os.listdir(row_path)
-                 if os.path.isfile(os.path.join(row_path,f))]
+                 for i,f in enumerate(os.listdir(row_path))
+                 if os.path.isfile(os.path.join(row_path,f)) and i<args.stop]
 
     GetPhonation.iterables = ("row", row_files)
     GetPhonation.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
@@ -413,6 +413,7 @@ if __name__ == '__main__':
     # config.enable_provenance()
     Flow.config['execution']['hash_method'] = 'timestamp'
     Flow.config['execution']['local_hash_check'] = False
+    Flow.config['execution']['create_report'] = False
 
     # ------------------------------------------------------------------------
     # Generate a visual graph:
