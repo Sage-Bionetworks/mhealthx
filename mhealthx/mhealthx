@@ -299,8 +299,8 @@ if synID_phonation:
         return outputs
 
     TableOpenSMILE = JoinNode(name='construct_openSMILE_feature_table',
-                              joinsource='GetPhonation',
-                              joinfield='inputs',
+                              joinsource=GetPhonation,
+                              joinfield=['inputs'],
                         interface=Fn(function=dummy,
                                      input_names=['inputs'],
                                      output_names=['outputs']))
@@ -310,7 +310,8 @@ if synID_phonation:
                         #              output_names=['table_data',
                         #                            'output_csv_file']))
     Flow.add_nodes([TableOpenSMILE])
-    Flow.connect(MergePhonation, 'output', TableOpenSMILE, 'tables')
+    Flow.connect(MergePhonation, 'output', TableOpenSMILE, 'inputs')
+    #Flow.connect(MergePhonation, 'output', TableOpenSMILE, 'tables')
     #TableOpenSMILE.inputs.output_csv_file = os.path.join(
     #    feature_table_file_path,
     #    'phonation_features_openSMILE_IS13_ComParE.csv')
