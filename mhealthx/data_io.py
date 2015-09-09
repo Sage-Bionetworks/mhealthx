@@ -230,7 +230,11 @@ def concatenate_tables_vertically(tables, output_csv_file=None):
         try:
             # pandas DataFrames:
             if type(tables[0]) == pd.DataFrame:
-                pass
+                tables_no_Nones = []
+                for table in tables:
+                    if table is not None and type(table) == pd.DataFrame:
+                        tables_no_Nones.append(table)
+                tables = tables_no_Nones
             # file strings:
             elif type(tables[0]) == str:
                 tables_from_files = []
@@ -314,7 +318,7 @@ def concatenate_tables_horizontally(tables, output_csv_file=None):
                 # file string:
                 elif type(table) == str:
                     if os.path.isfile(table):
-                        table_from_file = pd.DataFrame.from_csv(table)
+                        table_from_file = pd.read_csv(table)
                         tables_to_combine.append(table_from_file)
                     else:
                         raise Warning('{0} is not a file.'.format(table))
@@ -331,7 +335,7 @@ def concatenate_tables_horizontally(tables, output_csv_file=None):
             table0 = tables[0]
             nrows = table0.shape[0]
             for table in tables:
-                if table is None or table.shape[0] != nrows:
+                if table.shape[0] != nrows:
                     raise Warning("The tables have different numbers"
                                   " of rows!")
 
@@ -346,69 +350,6 @@ def concatenate_tables_horizontally(tables, output_csv_file=None):
             output_csv_file = None
 
     return table_data, output_csv_file
-
-
-def Nones_to_empty_csvs_in_list(csv_files, empty_csv_file=None):
-    """
-    Create an empty csv file of equal size as other inputs.
-
-    Parameters
-    ----------
-    csv_files : list of strings
-        each file should have the same number of rows, except for 'None'
-    empty_csv_file : string
-        name of empty csv file to create with the same shape as the others
-
-    Returns
-    -------
-    output_csv_files : list of strings or None
-        same as csv_files, except that Nones are replaced by empty csv files
-
-    Examples
-    --------
-    >>> from mhealthx.data_io import Nones_to_empty_csvs_in_list
-    >>> csv_files = ['/Users/arno/mhealthx_cache/mhealthx/retrieve_phonation_file/mapflow/_retrieve_phonation_file1/audio_audio.m4a-10349c95-7326-42de-a57f-08d228398d9d2367289341070419184.tmp.m4a.wav.csv.csv', '/Users/arno/mhealthx_cache/mhealthx/retrieve_phonation_file/mapflow/_retrieve_phonation_file1/audio_audio.m4a-10349c95-7326-42de-a57f-08d228398d9d2367289341070419184.tmp.m4a.wav.csv.csv']
-    >>> empty_csv_file = 'empty_table.csv'
-    >>> output_csv_files = Nones_to_empty_csvs_in_list(csv_files)
-
-    """
-    import numpy as np
-    import pandas as pd
-
-    if csv_files is None:
-        output_csv_files = None
-    else:
-        try:
-            # Select an example csv file:
-            example_csv = None
-            for input in csv_files:
-                if input is not None:
-                    example_csv = input
-                break
-
-            # Create an empty csv file with the same dimensions and columns:
-            if example_csv:
-                df = pd.read_csv(example_csv)
-                nan_row = np.empty(df.shape)
-                nan_row.fill('nan')
-                dfnew = pd.DataFrame(nan_row, columns=df.columns)
-                if not empty_csv_file:
-                    empty_csv_file = 'empty_table.csv'
-                dfnew.to_csv(empty_csv_file)
-
-                # Loop through csv files, replacing None with the empty table:
-                output_csv_files = []
-                for csv in csv_files:
-                    if csv is None:
-                        output_csv_files.append(empty_csv_file)
-                    else:
-                        output_csv_files.append(csv)
-            else:
-                output_csv_files = None
-        except:
-            output_csv_files = None
-
-        return output_csv_files
 
 
 # ============================================================================

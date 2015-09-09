@@ -290,8 +290,11 @@ if synID_phonation:
     # Horizontally concatenate pandas DataFrame and csv file:
     def concat_df_csv(df, csv_file):
         import pandas as pd
-        csv = pd.read_csv(csv_file)
-        output = pd.concat([df, csv], axis=1)
+        if csv_file:
+            csv = pd.read_csv(csv_file)
+            output = pd.concat([df, csv], axis=1)
+        else:
+            output = None
         return output
 
     JoinPhonation = Node(name='join_metadata_and_openSMILE_output',
