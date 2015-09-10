@@ -56,7 +56,7 @@ parser.add_argument("-n", "--numproc",
                     type=int, default=1, metavar='INT')
 parser.add_argument("-r", "--report",
                    help=('generate nipype reports'),
-                   type=bool, metavar='BOOL', default=True)
+                   type=bool, metavar='BOOL', default=False)
 parser.add_argument("-s", "--stop",
                    help=('stop at this many rows of the Synapse tables'),
                    type=int, metavar='INT', default=sys.maxint)
