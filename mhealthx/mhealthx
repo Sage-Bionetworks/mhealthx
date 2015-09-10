@@ -100,10 +100,6 @@ outputs_group.add_argument("-c", "--cache",
 args = parser.parse_args()
 username = args.username
 password = args.password
-#if args.stop:
-#    limit_rows = args.stop
-#else:
-#    limit_rows = None
 thirdparty = args.thirdparty
 synID_phonation = args.phonation
 synID_balance = args.balance
@@ -165,14 +161,7 @@ if synID_phonation:
                                                   'password'],
                                      output_names=['row',
                                                    'filepath']))
-    Flow.add_nodes([GetPhonation])
     GetPhonation.inputs.synapse_table = synID_phonation
-    # if limit_rows:
-    #     row_files = [os.path.join(row_path, f)
-    #                  for ifile, f in enumerate(os.listdir(row_path))
-    #                  if os.path.isfile(os.path.join(row_path,f))
-    #                  and ifile < limit_rows]
-    # else:
     row_files = [os.path.join(row_path, f)
                  for i,f in enumerate(os.listdir(row_path))
                  if os.path.isfile(os.path.join(row_path,f)) and i<args.stop]
@@ -194,7 +183,6 @@ if synID_phonation:
                                                      'file_append',
                                                      'create_file'],
                                         output_names=['renamed_file']))
-    Flow.add_nodes([RenamePhonation])
     Flow.connect(GetPhonation, 'filepath', RenamePhonation, 'old_file')
     RenamePhonation.inputs.new_filename = ''
     RenamePhonation.inputs.new_path = ''
@@ -213,7 +201,6 @@ if synID_phonation:
                                                       'input_args',
                                                       'output_args'],
                                          output_names=['converted_file']))
-    Flow.add_nodes([ConvertPhonation])
     Flow.connect(RenamePhonation, 'renamed_file',
                  ConvertPhonation, 'old_file')
     ConvertPhonation.inputs.file_append = '.wav'
@@ -233,7 +220,6 @@ if synID_phonation:
                                                       'file_append',
                                                       'create_file'],
                                          output_names=['new_file_name']))
-    Flow.add_nodes([RenamePhonation2])
     Flow.connect(ConvertPhonation, 'converted_file',
                  RenamePhonation2, 'old_file')
     RenamePhonation2.inputs.new_filename = ''
@@ -258,7 +244,6 @@ if synID_phonation:
                                                 'args',
                                                 'arg1',
                                                 'argN']))
-    Flow.add_nodes([OpenSMILE])
     OpenSMILE.inputs.command = 'SMILExtract'
     OpenSMILE.inputs.flag1 = '-I'
     Flow.connect(ConvertPhonation, 'converted_file', OpenSMILE, 'arg1')
@@ -279,7 +264,6 @@ if synID_phonation:
                                         input_names=['arff_file',
                                                      'csv_file'],
                                         output_names=['csv_file']))
-    Flow.add_nodes([FormatOpenSMILE])
     Flow.connect(OpenSMILE, 'argN', FormatOpenSMILE, 'arff_file')
     Flow.connect(OpenSMILE, ('argN', rename_file, '', '', '.csv', True),
                  FormatOpenSMILE, 'csv_file')
@@ -301,7 +285,6 @@ if synID_phonation:
                          interface=Fn(function=concat_df_csv,
                                       input_names=['df', 'csv_file'],
                                       output_names=['output']))
-    Flow.add_nodes([JoinPhonation])
     Flow.connect(GetPhonation, 'row', JoinPhonation, 'df')
     Flow.connect(FormatOpenSMILE, 'csv_file', JoinPhonation, 'csv_file')
 
@@ -316,13 +299,12 @@ if synID_phonation:
                                                   'output_csv_file'],
                                      output_names=['table_data',
                                                    'output_csv_file']))
-    Flow.add_nodes([TableOpenSMILE])
     Flow.connect(JoinPhonation, 'output', TableOpenSMILE, 'tables')
     TableOpenSMILE.inputs.output_csv_file = os.path.join(
         feature_table_file_path,
         'phonation_features_openSMILE_IS13_ComParE.csv')
-    #Flow.connect(TableOpenSMILE, 'output_csv_file',
-    #             Sink, 'feature_tables.@features')
+    Flow.connect(TableOpenSMILE, 'output_csv_file',
+                 Sink, 'feature_tables.@features')
 
 
 
@@ -338,7 +320,6 @@ if synID_phonation:
     #                                                    'csv_file'],
     #                                       output_names=['table_data',
     #                                                     'csv_file']))
-    # Flow.add_nodes([SaveOpenSMILE])
     # Flow.connect(FormatOpenSMILE, 'feature_table',
     #              SaveOpenSMILE, 'dataframes')
     # SaveOpenSMILE.inputs.csv_file = 'openSMILE_IS13_ComParE.csv'
@@ -359,7 +340,6 @@ if synID_phonation:
     #                                         'table_name',
     #                                         'synapse_table_id',
     #                                         'synapse_project_id']))
-    # Flow.add_nodes([SaveOpenSMILE])
     # Flow.connect(FormatOpenSMILE, 'feature_table', SaveOpenSMILE, 'tables')
     # SaveOpenSMILE.inputs.synapse_project_id = 'syn4899451'
     # SaveOpenSMILE.inputs.table_name = 'Phonation openSMILE feature table'
@@ -380,7 +360,6 @@ if synID_phonation:
     #                                                 'username',
     #                                                 'password'],
     #                                    output_names=[]))
-    # Flow.add_nodes([StoreOpenSMILE])
     # Flow.connect(SaveOpenSMILE, 'csv_file',
     #              StoreOpenSMILE, 'feature_file')
     # Flow.connect(OpenSMILE, 'argN',
