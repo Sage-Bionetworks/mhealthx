@@ -55,6 +55,9 @@ parser.add_argument("-v", "--version", help="version number",
 parser.add_argument("-n", "--numproc",
                     help=('number of processors (default: 1)'),
                     type=int, default=1, metavar='INT')
+#parser.add_argument("-r", "--rows",
+#                   help=('save individual rows vs. whole table'),
+#                   type=bool, metavar='BOOL', default=True)
 parser.add_argument("-s", "--stop",
                    help=('stop at this many rows of the Synapse tables'),
                    type=int, metavar='INT', default=sys.maxint)
@@ -298,8 +301,9 @@ if synID_phonation:
     # ------------------------------------------------------------------------
     # Create a feature table from the original metadata and openSMILE outputs:
     # ------------------------------------------------------------------------
-    write_final_table = False
-    if write_final_table:
+    concatenate_rows = False
+    if concatenate_rows:
+        #if not args.rows:
         TableOpenSMILE = JoinNode(name='construct_openSMILE_feature_table',
                                   joinsource=GetPhonation,
                                   joinfield=['tables'],
@@ -308,7 +312,7 @@ if synID_phonation:
                                                       'output_csv_file'],
                                          output_names=['table_data',
                                                        'output_csv_file']))
-        Flow.connect(JoinPhonation, 'output', TableOpenSMILE, 'tables')
+        Flow.connect(JoinPhonation, 'table_data', TableOpenSMILE, 'tables')
         TableOpenSMILE.inputs.output_csv_file = os.path.join(
             feature_table_file_path,
             'phonation_features_openSMILE_IS13_ComParE.csv')
