@@ -104,7 +104,7 @@ outputs_group.add_argument("-i", "--input",
                     help="input (prep) folder"
                          " (if not $HOME/mhealthx_cache/mhealthxprep)",
                     default=os.path.join(os.environ['HOME'],
-                                         'mhealthx_cache', 'mheathxprep'),
+                                         'mhealthx_cache', 'mhealthxprep'),
                     metavar='STR')
 args = parser.parse_args()
 username = args.username
