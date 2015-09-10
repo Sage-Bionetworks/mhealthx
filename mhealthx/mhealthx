@@ -31,9 +31,8 @@ from nipype import config, logging
 from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node, JoinNode
-from mhealthx.data_io import convert_audio_file, arff_to_csv, \
+from mhealthx.data_io import get_rename_convert_audio, arff_to_csv, \
     concatenate_tables_horizontally, concatenate_tables_vertically
-from mhealthx.synapse_io import read_files_from_row
 from mhealthx.utils import rename_file, run_command
 
 # ============================================================================
@@ -55,9 +54,9 @@ parser.add_argument("-v", "--version", help="version number",
 parser.add_argument("-n", "--numproc",
                     help=('number of processors (default: 1)'),
                     type=int, default=1, metavar='INT')
-#parser.add_argument("-r", "--rows",
-#                   help=('save individual rows vs. whole table'),
-#                   type=bool, metavar='BOOL', default=True)
+parser.add_argument("-r", "--report",
+                   help=('generate nipype reports'),
+                   type=bool, metavar='BOOL', default=True)
 parser.add_argument("-s", "--stop",
                    help=('stop at this many rows of the Synapse tables'),
                    type=int, metavar='INT', default=sys.maxint)
@@ -157,86 +156,45 @@ if not os.path.isdir(feature_table_file_path):
 #
 # ============================================================================
 if synID_phonation:
-    #phonFlow = Workflow(name='mhealthx phonation pipeline')
 
     # ------------------------------------------------------------------------
-    # Retrieve each audio file from Synapse table:
+    # Retrieve each row + audio file from Synapse table
+    # Append file name with ".m4a"
+    # Convert voice file to .wav format
+    # Copy file with new append:
     # ------------------------------------------------------------------------
-    GetPhonation = Node(name='retrieve_phonation_file',
-                        interface=Fn(function=read_files_from_row,
-                                     input_names=['synapse_table',
-                                                  'row',
-                                                  'column_name',
-                                                  'out_path',
-                                                  'username',
-                                                  'password'],
-                                     output_names=['row',
-                                                   'filepath']))
-    GetPhonation.inputs.synapse_table = synID_phonation
+    PrepPhonation = Node(name='prep_phonation_file',
+                         interface=Fn(function=get_rename_convert_audio,
+                                      input_names=['synapse_table',
+                                                   'row',
+                                                   'column_name',
+                                                   'rename_file_append',
+                                                   'convert_file_append',
+                                                   'copy_file_append',
+                                                   'convert_command',
+                                                   'convert_input_args',
+                                                   'convert_output_args',
+                                                   'out_path,'
+                                                   'username',
+                                                   'password'],
+                                      output_names=['row',
+                                                    'converted_file',
+                                                    'copy_name']))
+    PrepPhonation.inputs.synapse_table = synID_phonation
     row_files = [os.path.join(row_path, f)
                  for i,f in enumerate(os.listdir(row_path))
                  if os.path.isfile(os.path.join(row_path,f)) and i<args.stop]
-
-    GetPhonation.iterables = ("row", row_files)
-    GetPhonation.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
-    GetPhonation.inputs.out_path = '.'
-    GetPhonation.inputs.username = ''
-    GetPhonation.inputs.password = ''
-
-    # ------------------------------------------------------------------------
-    # Append file name with ".m4a":
-    # ------------------------------------------------------------------------
-    RenamePhonation = Node(name='rename_phonation_file',
-                           interface=Fn(function=rename_file,
-                                        input_names=['old_file',
-                                                     'new_filename',
-                                                     'new_path',
-                                                     'file_append',
-                                                     'create_file'],
-                                        output_names=['renamed_file']))
-    Flow.connect(GetPhonation, 'filepath', RenamePhonation, 'old_file')
-    RenamePhonation.inputs.new_filename = ''
-    RenamePhonation.inputs.new_path = ''
-    RenamePhonation.inputs.file_append = '.m4a'
-    RenamePhonation.inputs.create_file = True
-
-    # ------------------------------------------------------------------------
-    # Convert voice file to .wav format:
-    # ------------------------------------------------------------------------
-    ConvertPhonation = Node(name='convert_phonation_file',
-                            interface=Fn(function=convert_audio_file,
-                                         input_names=['old_file',
-                                                      'file_append',
-                                                      'new_file',
-                                                      'command',
-                                                      'input_args',
-                                                      'output_args'],
-                                         output_names=['converted_file']))
-    Flow.connect(RenamePhonation, 'renamed_file',
-                 ConvertPhonation, 'old_file')
-    ConvertPhonation.inputs.file_append = '.wav'
-    ConvertPhonation.inputs.new_file = ''
-    ConvertPhonation.inputs.command = 'ffmpeg'
-    ConvertPhonation.inputs.input_args = '-i'
-    ConvertPhonation.inputs.output_args = '-ac 2'
-
-    # ------------------------------------------------------------------------
-    # Append file name with ".csv":
-    # ------------------------------------------------------------------------
-    RenamePhonation2 = Node(name='rename_converted_phonation_file',
-                            interface=Fn(function=rename_file,
-                                         input_names=['old_file',
-                                                      'new_filename',
-                                                      'new_path',
-                                                      'file_append',
-                                                      'create_file'],
-                                         output_names=['new_file_name']))
-    Flow.connect(ConvertPhonation, 'converted_file',
-                 RenamePhonation2, 'old_file')
-    RenamePhonation2.inputs.new_filename = ''
-    RenamePhonation2.inputs.new_path = ''
-    RenamePhonation2.inputs.file_append = '.csv'
-    RenamePhonation2.inputs.create_file = False
+    PrepPhonation.iterables = ("row", row_files)
+    PrepPhonation.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
+    PrepPhonation.inputs.rename_file_append = '.m4a'
+    PrepPhonation.inputs.convert_file_append = '.wav'
+    PrepPhonation.inputs.copy_file_append = '.csv'
+    PrepPhonation.inputs.convert_command = 'ffmpeg'
+    PrepPhonation.inputs.convert_input_args = '-i'
+    PrepPhonation.inputs.convert_output_args = '-ac 2'
+    PrepPhonation.inputs.out_path = '.'
+    PrepPhonation.inputs.username = ''
+    PrepPhonation.inputs.password = ''
 
     # ------------------------------------------------------------------------
     # Process openSMILE command:
@@ -257,14 +215,14 @@ if synID_phonation:
                                                 'argN']))
     OpenSMILE.inputs.command = 'SMILExtract'
     OpenSMILE.inputs.flag1 = '-I'
-    Flow.connect(ConvertPhonation, 'converted_file', OpenSMILE, 'arg1')
+    Flow.connect(PrepPhonation, 'converted_file', OpenSMILE, 'arg1')
     OpenSMILE.inputs.flags = '-C'
     OpenSMILE.inputs.args = os.path.join(thirdparty, 'openSMILE-2.1.0',
                                          'config', 'IS13_ComParE.conf')
     OpenSMILE.inputs.flagN = '-O'
-    Flow.connect(RenamePhonation2, 'new_file_name', OpenSMILE, 'argN')
-    #Flow.connect(ConvertPhonation, ('converted_file', rename_file,
-    #                                '', '', '.csv', True), OpenSMILE, 'argN')
+    Flow.connect(PrepPhonation, 'copy_name', OpenSMILE, 'argN')
+    # Flow.connect(PrepPhonation, ('converted_file', rename_file,
+    #                              '', '', '.csv', True), OpenSMILE, 'argN')
     OpenSMILE.inputs.closing = ''
 
     # ------------------------------------------------------------------------
@@ -289,7 +247,7 @@ if synID_phonation:
                           interface=Fn(function=merge_func,
                                        input_names=['in1', 'in2'],
                                        output_names=['output']))
-    Flow.connect(GetPhonation, 'row', MergePhonation, 'in1')
+    Flow.connect(PrepPhonation, 'row', MergePhonation, 'in1')
     Flow.connect(FormatOpenSMILE, 'csv_file', MergePhonation, 'in2')
 
     # ------------------------------------------------------------------------
@@ -313,7 +271,7 @@ if synID_phonation:
     if concatenate_rows:
         #if not args.rows:
         TableOpenSMILE = JoinNode(name='construct_openSMILE_feature_table',
-                                  joinsource=GetPhonation,
+                                  joinsource=PrepPhonation,
                                   joinfield=['tables'],
                         interface=Fn(function=concatenate_tables_vertically,
                                          input_names=['tables',
@@ -325,13 +283,13 @@ if synID_phonation:
             feature_table_file_path,
             'phonation_features_openSMILE_IS13_ComParE.csv')
         Flow.connect(TableOpenSMILE, 'output_csv_file',
-                     Sink, 'feature_tables.@features')
+                     Sink, 'feature_tables.@openSMILE')
     # ------------------------------------------------------------------------
     # Else save individual rows to csv files:
     # ------------------------------------------------------------------------
     else:
         Flow.connect(JoinPhonation, 'output_csv_file',
-             Sink, 'feature_tables.@openSMILE_feature_rows')
+                     Sink, 'feature_tables.@openSMILE_rows')
 
 
 
@@ -396,7 +354,7 @@ if synID_phonation:
     # StoreOpenSMILE.inputs.source_file_id = ''
     # Flow.connect(OpenSMILE, 'command_line',
     #              StoreOpenSMILE, 'command_line')
-    # Flow.connect(GetPhonation, 'synapse_table_id',
+    # Flow.connect(PrepPhonation, 'synapse_table_id',
     #              StoreOpenSMILE, 'synapse_table_id')
     # StoreOpenSMILE.inputs.username = ''
     # StoreOpenSMILE.inputs.password = ''
@@ -418,7 +376,7 @@ if __name__ == '__main__':
     # config.enable_provenance()
     Flow.config['execution']['hash_method'] = 'timestamp'
     Flow.config['execution']['local_hash_check'] = False
-    Flow.config['execution']['create_report'] = False
+    Flow.config['execution']['create_report'] = args.report
 
     # ------------------------------------------------------------------------
     # Generate a visual graph:

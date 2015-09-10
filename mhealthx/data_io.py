@@ -84,6 +84,124 @@ def convert_audio_file(old_file, file_append, new_file='', command='ffmpeg',
     return converted_file
 
 
+def get_rename_convert_audio(synapse_table, row, column_name,
+                             rename_file_append='',
+                             convert_file_append='',
+                             copy_file_append='',
+                             convert_command='ffmpeg',
+                             convert_input_args='-i',
+                             convert_output_args='-ac 2',
+                             out_path='.', username='', password=''):
+    """
+    Read data from a row of a Synapse table, rename and convert audio file.
+
+    Calls ::
+        from mhealthx.synapse_io import read_files_from_row
+        from mhealthx.utils import rename_file
+        from mhealthx.data_io import convert_audio_file
+
+    Parameters
+    ----------
+    synapse_table : string or Schema
+        a synapse ID or synapse table Schema object
+    row : pandas DataFrame or string
+        row of a Synapse table converted to a dataframe or csv file
+    column_name : string
+        name of file handle column
+    rename_file_append : string
+        append to file name prior to conversion (e.g., '.m4a')
+    convert_file_append : string
+        append to file name to indicate converted file format (e.g., '.wav')
+    copy_file_append : string
+        append to file name without creating a new file (e.g., '.csv')
+    convert_command : string
+        executable command without arguments
+    convert_input_args : string
+        arguments preceding input file name for convert_command
+    convert_output_args : string
+        arguments preceding output file name for convert_command
+    out_path : string
+        a local path in which to store downloaded files. If None, stores them in (~/.synapseCache)
+    username : string
+        Synapse username (only needed once on a given machine)
+    password : string
+        Synapse password (only needed once on a given machine)
+
+    Returns
+    -------
+    row : pandas DataFrame
+        same as passed in: row of a Synapse table as a file or dataframe
+    converted_file : string
+        full path to the converted file
+
+    Examples
+    --------
+    >>> from mhealthx.data_io import get_rename_convert_audio
+    >>> from mhealthx.synapse_io import extract_rows, read_files_from_row
+    >>> import synapseclient
+    >>> syn = synapseclient.Synapse()
+    >>> syn.login()
+    >>> synapse_table = 'syn4590865'
+    >>> row_dataframes, row_files = extract_rows(synapse_table, save_path='.', limit=3, username='', password='')
+    >>> column_name = 'audio_audio.m4a' #, 'audio_countdown.m4a']
+    >>> rename_file_append = '.m4a'
+    >>> convert_file_append = '.wav'
+    >>> copy_file_append = '.csv'
+    >>> convert_command = 'ffmpeg'
+    >>> convert_input_args = '-i'
+    >>> convert_output_args = '-ac 2'
+    >>> out_path = '.'
+    >>> username = ''
+    >>> password = ''
+    >>> for i in range(1):
+    >>>     row = row_dataframes[i]
+    >>>     row, filepath = read_files_from_row(synapse_table, row,
+    >>>         column_name, out_path, username, password)
+    >>>     print(row)
+    >>>     row, converted_file, copy_name = get_rename_convert_audio(
+    >>>                              synapse_table,
+    >>>                              row, column_name,
+    >>>                              rename_file_append,
+    >>>                              convert_file_append,
+    >>>                              copy_file_append,
+    >>>                              convert_command,
+    >>>                              convert_input_args,
+    >>>                              convert_output_args,
+    >>>                              out_path, username, password)
+
+    """
+    from mhealthx.synapse_io import read_files_from_row
+    from mhealthx.utils import rename_file
+    from mhealthx.data_io import convert_audio_file
+
+    row, filepath = read_files_from_row(synapse_table, row, column_name,
+                                        out_path, username, password)
+    if rename_file_append:
+        new_filepath = rename_file(old_file=filepath, new_filename='',
+                                   new_path='',
+                                   file_append=rename_file_append,
+                                   create_file=True)
+    else:
+        new_filepath = filepath
+
+    if convert_file_append:
+        converted_file = convert_audio_file(old_file=new_filepath,
+                                            file_append=convert_file_append,
+                                            new_file='',
+                                            command=convert_command,
+                                            input_args=convert_input_args,
+                                            output_args=convert_output_args)
+    else:
+        converted_file = new_filepath
+
+    if copy_file_append:
+        copy_name = converted_file + copy_file_append
+    else:
+        copy_name = None
+
+    return row, converted_file, copy_name
+
+
 def arff_to_csv(arff_file, csv_file):
     """
     Convert an arff file to csv format.

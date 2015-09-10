@@ -111,6 +111,10 @@ def read_files_from_row(synapse_table, row, column_name,
         name of file handle column
     out_path : string
         a local path in which to store downloaded files. If None, stores them in (~/.synapseCache)
+    username : string
+        Synapse username (only needed once on a given machine)
+    password : string
+        Synapse password (only needed once on a given machine)
 
     Returns
     -------

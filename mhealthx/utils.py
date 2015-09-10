@@ -109,7 +109,7 @@ def rename_file(old_file, new_filename='', new_path='', file_append='',
 
     Returns
     -------
-    new_file_name : string
+    new_filepath : string
         new file name (full path, if remove_path not set)
 
     Examples
@@ -120,13 +120,13 @@ def rename_file(old_file, new_filename='', new_path='', file_append='',
     >>> new_path = '.'
     >>> file_append = '.csv'
     >>> create_file = True
-    >>> new_file_name = rename_file(old_file, new_filename, new_path, file_append, create_file)
+    >>> new_filepath = rename_file(old_file, new_filename, new_path, file_append, create_file)
     """
     import os
     from shutil import copyfile
 
     if old_file is None:
-        new_file_name = None
+        new_filepath = None
     else:
         try:
             old_path, base_file_name = os.path.split(old_file)
@@ -135,18 +135,18 @@ def rename_file(old_file, new_filename='', new_path='', file_append='',
                 base_file_name = new_filename
 
             if new_path:
-                new_file_name = os.path.join(new_path, base_file_name)
+                new_filepath = os.path.join(new_path, base_file_name)
             else:
-                new_file_name = os.path.join(old_path, base_file_name)
+                new_filepath = os.path.join(old_path, base_file_name)
 
             if file_append:
-                new_file_name = ''.join((new_file_name, file_append))
+                new_filepath = ''.join((new_filepath, file_append))
 
             if create_file:
-                copyfile(old_file, new_file_name)
+                copyfile(old_file, new_filepath)
         except:
-            new_file_name = None
+            new_filepath = None
 
-    return new_file_name
+    return new_filepath
 
 
