@@ -309,7 +309,7 @@ if synID_phonation:
     # ------------------------------------------------------------------------
     # Create a feature table from the original metadata and openSMILE outputs:
     # ------------------------------------------------------------------------
-    concatenate_rows = False
+    concatenate_rows = True
     if concatenate_rows:
         #if not args.rows:
         TableOpenSMILE = JoinNode(name='construct_openSMILE_feature_table',
