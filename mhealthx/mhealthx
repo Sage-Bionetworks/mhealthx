@@ -29,10 +29,11 @@ import os, sys
 import argparse
 from nipype import config, logging
 from nipype.interfaces.io import DataSink
+from nipype.interfaces.utility import Merge
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node, JoinNode
 from mhealthx.data_io import get_rename_convert_audio, arff_to_csv, \
-    concatenate_tables_horizontally, concatenate_tables_vertically
+    concatenate_two_tables_horizontally, concatenate_tables_vertically
 from mhealthx.utils import rename_file, run_command
 
 # ============================================================================
@@ -163,7 +164,7 @@ if synID_phonation:
     # Convert voice file to .wav format
     # Copy file with new append:
     # ------------------------------------------------------------------------
-    PrepPhonation = Node(name='prep_phonation_file',
+    PrepPhonation = Node(name='prepare_phonation_file',
                          interface=Fn(function=get_rename_convert_audio,
                                       input_names=['synapse_table',
                                                    'row',
@@ -238,58 +239,36 @@ if synID_phonation:
                  FormatOpenSMILE, 'csv_file')
 
     # ------------------------------------------------------------------------
-    # Combine metadata list and openSMILE list into one list:
-    # ------------------------------------------------------------------------
-    def merge_func(in1, in2):
-        output = [in1, in2]
-        return output
-    MergePhonation = Node(name='merge_metadata_and_openSMILE',
-                          interface=Fn(function=merge_func,
-                                       input_names=['in1', 'in2'],
-                                       output_names=['output']))
-    Flow.connect(PrepPhonation, 'row', MergePhonation, 'in1')
-    Flow.connect(FormatOpenSMILE, 'csv_file', MergePhonation, 'in2')
-
-    # ------------------------------------------------------------------------
     # Join metadata and openSMILE output into one pandas DataFrame:
     # ------------------------------------------------------------------------
     JoinPhonation = Node(name='join_metadata_and_openSMILE_output',
-                        interface=Fn(function=concatenate_tables_horizontally,
-                                      input_names=['tables',
-                                                   'output_csv_file'],
-                                      output_names=['table_data',
-                                                    'output_csv_file']))
-    Flow.connect(MergePhonation, 'output', JoinPhonation, 'tables')
-    Flow.connect(FormatOpenSMILE, ('csv_file', rename_file, '', '',
-                                   '_with_metadata.csv', True),
-                 JoinPhonation, 'output_csv_file')
+                    interface=Fn(function=concatenate_two_tables_horizontally,
+                                 input_names=['table1',
+                                              'table2',
+                                              'output_csv_file'],
+                                 output_names=['table_data',
+                                               'output_csv_file']))
+    Flow.connect(PrepPhonation, 'row', JoinPhonation, 'table1')
+    Flow.connect(FormatOpenSMILE, 'csv_file', JoinPhonation, 'table2')
+    JoinPhonation.inputs.output_csv_file = None
 
     # ------------------------------------------------------------------------
     # Create a feature table from the original metadata and openSMILE outputs:
     # ------------------------------------------------------------------------
-    concatenate_rows = True
-    if concatenate_rows:
-        #if not args.rows:
-        TableOpenSMILE = JoinNode(name='construct_openSMILE_feature_table',
-                                  joinsource=PrepPhonation,
-                                  joinfield=['tables'],
-                        interface=Fn(function=concatenate_tables_vertically,
-                                         input_names=['tables',
-                                                      'output_csv_file'],
-                                         output_names=['table_data',
-                                                       'output_csv_file']))
-        Flow.connect(JoinPhonation, 'table_data', TableOpenSMILE, 'tables')
-        TableOpenSMILE.inputs.output_csv_file = os.path.join(
-            feature_table_file_path,
-            'phonation_features_openSMILE_IS13_ComParE.csv')
-        Flow.connect(TableOpenSMILE, 'output_csv_file',
-                     Sink, 'feature_tables.@openSMILE')
-    # ------------------------------------------------------------------------
-    # Else save individual rows to csv files:
-    # ------------------------------------------------------------------------
-    else:
-        Flow.connect(JoinPhonation, 'output_csv_file',
-                     Sink, 'feature_tables.@openSMILE_rows')
+    TableOpenSMILE = JoinNode(name='construct_openSMILE_feature_table',
+                              joinsource=PrepPhonation,
+                              joinfield=['tables'],
+                          interface=Fn(function=concatenate_tables_vertically,
+                                       input_names=['tables',
+                                                    'output_csv_file'],
+                                       output_names=['table_data',
+                                                     'output_csv_file']))
+    Flow.connect(JoinPhonation, 'table_data', TableOpenSMILE, 'tables')
+    TableOpenSMILE.inputs.output_csv_file = os.path.join(
+        feature_table_file_path,
+        'phonation_features_openSMILE_IS13_ComParE.csv')
+    Flow.connect(TableOpenSMILE, 'output_csv_file',
+                 Sink, 'feature_tables.@openSMILE')
 
 
 

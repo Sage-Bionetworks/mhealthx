@@ -381,15 +381,15 @@ def concatenate_tables_vertically(tables, output_csv_file=None):
 
 def concatenate_tables_horizontally(tables, output_csv_file=None):
     """
-    Horizontally concatenate multiple table files or pandas DataFrames or
-    dictionaries that have the same number of rows and store as a csv table.
+    Horizontally concatenate multiple table files or pandas DataFrames
+    that have the same number of rows and store as a csv table.
 
     If any one of the members of the tables list is itself a list,
     call concatenate_tables_vertically() on this list.
 
     Parameters
     ----------
-    tables : list of strings, pandas DataFrames, and/or lists of dicts
+    tables : list of strings or pandas DataFrames
         each component table has the same number of rows
     output_csv_file : string or None
         output table file (full path)
@@ -466,6 +466,53 @@ def concatenate_tables_horizontally(tables, output_csv_file=None):
         except:
             table_data = None
             output_csv_file = None
+
+    return table_data, output_csv_file
+
+
+def concatenate_two_tables_horizontally(table1, table2, output_csv_file=None):
+    """
+    Horizontally concatenate two table files or pandas DataFrames
+    that have the same number of rows and store as a csv table.
+
+    If either of the tables is itself a list,
+    concatenate_two_tables_horizontally() will call
+    concatenate_tables_vertically() on this list.
+
+    Parameters
+    ----------
+    table1 : string or pandas DataFrame
+    table2 : string or pandas DataFrame
+        same number of rows as table1
+    output_csv_file : string or None
+        output table file (full path)
+
+    Returns
+    -------
+    table_data : Pandas DataFrame
+        output table data
+    output_csv_file : string or None
+        output table file (full path)
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from mhealthx.data_io import concatenate_two_tables_horizontally
+    >>> table1 = pd.DataFrame({'A': ['A0', 'A1', 'A2', 'A3'],
+    >>>                     'B': ['B0', 'B1', 'B2', 'B3'],
+    >>>                     'C': ['C0', 'C1', 'C2', 'C3']},
+    >>>                    index=[0, 1, 2, 3])
+    >>> table2 = pd.DataFrame({'A': ['A4', 'A5', 'A6', 'A7'],
+    >>>                     'B': ['B4', 'B5', 'B6', 'B7'],
+    >>>                     'C': ['C4', 'C5', 'C6', 'C7']},
+    >>>                     index=[0, 1, 2, 3])
+    >>> output_csv_file = None #'./test.csv'
+    >>> table_data, output_csv_file = concatenate_two_tables_horizontally(table1, table2, output_csv_file)
+    """
+    from mhealthx.data_io import concatenate_tables_horizontally as cat_horz
+
+    tables = [table1, table2]
+    table_data, output_csv_file = cat_horz(tables, output_csv_file)
 
     return table_data, output_csv_file
 
