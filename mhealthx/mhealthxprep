@@ -45,18 +45,19 @@ parser = argparse.ArgumentParser(description="""
                     (-t: path to installed third-party software; -u, -p:
                     Synapse login for first use on a given machine)
 """,
-                    formatter_class = lambda prog:
-                    argparse.HelpFormatter(prog, max_help_position=40))
+                                 formatter_class = lambda prog:
+                                 argparse.HelpFormatter(prog,
+                                                        max_help_position=40))
 parser.add_argument("-v", "--version", help="version number",
                     action='version', version='%(prog)s 0.1')
 parser.add_argument("-n", "--numproc",
-                    help=('number of processors (default: 1)'),
+                    help='number of processors (default: 1)',
                     type=int, default=1, metavar='INT')
 parser.add_argument("-s", "--stop",
-                    help=('stop at this many rows of the Synapse tables'),
+                    help='stop at this many rows of the Synapse tables',
                     type=int, metavar='INT')
 parser.add_argument("-g", "--graph",
-                    help=('plot workflow graph: "hier", "flat", "exec"'),
+                    help='plot workflow graph: "hier", "flat", "exec"',
                     choices=['hier', 'flat', 'exec'], metavar='STR')
 parser.add_argument("--plugin", dest="plugin",
                     default='Linear',
@@ -66,39 +67,36 @@ parser.add_argument("--plugin_args", dest="plugin_args",
                          " --plugin_args \"dict(qsub_args='-q many')\"")
 setup_group = parser.add_argument_group('setup')
 setup_group.add_argument("-t", "--thirdparty",
-                    help="path to third-party software",
-                    metavar='STR')
+                         help="path to third-party software",
+                         metavar='STR')
 setup_group.add_argument("-u", "--username",
-                    help="Synapse username",
-                    metavar='STR')
+                         help="Synapse username", metavar='STR')
 setup_group.add_argument("-p", "--password",
-                    help="Synapse password",
-                    metavar='STR')
+                         help="Synapse password", metavar='STR')
 activities_group = parser.add_argument_group('activities')
 activities_group.add_argument("--phonation",
-                    help="Synapse table ID for phonation data",
-                    metavar='STR')
+                              help="Synapse table ID for phonation data",
+                              metavar='STR')
 activities_group.add_argument("--balance",
-                    help="Synapse table ID for balance data",
-                    metavar='STR')
+                              help="Synapse table ID for balance data",
+                              metavar='STR')
 activities_group.add_argument("--tapping",
-                    help="Synapse table ID for tapping data",
-                    metavar='STR')
+                              help="Synapse table ID for tapping data",
+                              metavar='STR')
 outputs_group = parser.add_argument_group('outputs')
 outputs_group.add_argument("-o", "--output",
-                    help='output folder (if not $HOME/mhealthx_output)',
-                    default=os.path.join(os.environ['HOME'],
-                                         'mhealthx_output'), metavar='STR')
+                           help='output folder (if not $HOME/mhealthx_output)',
+                           default=os.path.join(os.environ['HOME'],
+                                                'mhealthx_output'),
+                           metavar='STR')
 outputs_group.add_argument("-c", "--cache",
-                    help="cache folder"
-                         " (if not $HOME/mhealthx_cache)",
-                    default=os.path.join(os.environ['HOME'],
-                                         'mhealthx_cache'), metavar='STR')
+                           help="cache folder (if not $HOME/mhealthx_cache)",
+                           default=os.path.join(os.environ['HOME'],
+                                                'mhealthx_cache'),
+                           metavar='STR')
 args = parser.parse_args()
 username = args.username
 password = args.password
-if args.stop:
-    limit_rows = args.stop
 thirdparty = args.thirdparty
 synID_phonation = args.phonation
 synID_balance = args.balance
@@ -161,7 +159,7 @@ if synID_phonation:
     GetPhonationRows.inputs.synapse_table = synID_phonation
     GetPhonationRows.inputs.save_path = row_file_path
     if args.stop:
-        GetPhonationRows.inputs.limit = limit_rows
+        GetPhonationRows.inputs.limit = args.stop
     else:
         GetPhonationRows.inputs.limit = None
     GetPhonationRows.inputs.username = ''

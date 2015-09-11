@@ -25,7 +25,8 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 
 """
 
-import os, sys
+import os
+import sys
 import argparse
 from nipype import config, logging
 from nipype.interfaces.io import DataSink
@@ -47,18 +48,19 @@ parser = argparse.ArgumentParser(description="""
                     (-t: path to installed third-party software; -u, -p:
                     Synapse login for first use on a given machine)
 """,
-                    formatter_class = lambda prog:
-                    argparse.HelpFormatter(prog, max_help_position=40))
+                                 formatter_class = lambda prog:
+                                 argparse.HelpFormatter(prog,
+                                                        max_help_position=40))
 parser.add_argument("-v", "--version", help="version number",
                     action='version', version='%(prog)s 0.1')
 parser.add_argument("-n", "--numproc",
-                    help=('number of processors (default: 1)'),
+                    help='number of processors (default: 1)',
                     type=int, default=1, metavar='INT')
-parser.add_argument("-s", "--stop",
-                   help=('stop at this many rows of the Synapse tables'),
-                   type=int, metavar='INT', default=sys.maxint)
+parser.add_argument("--stop",
+                    help='stop at this many rows of the Synapse tables',
+                    type=int, metavar='INT', default=sys.maxint)
 parser.add_argument("-g", "--graph",
-                    help=('plot workflow graph: "hier", "flat", "exec"'),
+                    help='plot workflow graph: "hier", "flat", "exec"',
                     choices=['hier', 'flat', 'exec'], metavar='STR')
 parser.add_argument("--plugin", dest="plugin",
                     default='Linear',
@@ -68,45 +70,42 @@ parser.add_argument("--plugin_args", dest="plugin_args",
                          " --plugin_args \"dict(qsub_args='-q many')\"")
 setup_group = parser.add_argument_group('setup')
 setup_group.add_argument("-t", "--thirdparty",
-                    help="path to third-party software",
-                    metavar='STR')
+                         help="path to third-party software",
+                         metavar='STR')
 setup_group.add_argument("-u", "--username",
-                    help="Synapse username (once per machine)",
-                    metavar='STR')
+                         help="Synapse username", metavar='STR')
 setup_group.add_argument("-p", "--password",
-                    help="Synapse password (once per machine)",
-                    metavar='STR')
+                         help="Synapse password", metavar='STR')
 activities_group = parser.add_argument_group('activities')
 activities_group.add_argument("--phonation",
-                    help="Synapse table ID for phonation data",
-                    metavar='STR')
+                              help="Synapse table ID for phonation data",
+                              metavar='STR')
 activities_group.add_argument("--balance",
-                    help="Synapse table ID for balance data",
-                    metavar='STR')
+                              help="Synapse table ID for balance data",
+                              metavar='STR')
 activities_group.add_argument("--tapping",
-                    help="Synapse table ID for tapping data",
-                    metavar='STR')
+                              help="Synapse table ID for tapping data",
+                              metavar='STR')
 outputs_group = parser.add_argument_group('outputs')
 outputs_group.add_argument("-o", "--output",
-                    help='output folder (if not $HOME/mhealthx_output)',
-                    default=os.path.join(os.environ['HOME'],
-                                         'mhealthx_output'), metavar='STR')
+                           help='output folder (if not $HOME/mhealthx_output)',
+                           default=os.path.join(os.environ['HOME'],
+                                                'mhealthx_output'),
+                           metavar='STR')
 outputs_group.add_argument("-c", "--cache",
-                    help="cache folder"
-                         " (if not $HOME/mhealthx_cache)",
-                    default=os.path.join(os.environ['HOME'],
-                                         'mhealthx_cache'), metavar='STR')
+                           help="cache folder (if not $HOME/mhealthx_cache)",
+                           default=os.path.join(os.environ['HOME'],
+                                                'mhealthx_cache'),
+                           metavar='STR')
 outputs_group.add_argument("-i", "--input",
-                    help="input (prep) folder"
-                         " (if not $HOME/mhealthx_cache/mhealthxprep)",
-                    default=os.path.join(os.environ['HOME'],
-                                         'mhealthx_cache', 'mhealthxprep'),
-                    metavar='STR')
+                           help="input (prep) folder "
+                                "(if not $HOME/mhealthx_cache/mhealthxprep)",
+                           default=os.path.join(os.environ['HOME'],
+                                                'mhealthx_cache',
+                                                'mhealthxprep'),
+                           metavar='STR')
 outputs_group.add_argument('--reports', dest='reports', action='store_true',
-                           help=('generate nipype reports'))
-outputs_group.add_argument('--no-reports', dest='reports',
-                           action='store_false',
-                           help=('do not generate nipype reports'))
+                           help='generate nipype reports')
 outputs_group.set_defaults(reports=False)
 
 args = parser.parse_args()
@@ -187,7 +186,8 @@ if synID_phonation:
     PrepPhonation.inputs.synapse_table = synID_phonation
     row_files = [os.path.join(row_path, f)
                  for i,f in enumerate(os.listdir(row_path))
-                 if os.path.isfile(os.path.join(row_path,f)) and i<args.stop]
+                 if i < args.stop
+                 and os.path.isfile(os.path.join(row_path,f))]
     PrepPhonation.iterables = ("row", row_files)
     PrepPhonation.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
     PrepPhonation.inputs.rename_file_append = '.m4a'
@@ -249,11 +249,12 @@ if synID_phonation:
     TableOpenSMILE = JoinNode(name='assemble_openSMILE_table',
                               joinsource=PrepPhonation,
                               joinfield=['tables'],
-                          interface=Fn(function=concatenate_tables_vertically,
-                                       input_names=['tables',
-                                                    'output_csv_file'],
-                                       output_names=['table_data',
-                                                     'output_csv_file']))
+                              interface=Fn(function=
+                                           concatenate_tables_vertically,
+                                           input_names=['tables',
+                                                        'output_csv_file'],
+                                           output_names=['table_data',
+                                                         'output_csv_file']))
     Flow.connect(FormatOpenSMILE, 'table_data', TableOpenSMILE, 'tables')
     TableOpenSMILE.inputs.output_csv_file = os.path.join(
         feature_table_file_path,
