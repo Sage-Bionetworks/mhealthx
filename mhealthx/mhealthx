@@ -29,12 +29,11 @@ import os, sys
 import argparse
 from nipype import config, logging
 from nipype.interfaces.io import DataSink
-from nipype.interfaces.utility import Merge
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node, JoinNode
 from mhealthx.data_io import get_rename_convert_audio, arff_to_csv, \
-    concatenate_two_tables_horizontally, concatenate_tables_vertically
-from mhealthx.utils import rename_file, run_command
+    concatenate_tables_vertically
+from mhealthx.utils import run_command
 
 # ============================================================================
 #
@@ -55,9 +54,6 @@ parser.add_argument("-v", "--version", help="version number",
 parser.add_argument("-n", "--numproc",
                     help=('number of processors (default: 1)'),
                     type=int, default=1, metavar='INT')
-parser.add_argument("-r", "--report",
-                   help=('generate nipype reports'),
-                   type=bool, metavar='BOOL', default=False)
 parser.add_argument("-s", "--stop",
                    help=('stop at this many rows of the Synapse tables'),
                    type=int, metavar='INT', default=sys.maxint)
@@ -75,10 +71,10 @@ setup_group.add_argument("-t", "--thirdparty",
                     help="path to third-party software",
                     metavar='STR')
 setup_group.add_argument("-u", "--username",
-                    help="Synapse username",
+                    help="Synapse username (once per machine)",
                     metavar='STR')
 setup_group.add_argument("-p", "--password",
-                    help="Synapse password",
+                    help="Synapse password (once per machine)",
                     metavar='STR')
 activities_group = parser.add_argument_group('activities')
 activities_group.add_argument("--phonation",
@@ -106,6 +102,13 @@ outputs_group.add_argument("-i", "--input",
                     default=os.path.join(os.environ['HOME'],
                                          'mhealthx_cache', 'mhealthxprep'),
                     metavar='STR')
+outputs_group.add_argument('--reports', dest='reports', action='store_true',
+                           help=('generate nipype reports'))
+outputs_group.add_argument('--no-reports', dest='reports',
+                           action='store_false',
+                           help=('do not generate nipype reports'))
+outputs_group.set_defaults(reports=False)
+
 args = parser.parse_args()
 username = args.username
 password = args.password
@@ -227,35 +230,23 @@ if synID_phonation:
     OpenSMILE.inputs.closing = ''
 
     # ------------------------------------------------------------------------
-    # Format openSMILE output:
+    # Format openSMILE output and join with metadata:
     # ------------------------------------------------------------------------
-    FormatOpenSMILE = Node(name='format_openSMILE_output',
+    FormatOpenSMILE = Node(name='format_openSMILE_row',
                            interface=Fn(function=arff_to_csv,
                                         input_names=['arff_file',
-                                                     'csv_file'],
-                                        output_names=['csv_file']))
+                                                     'output_csv_file',
+                                                     'table_to_join'],
+                                        output_names=['table_data',
+                                                      'output_csv_file']))
     Flow.connect(OpenSMILE, 'argN', FormatOpenSMILE, 'arff_file')
-    Flow.connect(OpenSMILE, ('argN', rename_file, '', '', '.csv', True),
-                 FormatOpenSMILE, 'csv_file')
-
-    # ------------------------------------------------------------------------
-    # Join metadata and openSMILE output into one pandas DataFrame:
-    # ------------------------------------------------------------------------
-    JoinPhonation = Node(name='join_metadata_and_openSMILE_output',
-                    interface=Fn(function=concatenate_two_tables_horizontally,
-                                 input_names=['table1',
-                                              'table2',
-                                              'output_csv_file'],
-                                 output_names=['table_data',
-                                               'output_csv_file']))
-    Flow.connect(PrepPhonation, 'row', JoinPhonation, 'table1')
-    Flow.connect(FormatOpenSMILE, 'csv_file', JoinPhonation, 'table2')
-    JoinPhonation.inputs.output_csv_file = None
+    FormatOpenSMILE.inputs.output_csv_file = None
+    Flow.connect(PrepPhonation, 'row', FormatOpenSMILE, 'table_to_join')
 
     # ------------------------------------------------------------------------
     # Create a feature table from the original metadata and openSMILE outputs:
     # ------------------------------------------------------------------------
-    TableOpenSMILE = JoinNode(name='construct_openSMILE_feature_table',
+    TableOpenSMILE = JoinNode(name='assemble_openSMILE_table',
                               joinsource=PrepPhonation,
                               joinfield=['tables'],
                           interface=Fn(function=concatenate_tables_vertically,
@@ -263,7 +254,7 @@ if synID_phonation:
                                                     'output_csv_file'],
                                        output_names=['table_data',
                                                      'output_csv_file']))
-    Flow.connect(JoinPhonation, 'table_data', TableOpenSMILE, 'tables')
+    Flow.connect(FormatOpenSMILE, 'table_data', TableOpenSMILE, 'tables')
     TableOpenSMILE.inputs.output_csv_file = os.path.join(
         feature_table_file_path,
         'phonation_features_openSMILE_IS13_ComParE.csv')
@@ -355,7 +346,7 @@ if __name__ == '__main__':
     # config.enable_provenance()
     Flow.config['execution']['hash_method'] = 'timestamp'
     Flow.config['execution']['local_hash_check'] = False
-    Flow.config['execution']['create_report'] = args.report
+    Flow.config['execution']['create_report'] = args.reports
 
     # ------------------------------------------------------------------------
     # Generate a visual graph:

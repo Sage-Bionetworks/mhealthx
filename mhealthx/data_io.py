@@ -202,9 +202,9 @@ def get_rename_convert_audio(synapse_table, row, column_name,
     return row, converted_file, copy_name
 
 
-def arff_to_csv(arff_file, csv_file):
+def arff_to_csv(arff_file, output_csv_file=None, table_to_join=None):
     """
-    Convert an arff file to csv format.
+    Convert an arff file to a row (optionally combine with a table).
 
     Column headers include lines that start with '@attribute ',
     include 'numeric', and whose intervening string is not exception_string.
@@ -221,25 +221,33 @@ def arff_to_csv(arff_file, csv_file):
     ----------
     arff_file : string
         arff file (full path)
-    csv_file : string
-        csv file (full path)
+    output_csv_file : string or None
+        output table file (full path)
+    table_to_join : pandas DataFrame or None
+        row table to adjoin to the left of the above csv file
 
     Returns
     -------
-    csv_file : string
-        csv file (full path)
+    table_data : Pandas DataFrame
+        output table data
+    output_csv_file : string or None
+        output table file (full path)
 
     Examples
     --------
+    >>> import pandas as pd
     >>> from mhealthx.data_io import arff_to_csv
     >>> arff_file = '/Users/arno/csv/test1.csv'
-    >>> csv_file = 'test.csv'
-    >>> csv_file = arff_to_csv(arff_file, csv_file)
+    >>> output_csv_file = None #'test.csv'
+    >>> table_to_join = pd.DataFrame({'A': ['A0'], 'B': ['B0'], 'C': ['C0']}, index=[0])
+    >>> table_data, output_csv_file = arff_to_csv(arff_file, output_csv_file, table_to_join)
 
     """
+    import pandas as pd
 
     if arff_file is None:
-        csv_file = None
+        table_data = None
+        output_csv_file = None
     else:
         try:
             # String not included as a header:
@@ -253,7 +261,7 @@ def arff_to_csv(arff_file, csv_file):
                 lines = fid.readlines()
 
             # Loop through lines of the arff file:
-            cols = []
+            columns = []
             first_numeric = False
             for iline, line in enumerate(lines):
                 if '@data' in line:
@@ -269,14 +277,16 @@ def arff_to_csv(arff_file, csv_file):
                         else:
                             interstring = line[11:line.index('numeric') - 1]
 
-                        # If intervening string between '@attribute ' and 'numeric'
-                        # is not the exception_string, include as a column header:
+                        # If intervening string between '@attribute '
+                        # and 'numeric' is not the exception_string,
+                        # include as a column header:
                         if interstring != exception_string:
-                            cols.append(interstring)
+                            columns.append(interstring)
                             if not first_numeric:
                                 first_numeric = True
 
-                    # Else break if past first line with '@attribute ' and 'numeric':
+                    # Else break if past first line
+                    # that has '@attribute ' and 'numeric':
                     elif first_numeric:
                         break
 
@@ -284,22 +294,28 @@ def arff_to_csv(arff_file, csv_file):
             data = lines[len(lines)-1].split(',')
             data = data[data_from_left:-data_from_right]
 
-            if len(data) != len(cols):
+            if len(data) != len(columns):
                 raise Warning("arff file doesn't conform to expected format.")
 
-            # Write csv file:
-            headers = ",".join(cols)
-            data_string = ', '.join(data) + '\n'
-            if not csv_file:
-                csv_file = arff_file + '.csv'
-            with open(csv_file, 'w') as fout:
-                fout.write(headers)
-                fout.write('\n')
-                fout.writelines(data_string)
-        except:
-            csv_file = None
+            # Construct a pandas DataFrame:
+            table_data = pd.DataFrame(data)
+            table_data = table_data.transpose()
+            table_data.columns = columns
 
-    return csv_file
+            # Join the table_to_join and above DataFrame:
+            if table_to_join is not None and \
+                            type(table_to_join) == pd.DataFrame:
+                table_data = pd.concat([table_to_join, table_data], axis=1)
+
+            # Save output_csv_file:
+            if output_csv_file:
+                table_data.to_csv(output_csv_file)
+
+        except:
+            table_data = None
+            output_csv_file = None
+
+    return table_data, output_csv_file
 
 
 def concatenate_tables_vertically(tables, output_csv_file=None):
