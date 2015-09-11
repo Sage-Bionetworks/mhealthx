@@ -185,7 +185,7 @@ if synID_phonation:
                                                     'copy_name']))
     PrepPhonation.inputs.synapse_table = synID_phonation
     row_files = [os.path.join(row_path, f)
-                 for i,f in enumerate(os.listdir(row_path))
+                 for i,f in enumerate(sorted(os.listdir(row_path)))
                  if i < args.stop
                  and os.path.isfile(os.path.join(row_path,f))]
     PrepPhonation.iterables = ("row", row_files)
