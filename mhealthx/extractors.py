@@ -110,7 +110,6 @@ def openSMILE(synapse_table, row, column_name, rename_file_append,
     """
     import os
     import pandas as pd
-    #from nipype.algorithms import misc
 
     from mhealthx.data_io import get_convert_audio, arff_to_csv, row_to_table
     from mhealthx.utils import run_command
@@ -150,8 +149,8 @@ def openSMILE(synapse_table, row, column_name, rename_file_append,
     feature_row = pd.concat([row, row_data], axis=1)
 
     # 7. Write the feature row to a feature table.
-    if feature_table:
-        row_to_table(feature_row, feature_table)
+    # if feature_table:
+    #     row_to_table(feature_row, feature_table)
 
     return feature_row
 

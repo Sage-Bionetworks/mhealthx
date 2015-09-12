@@ -104,8 +104,6 @@ outputs_group.add_argument("-i", "--input",
                            metavar='STR')
 outputs_group.add_argument('--reports', dest='reports', action='store_true',
                            help='generate nipype reports')
-outputs_group.set_defaults(reports=True)
-
 args = parser.parse_args()
 username = args.username
 password = args.password
