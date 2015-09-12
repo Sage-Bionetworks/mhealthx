@@ -144,8 +144,7 @@ if not os.path.isdir(args.cache):
 row_path = os.path.join(args.input, 'row_files')
 if not os.path.isdir(row_path):
     os.makedirs(row_path)
-workflow_path = os.path.join(args.cache, main_workflow_name)
-feature_table_path = os.path.join(workflow_path, 'feature_tables')
+feature_table_path = os.path.join(args.output, 'feature_tables')
 if not os.path.isdir(feature_table_path):
     os.makedirs(feature_table_path)
 
@@ -159,24 +158,21 @@ if synID_phonation:
     # ------------------------------------------------------------------------
     # openSMILE:
     # 1. Retrieve each row + audio file from a Synapse table.
-    # 2. Append file name with ".m4a".
-    # 3. Convert voice file to .wav format.
-    # 4. Run openSMILE's SMILExtract audio feature extraction command.
-    # 5. Format openSMILE arff output as a (DataFrame) row.
-    # 6. Construct a feature row from the original and openSMILE rows.
-    # 7. Write the feature row to a feature table.
+    # 2. Convert voice file to .wav format.
+    # 3. Run openSMILE's SMILExtract audio feature extraction command.
+    # 4. Format openSMILE arff output as a (DataFrame) row.
+    # 5. Construct a feature row from the original and openSMILE rows.
+    # 6. Write the feature row to a feature table.
     # ------------------------------------------------------------------------
     openSMILE = Node(name='openSMILE',
                      interface=Fn(function=openSMILE,
                                   input_names=['synapse_table',
                                                'row',
                                                'column_name',
-                                               'rename_file_append',
                                                'convert_file_append',
                                                'convert_command',
                                                'convert_input_args',
                                                'convert_output_args',
-                                               'out_path',
                                                'username',
                                                'password',
                                                'command',
@@ -195,12 +191,10 @@ if synID_phonation:
                  and os.path.isfile(os.path.join(row_path,f))]
     openSMILE.iterables = ("row", row_files)
     openSMILE.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
-    openSMILE.inputs.rename_file_append = '.m4a'
     openSMILE.inputs.convert_file_append = '.wav'
     openSMILE.inputs.convert_command = 'ffmpeg'
     openSMILE.inputs.convert_input_args = '-i'
     openSMILE.inputs.convert_output_args = '-ac 2'
-    openSMILE.inputs.out_path = os.path.abspath('.')
     openSMILE.inputs.username = ''
     openSMILE.inputs.password = ''
     openSMILE.inputs.command = 'SMILExtract'
@@ -212,7 +206,6 @@ if synID_phonation:
     openSMILE.inputs.closing = '-nologfile 1'
     openSMILE.inputs.feature_table = os.path.join(feature_table_path,
         'phonation_features_openSMILE-2.1.0_IS13_ComParE.csv')
-
 
 
 

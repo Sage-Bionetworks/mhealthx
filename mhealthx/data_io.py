@@ -69,28 +69,24 @@ def convert_audio_file(old_file, new_file, command='ffmpeg',
 
 
 def get_convert_audio(synapse_table, row, column_name,
-                      rename_file_append='',
                       convert_file_append='', convert_command='ffmpeg',
                       convert_input_args='-i', convert_output_args='-ac 2',
                       out_path=None, username='', password=''):
     """
-    Read data from a row of a Synapse table, rename and convert audio file.
+    Read data from a row of a Synapse table and convert audio file.
 
     Calls ::
         from mhealthx.synapse_io import read_files_from_row
-        from mhealthx.utils import rename_file
         from mhealthx.data_io import convert_audio_file
 
     Parameters
     ----------
     synapse_table : string or Schema
         a synapse ID or synapse table Schema object
-    row : pandas DataFrame or string
-        row of a Synapse table converted to a dataframe or csv file
+    row : pandas Series or string
+        row of a Synapse table converted to a Series or csv file
     column_name : string
         name of file handle column
-    rename_file_append : string
-        append to file name prior to conversion (e.g., '.m4a')
     convert_file_append : string
         append to file name to indicate converted file format (e.g., '.wav')
     convert_command : string
@@ -109,22 +105,21 @@ def get_convert_audio(synapse_table, row, column_name,
 
     Returns
     -------
-    row : pandas DataFrame
-        same as passed in: row of a Synapse table as a file or dataframe
-    converted_file : string
+    row : pandas Series
+        same as passed in: row of a Synapse table as a file or Series
+    new_file : string
         full path to the converted file
 
     Examples
     --------
-    >>> from mhealthx.data_io import get_rename_convert_audio
+    >>> from mhealthx.data_io import get_convert_audio
     >>> from mhealthx.synapse_io import extract_rows, read_files_from_row
     >>> import synapseclient
     >>> syn = synapseclient.Synapse()
     >>> syn.login()
     >>> synapse_table = 'syn4590865'
-    >>> row_dataframes, row_files = extract_rows(synapse_table, save_path='.', limit=3, username='', password='')
+    >>> row_series, row_files = extract_rows(synapse_table, save_path='.', limit=3, username='', password='')
     >>> column_name = 'audio_audio.m4a' #, 'audio_countdown.m4a']
-    >>> rename_file_append = '.m4a'
     >>> convert_file_append = '.wav'
     >>> convert_command = 'ffmpeg'
     >>> convert_input_args = '-i'
@@ -133,46 +128,36 @@ def get_convert_audio(synapse_table, row, column_name,
     >>> username = ''
     >>> password = ''
     >>> for i in range(1):
-    >>>     row = row_dataframes[i]
+    >>>     row = row_series[i]
     >>>     row, filepath = read_files_from_row(synapse_table, row,
     >>>         column_name, out_path, username, password)
     >>>     print(row)
-    >>>     row, converted_file, copy_name = get_convert_audio(synapse_table,
-    >>>                              row, column_name,
-    >>>                              rename_file_append,
-    >>>                              convert_file_append,
-    >>>                              convert_command,
-    >>>                              convert_input_args,
-    >>>                              convert_output_args,
-    >>>                              out_path, username, password)
+    >>>     row, new_file = get_convert_audio(synapse_table,
+    >>>                                       row, column_name,
+    >>>                                       convert_file_append,
+    >>>                                       convert_command,
+    >>>                                       convert_input_args,
+    >>>                                       convert_output_args,
+    >>>                                       out_path, username, password)
 
     """
     from mhealthx.synapse_io import read_files_from_row
-    from mhealthx.utils import rename_file
     from mhealthx.data_io import convert_audio_file
 
-    row, filepath = read_files_from_row(synapse_table, row, column_name,
-                                        out_path, username, password)
-    if rename_file_append:
-        new_filepath = rename_file(old_file=filepath,
-                                   new_filename='',
-                                   new_path='',
-                                   file_append=rename_file_append,
-                                   create_file=True)
-    else:
-        new_filepath = filepath
+    try:
+        row, file_path = read_files_from_row(synapse_table, row, column_name,
+                                             out_path, username, password)
+        if convert_file_append:
+            renamed_file = file_path + convert_file_append
+            new_file = convert_audio_file(old_file=file_path,
+                                          new_file=renamed_file,
+                                          command=convert_command,
+                                          input_args=convert_input_args,
+                                          output_args=convert_output_args)
+    except:
+        new_file = None
 
-    if convert_file_append:
-        new_file = new_filepath + convert_file_append
-        converted_file = convert_audio_file(old_file=new_filepath,
-                                            new_file=new_file,
-                                            command=convert_command,
-                                            input_args=convert_input_args,
-                                            output_args=convert_output_args)
-    else:
-        converted_file = new_filepath
-
-    return row, converted_file
+    return row, new_file
 
 
 def arff_to_csv(arff_file, output_csv_file=None):
@@ -199,24 +184,23 @@ def arff_to_csv(arff_file, output_csv_file=None):
 
     Returns
     -------
-    table_data : Pandas DataFrame
+    row_data : Pandas Series
         output table data
     output_csv_file : string or None
         output table file (full path)
 
     Examples
     --------
-    >>> import pandas as pd
     >>> from mhealthx.data_io import arff_to_csv
     >>> arff_file = '/Users/arno/csv/test1.csv'
     >>> output_csv_file = None #'test.csv'
-    >>> table_data, output_csv_file = arff_to_csv(arff_file, output_csv_file)
+    >>> row_data, output_csv_file = arff_to_csv(arff_file, output_csv_file)
 
     """
     import pandas as pd
 
     if arff_file is None:
-        table_data = None
+        row_data = None
         output_csv_file = None
     else:
         try:
@@ -267,20 +251,18 @@ def arff_to_csv(arff_file, output_csv_file=None):
             if len(data) != len(columns):
                 raise Warning("arff file doesn't conform to expected format.")
 
-            # Construct a pandas DataFrame:
-            table_data = pd.DataFrame(data)
-            table_data = table_data.transpose()
-            table_data.columns = columns
+            # Construct a pandas Series:
+            row_data = pd.Series(data, index=columns)
 
             # Save output_csv_file:
             if output_csv_file:
-                table_data.to_csv(output_csv_file)
+                row_data.to_csv(output_csv_file)
 
         except:
-            table_data = None
+            row_data = None
             output_csv_file = None
 
-    return table_data, output_csv_file
+    return row_data, output_csv_file
 
 
 def row_to_table(row_data, output_table):
@@ -291,7 +273,7 @@ def row_to_table(row_data, output_table):
 
     Parameters
     ----------
-    row_data : pandas DataFrame
+    row_data : pandas Series
         row of data
     output_table : string
         add row to this table file
@@ -300,7 +282,7 @@ def row_to_table(row_data, output_table):
     --------
     >>> import pandas as pd
     >>> from mhealthx.data_io import row_to_table
-    >>> row_data = pd.DataFrame({'A': ['A0'], 'B': ['B0'], 'C': ['C0']})
+    >>> row_data = pd.Series({'A': ['A0'], 'B': ['B0'], 'C': ['C0']})
     >>> output_table = 'test.csv'
     >>> row_to_table(row_data, output_table)
     """
@@ -308,11 +290,11 @@ def row_to_table(row_data, output_table):
 
     addrow = misc.AddCSVRow()
     addrow.inputs.in_file = output_table
-    columns = row_data.columns
-    values = row_data.values
-    for icol, col in enumerate(columns):
-        eval("addrow.inputs.{0} = '{1}'".format(col, values[0][icol]))
+    addrow.inputs.set(**row_data.to_dict())
     addrow.run()
+
+
+
 
 
 def concatenate_tables_vertically(tables, output_csv_file=None):

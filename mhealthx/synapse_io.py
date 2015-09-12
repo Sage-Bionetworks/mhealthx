@@ -30,10 +30,10 @@ def extract_rows(synapse_table, save_path=None, limit=None,
 
     Returns
     -------
-    row_dataframes : list of pandas DataFrames
-        each row of a Synapse table converted to a dataframe
+    rows : list of pandas Series
+        each row of a Synapse table
     row_files: list of strings
-        file names corresponding to each of the row_dataframes
+        file names corresponding to each of the rows
 
     Examples
     --------
@@ -46,7 +46,7 @@ def extract_rows(synapse_table, save_path=None, limit=None,
     >>> limit = 3
     >>> username = ''
     >>> password = ''
-    >>> row_dataframes, row_files = extract_rows(synapse_table, save_path, limit, username='', password='')
+    >>> rows, row_files = extract_rows(synapse_table, save_path, limit, username='', password='')
 
     """
     import os
@@ -54,7 +54,7 @@ def extract_rows(synapse_table, save_path=None, limit=None,
     import synapseclient
 
     if not synapse_table:
-        row_dataframes = None
+        rows = None
         row_files = None
     else:
         try:
@@ -75,25 +75,24 @@ def extract_rows(synapse_table, save_path=None, limit=None,
             headers = {header['name']:i for i, header
                        in enumerate(results.headers)}
 
-            row_dataframes = []
+            rows = []
             row_files = []
             for irow, row in enumerate(results):
                 row_map = {col:row[i] for col,i in headers.iteritems()}
                 columns = row_map.keys()
                 values = [unicode(x) for x in row_map.values()]
-                df = pd.DataFrame(values, columns)
-                row_dataframe = df.transpose()
-                row_dataframes.append(row_dataframe)
+                row_series = pd.Series(values, columns)
+                rows.append(row_series)
                 if save_path:
                     csv_file = "row{0}.csv".format(irow)
                     csv_file = os.path.join(save_path, csv_file)
-                    row_dataframe.to_csv(csv_file)
+                    row_series.to_csv(csv_file)
                     row_files.append(csv_file)
         except:
-            row_dataframes = None
+            rows = None
             row_files = None
 
-    return row_dataframes, row_files
+    return rows, row_files
 
 
 def read_files_from_row(synapse_table, row, column_name,
@@ -105,8 +104,8 @@ def read_files_from_row(synapse_table, row, column_name,
     ----------
     synapse_table : string or Schema
         a synapse ID or synapse table Schema object
-    row : pandas DataFrame or string
-        row of a Synapse table converted to a dataframe or csv file
+    row : pandas Series or string
+        row of a Synapse table converted to a Series or csv file
     column_name : string
         name of file handle column
     out_path : string or None
@@ -119,8 +118,8 @@ def read_files_from_row(synapse_table, row, column_name,
 
     Returns
     -------
-    row : pandas DataFrame
-        same as passed in: row of a Synapse table as a file or dataframe
+    row : pandas Series
+        same as passed in: row of a Synapse table as a file or Series
     filepath : string
         downloaded file (full path)
 
@@ -135,11 +134,11 @@ def read_files_from_row(synapse_table, row, column_name,
     >>> limit = 3
     >>> username = ''
     >>> password = ''
-    >>> row_dataframes, row_files = extract_rows(synapse_table, save_path, limit, username='', password='')
+    >>> rows, row_files = extract_rows(synapse_table, save_path, limit, username='', password='')
     >>> column_name = 'audio_audio.m4a' #, 'audio_countdown.m4a']
     >>> out_path = '.'
     >>> for i in range(3):
-    >>>     row = row_dataframes[i]
+    >>>     row = rows[i]
     >>>     row, filepath = read_files_from_row(synapse_table, row, column_name, out_path, username, password)
     >>>     print(row)
 
@@ -151,12 +150,13 @@ def read_files_from_row(synapse_table, row, column_name,
         row = None
         filepath = None
     else:
-        if type(row) == pd.DataFrame:
+        if type(row) == pd.Series:
             pass
         elif type(row) == str:
-            row = pd.read_csv(row)
+            # Read row from csv file to pandas Series:
+            row = pd.Series.from_csv(row)
         else:
-            raise Warning("row should be a pandas DataFrame or a file string")
+            raise Warning("row should be a pandas Series or a file string")
 
         # Log in to Synapse:
         syn = synapseclient.Synapse()
@@ -384,24 +384,3 @@ def feature_file_to_synapse_table(feature_file, raw_feature_file,
 if __name__ == '__main__':
 
     pass
-    # # Setup:
-    # synapse_table_id = 'syn4590865'
-    # target_synapse_project_id = 'syn4899451'
-    # username = ''
-    # password = ''
-    # column_name = 'audio_audio.wav'
-    # download_limit = 3 # Test with first 3 rows or None for all rows
-    # out_path = '.'
-    # ffmpeg = '/home/arno/software/audio/ffmpeg/ffmpeg'
-    # table_name = 'mPower phonation wav files and file handle IDs'
-    # #table_name = 'mPower countdown wav files and file handle IDs'
-    #
-    # # Download files:
-    # table_data, files = read_synapse_table_files(synapse_table_id,
-    #                                              column_name, download_limit,
-    #                                              out_path,
-    #                                              username, password)
-    #
-    # # Upload wav files and file handle IDs:
-    # files_to_synapse_table(files, target_synapse_project_id,
-    #                                 table_name, username, password)

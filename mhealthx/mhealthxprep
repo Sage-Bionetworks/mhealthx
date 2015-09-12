@@ -141,7 +141,6 @@ if not os.path.isdir(row_file_path):
 #
 # ============================================================================
 if synID_phonation:
-    #phonFlow = Workflow(name='mhealthx phonation pipeline')
 
     # ------------------------------------------------------------------------
     # Retrieve information about all audio files in Synapse table:
@@ -153,7 +152,7 @@ if synID_phonation:
                                                       'limit',
                                                       'username',
                                                       'password'],
-                                         output_names=['row_dataframes',
+                                         output_names=['row_data',
                                                        'row_files']))
     Flow.add_nodes([GetPhonationRows])
     GetPhonationRows.inputs.synapse_table = synID_phonation
