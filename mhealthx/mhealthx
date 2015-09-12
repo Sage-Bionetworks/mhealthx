@@ -31,10 +31,8 @@ import argparse
 from nipype import config, logging
 from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
-from nipype.pipeline.engine import Workflow, Node, JoinNode
-from mhealthx.data_io import get_rename_convert_audio, arff_to_csv, \
-    concatenate_tables_vertically
-from mhealthx.utils import run_command
+from nipype.pipeline.engine import Workflow, Node
+from mhealthx.extractors import openSMILE
 
 # ============================================================================
 #
@@ -106,7 +104,7 @@ outputs_group.add_argument("-i", "--input",
                            metavar='STR')
 outputs_group.add_argument('--reports', dest='reports', action='store_true',
                            help='generate nipype reports')
-outputs_group.set_defaults(reports=False)
+outputs_group.set_defaults(reports=True)
 
 args = parser.parse_args()
 username = args.username
@@ -149,118 +147,74 @@ row_path = os.path.join(args.input, 'row_files')
 if not os.path.isdir(row_path):
     os.makedirs(row_path)
 workflow_path = os.path.join(args.cache, main_workflow_name)
-feature_table_file_path = os.path.join(workflow_path, 'feature_tables')
-if not os.path.isdir(feature_table_file_path):
-    os.makedirs(feature_table_file_path)
+feature_table_path = os.path.join(workflow_path, 'feature_tables')
+if not os.path.isdir(feature_table_path):
+    os.makedirs(feature_table_path)
 
 # ============================================================================
 #
-# Phonation workflow
+# Phonation
 #
 # ============================================================================
 if synID_phonation:
 
     # ------------------------------------------------------------------------
-    # Retrieve each row + audio file from Synapse table
-    # Append file name with ".m4a"
-    # Convert voice file to .wav format
-    # Copy file with new append:
+    # openSMILE:
+    # 1. Retrieve each row + audio file from a Synapse table.
+    # 2. Append file name with ".m4a".
+    # 3. Convert voice file to .wav format.
+    # 4. Run openSMILE's SMILExtract audio feature extraction command.
+    # 5. Format openSMILE arff output as a (DataFrame) row.
+    # 6. Construct a feature row from the original and openSMILE rows.
+    # 7. Write the feature row to a feature table.
     # ------------------------------------------------------------------------
-    PrepPhonation = Node(name='prepare_phonation_file',
-                         interface=Fn(function=get_rename_convert_audio,
-                                      input_names=['synapse_table',
-                                                   'row',
-                                                   'column_name',
-                                                   'rename_file_append',
-                                                   'convert_file_append',
-                                                   'copy_file_append',
-                                                   'convert_command',
-                                                   'convert_input_args',
-                                                   'convert_output_args',
-                                                   'out_path,'
-                                                   'username',
-                                                   'password'],
-                                      output_names=['row',
-                                                    'converted_file',
-                                                    'copy_name']))
-    PrepPhonation.inputs.synapse_table = synID_phonation
+    openSMILE = Node(name='openSMILE',
+                     interface=Fn(function=openSMILE,
+                                  input_names=['synapse_table',
+                                               'row',
+                                               'column_name',
+                                               'rename_file_append',
+                                               'convert_file_append',
+                                               'convert_command',
+                                               'convert_input_args',
+                                               'convert_output_args',
+                                               'out_path',
+                                               'username',
+                                               'password',
+                                               'command',
+                                               'flag1',
+                                               'flags',
+                                               'flagn',
+                                               'args',
+                                               'closing',
+                                               'feature_table'],
+                                  output_names=['feature_row']))
+    Flow.add_nodes([openSMILE])
+    openSMILE.inputs.synapse_table = synID_phonation
     row_files = [os.path.join(row_path, f)
                  for i,f in enumerate(sorted(os.listdir(row_path)))
                  if i < args.stop
                  and os.path.isfile(os.path.join(row_path,f))]
-    PrepPhonation.iterables = ("row", row_files)
-    PrepPhonation.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
-    PrepPhonation.inputs.rename_file_append = '.m4a'
-    PrepPhonation.inputs.convert_file_append = '.wav'
-    PrepPhonation.inputs.copy_file_append = '.csv'
-    PrepPhonation.inputs.convert_command = 'ffmpeg'
-    PrepPhonation.inputs.convert_input_args = '-i'
-    PrepPhonation.inputs.convert_output_args = '-ac 2'
-    PrepPhonation.inputs.out_path = '.'
-    PrepPhonation.inputs.username = ''
-    PrepPhonation.inputs.password = ''
-
-    # ------------------------------------------------------------------------
-    # Process openSMILE command:
-    # ------------------------------------------------------------------------
-    OpenSMILE = Node(name='openSMILE',
-                     interface=Fn(function=run_command,
-                                  input_names=['command',
-                                               'flag1',
-                                               'arg1',
-                                               'flags',
-                                               'args',
-                                               'flagN',
-                                               'argN',
-                                               'closing'],
-                                  output_names=['command_line',
-                                                'args',
-                                                'arg1',
-                                                'argN']))
-    OpenSMILE.inputs.command = 'SMILExtract'
-    OpenSMILE.inputs.flag1 = '-I'
-    Flow.connect(PrepPhonation, 'converted_file', OpenSMILE, 'arg1')
-    OpenSMILE.inputs.flags = '-C'
-    OpenSMILE.inputs.args = os.path.join(thirdparty, 'openSMILE-2.1.0',
+    openSMILE.iterables = ("row", row_files)
+    openSMILE.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
+    openSMILE.inputs.rename_file_append = '.m4a'
+    openSMILE.inputs.convert_file_append = '.wav'
+    openSMILE.inputs.convert_command = 'ffmpeg'
+    openSMILE.inputs.convert_input_args = '-i'
+    openSMILE.inputs.convert_output_args = '-ac 2'
+    openSMILE.inputs.out_path = os.path.abspath('.')
+    openSMILE.inputs.username = ''
+    openSMILE.inputs.password = ''
+    openSMILE.inputs.command = 'SMILExtract'
+    openSMILE.inputs.flag1 = '-I'
+    openSMILE.inputs.flags = '-C'
+    openSMILE.inputs.flagn = '-O'
+    openSMILE.inputs.args = os.path.join(thirdparty, 'openSMILE-2.1.0',
                                          'config', 'IS13_ComParE.conf')
-    OpenSMILE.inputs.flagN = '-O'
-    Flow.connect(PrepPhonation, 'copy_name', OpenSMILE, 'argN')
-    # Flow.connect(PrepPhonation, ('converted_file', rename_file,
-    #                              '', '', '.csv', True), OpenSMILE, 'argN')
-    OpenSMILE.inputs.closing = ''
+    openSMILE.inputs.closing = '-nologfile 1'
+    openSMILE.inputs.feature_table = os.path.join(feature_table_path,
+        'phonation_features_openSMILE-2.1.0_IS13_ComParE.csv')
 
-    # ------------------------------------------------------------------------
-    # Format openSMILE output and join with metadata:
-    # ------------------------------------------------------------------------
-    FormatOpenSMILE = Node(name='format_openSMILE_row',
-                           interface=Fn(function=arff_to_csv,
-                                        input_names=['arff_file',
-                                                     'output_csv_file',
-                                                     'table_to_join'],
-                                        output_names=['table_data',
-                                                      'output_csv_file']))
-    Flow.connect(OpenSMILE, 'argN', FormatOpenSMILE, 'arff_file')
-    FormatOpenSMILE.inputs.output_csv_file = None
-    Flow.connect(PrepPhonation, 'row', FormatOpenSMILE, 'table_to_join')
-
-    # ------------------------------------------------------------------------
-    # Create a feature table from the original metadata and openSMILE outputs:
-    # ------------------------------------------------------------------------
-    TableOpenSMILE = JoinNode(name='assemble_openSMILE_table',
-                              joinsource=PrepPhonation,
-                              joinfield=['tables'],
-                              interface=Fn(function=
-                                           concatenate_tables_vertically,
-                                           input_names=['tables',
-                                                        'output_csv_file'],
-                                           output_names=['table_data',
-                                                         'output_csv_file']))
-    Flow.connect(FormatOpenSMILE, 'table_data', TableOpenSMILE, 'tables')
-    TableOpenSMILE.inputs.output_csv_file = os.path.join(
-        feature_table_file_path,
-        'phonation_features_openSMILE_IS13_ComParE.csv')
-    Flow.connect(TableOpenSMILE, 'output_csv_file',
-                 Sink, 'feature_tables.@openSMILE')
 
 
 
@@ -317,10 +271,10 @@ if synID_phonation:
     #                                    output_names=[]))
     # Flow.connect(SaveOpenSMILE, 'csv_file',
     #              StoreOpenSMILE, 'feature_file')
-    # Flow.connect(OpenSMILE, 'argN',
+    # Flow.connect(OpenSMILE, 'argn',
     #              StoreOpenSMILE, 'raw_feature_file')
     # StoreOpenSMILE.inputs.provenance_activity_id = ''
-    # #Flow.connect(OpenSMILE, 'argN',
+    # #Flow.connect(OpenSMILE, 'argn',
     # #             StoreOpenSMILE, 'source_file_id')
     # StoreOpenSMILE.inputs.source_file_id = ''
     # Flow.connect(OpenSMILE, 'command_line',

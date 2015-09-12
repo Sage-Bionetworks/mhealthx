@@ -9,8 +9,8 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
-def run_command(command, flag1='', arg1='', flags=[], args=[],
-                flagN='', argN='', closing=''):
+def run_command(command, flag1='', arg1='', flags='', args=[],
+                flagn='', argn='', closing=''):
     """
     Run a generic command.
 
@@ -26,9 +26,9 @@ def run_command(command, flag1='', arg1='', flags=[], args=[],
         command line flags precede their respective args: ["-C", "-I", "-O"]
     args : string or list of strings
         command line arguments: ["config.conf", "input.wav", "output.csv"]
-    flagN : string
+    flagn : string
         optional last command line flag
-    argN : string
+    argn : string
         optional last argument, handy for iterating over in the pipeline
     closing : string
         closing string in command
@@ -41,7 +41,7 @@ def run_command(command, flag1='', arg1='', flags=[], args=[],
         command line arguments
     arg1 : string
         optional first argument, handy for iterating over in the pipeline
-    argN : string
+    argn : string
         optional last argument, handy for iterating over in the pipeline
 
     Examples
@@ -52,10 +52,10 @@ def run_command(command, flag1='', arg1='', flags=[], args=[],
     >>> arg1 = ''
     >>> flags = ['-l', '']
     >>> args = ['/software', '/desk']
-    >>> flagN = ''
-    >>> argN = ''
+    >>> flagn = ''
+    >>> argn = ''
     >>> closing = '> test.txt'
-    >>> command_line, args, arg1, argN = run_command(command, flag1, arg1, flags, args, flagN, argN, closing)
+    >>> command_line, args, arg1, argn = run_command(command, flag1, arg1, flags, args, flagn, argn, closing)
 
     """
     from nipype.interfaces.base import CommandLine
@@ -73,7 +73,7 @@ def run_command(command, flag1='', arg1='', flags=[], args=[],
             raise IOError("-flags and -args should both be strings or lists")
 
         options = ' '.join([' '.join([flag1, arg1]), flags_args,
-                            ' '.join([flagN, argN]), closing])
+                            ' '.join([flagn, argn]), closing])
         command_line = ' '.join([command, options])
 
         # Nipype command line wrapper:
@@ -85,14 +85,15 @@ def run_command(command, flag1='', arg1='', flags=[], args=[],
         command_line = None
         args = None
         arg1 = None
-        argN = None
+        argn = None
 
-    return command_line, args, arg1, argN
+    return command_line, args, arg1, argn
 
 
 def rename_file(old_file, new_filename='', new_path='', file_append='',
                 create_file=False):
-    """Rename (and optionally copy) a file / path / file_append.
+    """
+    Rename (and optionally copy) a file / path / file_append.
 
     Parameters
     ----------

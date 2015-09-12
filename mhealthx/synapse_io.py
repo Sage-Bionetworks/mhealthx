@@ -97,7 +97,7 @@ def extract_rows(synapse_table, save_path=None, limit=None,
 
 
 def read_files_from_row(synapse_table, row, column_name,
-                        out_path='.', username='', password=''):
+                        out_path=None, username='', password=''):
     """
     Read data from a row of a Synapse table.
 
@@ -109,8 +109,9 @@ def read_files_from_row(synapse_table, row, column_name,
         row of a Synapse table converted to a dataframe or csv file
     column_name : string
         name of file handle column
-    out_path : string
-        a local path in which to store downloaded files. If None, stores them in (~/.synapseCache)
+    out_path : string or None
+        a local path in which to store downloaded files.
+        If None, stores them in (~/.synapseCache)
     username : string
         Synapse username (only needed once on a given machine)
     password : string

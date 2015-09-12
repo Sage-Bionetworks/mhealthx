@@ -12,7 +12,7 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
-def convert_audio_file(old_file, file_append, new_file='', command='ffmpeg',
+def convert_audio_file(old_file, new_file, command='ffmpeg',
                        input_args='-i', output_args='-ac 2'):
     """
     Convert audio file to new format.
@@ -21,10 +21,8 @@ def convert_audio_file(old_file, file_append, new_file='', command='ffmpeg',
     ----------
     old_file : string
         full path to the input file
-    file_append : string
-        append to file name to indicate output file format (e.g., '.wav')
     new_file : string
-        full path to the output file (optional)
+        full path to the output file
     command : string
         executable command without arguments
     input_args : string
@@ -34,64 +32,47 @@ def convert_audio_file(old_file, file_append, new_file='', command='ffmpeg',
 
     Returns
     -------
-    converted_file : string
-        full path to the converted file
+    new_file : string
+        full path to the output file
 
     Examples
     --------
     >>> from mhealthx.data_io import convert_audio_file
     >>> old_file = '/Users/arno/mhealthx_cache/mhealthx/feature_files/test.m4a'
-    >>> file_append = '.wav'
-    >>> new_file = 'test.m4a'
+    >>> new_file = 'test.wav'
     >>> command = 'ffmpeg'
     >>> input_args = '-i'
     >>> output_args = '-ac 2'
-    >>> converted_file = convert_audio_file(old_file, file_append, new_file, command, input_args, output_args)
+    >>> new_file = convert_audio_file(old_file, file_append, new_file, command, input_args, output_args)
 
     """
     import os
     from nipype.interfaces.base import CommandLine
 
     if old_file is None:
-        converted_file = None
+        new_file = None
     else:
         if not os.path.isfile(old_file):
-            converted_file = None
+            new_file = None
         else:
             try:
-                ## Don't convert file if file already has correct append:
-                #if old_file.endswith(file_append): converted_file=old_file
-
-                # Convert file to new format:
-                if new_file:
-                    output_file = new_file + file_append
-                else:
-                    output_file = old_file + file_append
-
-                # Don't convert file if output file already exists:
-                #if os.path.isfile(output_file): converted_file=output_file
-
                 # Nipype command line wrapper:
                 cli = CommandLine(command = command)
                 cli.inputs.args = ' '.join([input_args, old_file,
-                                            output_args, output_file])
+                                            output_args, new_file])
                 cli.cmdline
                 cli.run()
-                converted_file = output_file
             except:
-                converted_file = None
+                new_file = None
 
-    return converted_file
+    return new_file
 
 
-def get_rename_convert_audio(synapse_table, row, column_name,
-                             rename_file_append='',
-                             convert_file_append='',
-                             copy_file_append='',
-                             convert_command='ffmpeg',
-                             convert_input_args='-i',
-                             convert_output_args='-ac 2',
-                             out_path='.', username='', password=''):
+def get_convert_audio(synapse_table, row, column_name,
+                      rename_file_append='',
+                      convert_file_append='', convert_command='ffmpeg',
+                      convert_input_args='-i', convert_output_args='-ac 2',
+                      out_path=None, username='', password=''):
     """
     Read data from a row of a Synapse table, rename and convert audio file.
 
@@ -112,16 +93,15 @@ def get_rename_convert_audio(synapse_table, row, column_name,
         append to file name prior to conversion (e.g., '.m4a')
     convert_file_append : string
         append to file name to indicate converted file format (e.g., '.wav')
-    copy_file_append : string
-        append to file name without creating a new file (e.g., '.csv')
     convert_command : string
         executable command without arguments
     convert_input_args : string
         arguments preceding input file name for convert_command
     convert_output_args : string
         arguments preceding output file name for convert_command
-    out_path : string
-        a local path in which to store downloaded files. If None, stores them in (~/.synapseCache)
+    out_path : string or None
+        a local path in which to store downloaded files.
+        If None, stores them in (~/.synapseCache)
     username : string
         Synapse username (only needed once on a given machine)
     password : string
@@ -146,7 +126,6 @@ def get_rename_convert_audio(synapse_table, row, column_name,
     >>> column_name = 'audio_audio.m4a' #, 'audio_countdown.m4a']
     >>> rename_file_append = '.m4a'
     >>> convert_file_append = '.wav'
-    >>> copy_file_append = '.csv'
     >>> convert_command = 'ffmpeg'
     >>> convert_input_args = '-i'
     >>> convert_output_args = '-ac 2'
@@ -158,12 +137,10 @@ def get_rename_convert_audio(synapse_table, row, column_name,
     >>>     row, filepath = read_files_from_row(synapse_table, row,
     >>>         column_name, out_path, username, password)
     >>>     print(row)
-    >>>     row, converted_file, copy_name = get_rename_convert_audio(
-    >>>                              synapse_table,
+    >>>     row, converted_file, copy_name = get_convert_audio(synapse_table,
     >>>                              row, column_name,
     >>>                              rename_file_append,
     >>>                              convert_file_append,
-    >>>                              copy_file_append,
     >>>                              convert_command,
     >>>                              convert_input_args,
     >>>                              convert_output_args,
@@ -177,7 +154,8 @@ def get_rename_convert_audio(synapse_table, row, column_name,
     row, filepath = read_files_from_row(synapse_table, row, column_name,
                                         out_path, username, password)
     if rename_file_append:
-        new_filepath = rename_file(old_file=filepath, new_filename='',
+        new_filepath = rename_file(old_file=filepath,
+                                   new_filename='',
                                    new_path='',
                                    file_append=rename_file_append,
                                    create_file=True)
@@ -185,26 +163,21 @@ def get_rename_convert_audio(synapse_table, row, column_name,
         new_filepath = filepath
 
     if convert_file_append:
+        new_file = new_filepath + convert_file_append
         converted_file = convert_audio_file(old_file=new_filepath,
-                                            file_append=convert_file_append,
-                                            new_file='',
+                                            new_file=new_file,
                                             command=convert_command,
                                             input_args=convert_input_args,
                                             output_args=convert_output_args)
     else:
         converted_file = new_filepath
 
-    if copy_file_append:
-        copy_name = converted_file + copy_file_append
-    else:
-        copy_name = None
-
-    return row, converted_file, copy_name
+    return row, converted_file
 
 
-def arff_to_csv(arff_file, output_csv_file=None, table_to_join=None):
+def arff_to_csv(arff_file, output_csv_file=None):
     """
-    Convert an arff file to a row (optionally combine with a table).
+    Convert an arff file to a row.
 
     Column headers include lines that start with '@attribute ',
     include 'numeric', and whose intervening string is not exception_string.
@@ -223,8 +196,6 @@ def arff_to_csv(arff_file, output_csv_file=None, table_to_join=None):
         arff file (full path)
     output_csv_file : string or None
         output table file (full path)
-    table_to_join : pandas DataFrame or None
-        row table to adjoin to the left of the above csv file
 
     Returns
     -------
@@ -239,8 +210,7 @@ def arff_to_csv(arff_file, output_csv_file=None, table_to_join=None):
     >>> from mhealthx.data_io import arff_to_csv
     >>> arff_file = '/Users/arno/csv/test1.csv'
     >>> output_csv_file = None #'test.csv'
-    >>> table_to_join = pd.DataFrame({'A': ['A0'], 'B': ['B0'], 'C': ['C0']}, index=[0])
-    >>> table_data, output_csv_file = arff_to_csv(arff_file, output_csv_file, table_to_join)
+    >>> table_data, output_csv_file = arff_to_csv(arff_file, output_csv_file)
 
     """
     import pandas as pd
@@ -302,11 +272,6 @@ def arff_to_csv(arff_file, output_csv_file=None, table_to_join=None):
             table_data = table_data.transpose()
             table_data.columns = columns
 
-            # Join the table_to_join and above DataFrame:
-            if table_to_join is not None and \
-                            type(table_to_join) == pd.DataFrame:
-                table_data = pd.concat([table_to_join, table_data], axis=1)
-
             # Save output_csv_file:
             if output_csv_file:
                 table_data.to_csv(output_csv_file)
@@ -316,6 +281,8 @@ def arff_to_csv(arff_file, output_csv_file=None, table_to_join=None):
             output_csv_file = None
 
     return table_data, output_csv_file
+
+
 
 
 def concatenate_tables_vertically(tables, output_csv_file=None):
