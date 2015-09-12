@@ -17,6 +17,9 @@ bash /shared/software/Miniconda-latest-Linux-x86_64.sh -b -f -p /shared/software
 # Install nipype pipeline framework:
 pip install nipype
 
+# https://pythonhosted.org/lockfile/lockfile.html
+pip install lockfile
+
 # Install ffmpeg dependencies:
 # (from https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu)
 mkdir /shared/software/ffmpeg
