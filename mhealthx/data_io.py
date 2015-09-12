@@ -283,6 +283,36 @@ def arff_to_csv(arff_file, output_csv_file=None):
     return table_data, output_csv_file
 
 
+def row_to_table(row_data, output_table):
+    """
+    Add row to table using nipype (thread-safe in multi-processor execution).
+
+    (Requires Python module lockfile)
+
+    Parameters
+    ----------
+    row_data : pandas DataFrame
+        row of data
+    output_table : string
+        add row to this table file
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from mhealthx.data_io import row_to_table
+    >>> row_data = pd.DataFrame({'A': ['A0'], 'B': ['B0'], 'C': ['C0']})
+    >>> output_table = 'test.csv'
+    >>> row_to_table(row_data, output_table)
+    """
+    from nipype.algorithms import misc
+
+    addrow = misc.AddCSVRow()
+    addrow.inputs.in_file = output_table
+    columns = row_data.columns
+    values = row_data.values
+    for icol, col in enumerate(columns):
+        eval("addrow.inputs.{0} = '{1}'".format(col, values[0][icol]))
+    addrow.run()
 
 
 def concatenate_tables_vertically(tables, output_csv_file=None):

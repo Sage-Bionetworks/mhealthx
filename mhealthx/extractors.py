@@ -96,7 +96,7 @@ def openSMILE(synapse_table, row, column_name, rename_file_append,
     >>> thirdparty = '/software'
     >>> args = os.path.join(thirdparty, 'openSMILE-2.1.0', 'config', 'IS13_ComParE.conf')
     >>> closing = '-nologfile 1'
-    >>> feature_table = None
+    >>> feature_table = feature_table = '/homedir/mhealthx_cache/mhealthx/feature_tables/phonation_features_openSMILE-2.1.0_IS13_ComParE.csv'
     >>> for i in range(1):
     >>>     row = row_dataframes[i]
     >>>     row, filepath = read_files_from_row(synapse_table, row,
@@ -112,7 +112,7 @@ def openSMILE(synapse_table, row, column_name, rename_file_append,
     import pandas as pd
     #from nipype.algorithms import misc
 
-    from mhealthx.data_io import get_convert_audio, arff_to_csv
+    from mhealthx.data_io import get_convert_audio, arff_to_csv, row_to_table
     from mhealthx.utils import run_command
 
 
@@ -147,16 +147,13 @@ def openSMILE(synapse_table, row, column_name, rename_file_append,
                                             output_csv_file=None)
 
     # 6. Construct a feature row from the original and openSMILE rows.
-    row_data = pd.concat([row, row_data], axis=1)
+    feature_row = pd.concat([row, row_data], axis=1)
 
     # 7. Write the feature row to a feature table.
-    from nipype.algorithms import misc
-    addrow  = misc.AddCSVRow()
-    addrow.inputs.in_file = feature_table
-    addrow.inputs.values = row_data.values()
-    addrow.run()
+    if feature_table:
+        row_to_table(feature_row, feature_table)
 
-    return row_data
+    return feature_row
 
 
 
