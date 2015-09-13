@@ -160,9 +160,8 @@ if synID_phonation:
     # 1. Retrieve each row + audio file from a Synapse table.
     # 2. Convert voice file to .wav format.
     # 3. Run openSMILE's SMILExtract audio feature extraction command.
-    # 4. Format openSMILE arff output as a (DataFrame) row.
-    # 5. Construct a feature row from the original and openSMILE rows.
-    # 6. Write the feature row to a feature table.
+    # 4. Construct a feature row from the original and openSMILE rows.
+    # 5. Write the feature row to a feature table.
     # ------------------------------------------------------------------------
     openSMILE = Node(name='openSMILE',
                      interface=Fn(function=openSMILE,
@@ -181,8 +180,9 @@ if synID_phonation:
                                                'flagn',
                                                'args',
                                                'closing',
-                                               'feature_table'],
-                                  output_names=['feature_row']))
+                                               'feature_table_path'],
+                                  output_names=['feature_row',
+                                                'feature_table']))
     Flow.add_nodes([openSMILE])
     openSMILE.inputs.synapse_table = synID_phonation
     row_files = [os.path.join(row_path, f)
@@ -200,12 +200,12 @@ if synID_phonation:
     openSMILE.inputs.command = 'SMILExtract'
     openSMILE.inputs.flag1 = '-I'
     openSMILE.inputs.flags = '-C'
-    openSMILE.inputs.flagn = '-O'
+    openSMILE.inputs.flagn = '-csvoutput' #'-O'
     openSMILE.inputs.args = os.path.join(thirdparty, 'openSMILE-2.1.0',
                                          'config', 'IS13_ComParE.conf')
     openSMILE.inputs.closing = '-nologfile 1'
-    openSMILE.inputs.feature_table = os.path.join(feature_table_path,
-        'phonation_features_openSMILE-2.1.0_IS13_ComParE.csv')
+    openSMILE.inputs.feature_table_path = feature_table_path
+    #Flow.connect(openSMILE, 'feature_table', Sink, 'phonation.@features')
 
 
 
