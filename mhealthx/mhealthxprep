@@ -84,11 +84,6 @@ activities_group.add_argument("--tapping",
                               help="Synapse table ID for tapping data",
                               metavar='STR')
 outputs_group = parser.add_argument_group('outputs')
-outputs_group.add_argument("-o", "--output",
-                           help='output folder (if not $HOME/mhealthx_output)',
-                           default=os.path.join(os.environ['HOME'],
-                                                'mhealthx_output'),
-                           metavar='STR')
 outputs_group.add_argument("-c", "--cache",
                            help="cache folder (if not $HOME/mhealthx_cache)",
                            default=os.path.join(os.environ['HOME'],
@@ -123,17 +118,12 @@ syn.login(username, password, rememberMe=True)
 main_workflow_name = 'mhealthxprep'
 Flow = Workflow(name=main_workflow_name)
 Flow.base_dir = args.cache
-Sink = Node(DataSink(), name='Results')
-Sink.inputs.base_directory = args.output
-if not os.path.isdir(args.output):
-    print("Create missing output directory: {0}".format(args.output))
-    os.makedirs(args.output)
 if not os.path.isdir(args.cache):
     print("Create missing cache directory: {0}".format(args.cache))
     os.makedirs(args.cache)
-row_file_path = os.path.join(args.cache, main_workflow_name, 'row_files')
-if not os.path.isdir(row_file_path):
-    os.makedirs(row_file_path)
+row_path = os.path.join(args.cache, main_workflow_name, 'row_files')
+if not os.path.isdir(row_path):
+    os.makedirs(row_path)
 
 # ============================================================================
 #
@@ -156,7 +146,7 @@ if synID_phonation:
                                                        'row_files']))
     Flow.add_nodes([GetPhonationRows])
     GetPhonationRows.inputs.synapse_table = synID_phonation
-    GetPhonationRows.inputs.save_path = row_file_path
+    GetPhonationRows.inputs.save_path = row_path
     if args.stop:
         GetPhonationRows.inputs.limit = args.stop
     else:

@@ -142,8 +142,6 @@ if not os.path.isdir(args.cache):
     print("Create missing cache directory: {0}".format(args.cache))
     os.makedirs(args.cache)
 row_path = os.path.join(args.input, 'row_files')
-if not os.path.isdir(row_path):
-    os.makedirs(row_path)
 feature_table_path = os.path.join(args.output, 'feature_tables')
 if not os.path.isdir(feature_table_path):
     os.makedirs(feature_table_path)
