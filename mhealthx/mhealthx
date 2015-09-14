@@ -67,8 +67,8 @@ parser.add_argument("--plugin_args", dest="plugin_args",
                     help="optional plugin arguments:"
                          " --plugin_args \"dict(qsub_args='-q many')\"")
 setup_group = parser.add_argument_group('setup')
-setup_group.add_argument("-t", "--thirdparty",
-                         help="path to third-party software",
+setup_group.add_argument("-d", "--dependencies",
+                         help="path to software dependencies",
                          metavar='STR')
 setup_group.add_argument("-u", "--username",
                          help="Synapse username", metavar='STR')
