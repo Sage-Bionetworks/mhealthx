@@ -85,7 +85,7 @@ activities_group.add_argument("--tapping",
                               help="Synapse table ID for tapping data",
                               metavar='STR')
 outputs_group = parser.add_argument_group('outputs')
-outputs_group.add_argument("-o", "--output",
+outputs_group.add_argument("-o", "--outputs",
                            help='output folder (if not $HOME/mhealthx_output)',
                            default=os.path.join(os.environ['HOME'],
                                                 'mhealthx_output'),
@@ -98,7 +98,7 @@ outputs_group.add_argument("-c", "--cache",
 outputs_group.add_argument("-t", "--temp",
                            help='temporary local output folder (optional)',
                            metavar='STR')
-outputs_group.add_argument("-i", "--input",
+outputs_group.add_argument("-i", "--inputs",
                            help="input (prep) folder "
                                 "(if not $HOME/mhealthx_cache/mhealthxprep)",
                            default=os.path.join(os.environ['HOME'],
@@ -137,15 +137,15 @@ main_workflow_name = 'mhealthx'
 Flow = Workflow(name=main_workflow_name)
 Flow.base_dir = args.cache
 Sink = Node(DataSink(), name='Results')
-Sink.inputs.base_directory = args.output
-if not os.path.isdir(args.output):
-    print("Create missing output directory: {0}".format(args.output))
-    os.makedirs(args.output)
+Sink.inputs.base_directory = args.outputs
+if not os.path.isdir(args.outputs):
+    print("Create missing output directory: {0}".format(args.outputs))
+    os.makedirs(args.outputs)
 if not os.path.isdir(args.cache):
     print("Create missing cache directory: {0}".format(args.cache))
     os.makedirs(args.cache)
-row_path = os.path.join(args.input, 'row_files')
-feature_table_path = os.path.join(args.output, 'feature_tables')
+row_path = os.path.join(args.inputs, 'row_files')
+feature_table_path = os.path.join(args.outputs, 'feature_tables')
 if not os.path.isdir(feature_table_path):
     os.makedirs(feature_table_path)
 
