@@ -110,7 +110,7 @@ outputs_group.add_argument('--reports', dest='reports', action='store_true',
 args = parser.parse_args()
 username = args.username
 password = args.password
-thirdparty = args.thirdparty
+dependencies = args.dependencies
 synID_phonation = args.phonation
 synID_balance = args.balance
 synID_tapping = args.tapping
@@ -203,7 +203,7 @@ if synID_phonation:
     openSMILE.inputs.flag1 = '-I'
     openSMILE.inputs.flags = '-C'
     openSMILE.inputs.flagn = '-csvoutput' #'-O'
-    openSMILE.inputs.args = os.path.join(thirdparty, 'openSMILE-2.1.0',
+    openSMILE.inputs.args = os.path.join(dependencies, 'openSMILE-2.1.0',
                                          'config', 'IS13_ComParE.conf')
     openSMILE.inputs.closing = '-nologfile 1'
     openSMILE.inputs.temporary_path = args.temp
