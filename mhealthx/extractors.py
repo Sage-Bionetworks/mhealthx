@@ -13,7 +13,7 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 def openSMILE(synapse_table, row, column_name, convert_file_append,
               convert_command, convert_input_args, convert_output_args,
               username, password, command, flag1, flags, flagn,
-              args, closing, feature_table_path):
+              args, closing, temporary_path, feature_table_path):
     """
     Retrieve, convert, process audio file, and store feature row to a table.
 
@@ -56,6 +56,8 @@ def openSMILE(synapse_table, row, column_name, convert_file_append,
         command line arguments: ["config.conf", "input.wav", "output.csv"]
     closing : string
         closing string in command
+    temporary_path : string
+        path for temporary output of audio files (optional, else cache dir)
     feature_table_path : string
         path to the output table file (parent directory)
 
@@ -96,6 +98,7 @@ def openSMILE(synapse_table, row, column_name, convert_file_append,
     >>> thirdparty = '/software'
     >>> args = os.path.join(thirdparty, 'openSMILE-2.1.0', 'config', 'IS13_ComParE.conf')
     >>> closing = '-nologfile 1'
+    >>> temporary_path = '/Users/arno/Desktop' #'/home/ubuntu'
     >>> feature_table_path = '.'
     >>> for i in range(1):
     >>>     #row = row_series[i]
@@ -108,19 +111,19 @@ def openSMILE(synapse_table, row, column_name, convert_file_append,
     >>>                      convert_command, convert_input_args,
     >>>                      convert_output_args, username, password, command,
     >>>                      flag1, flags, flagn, args, closing,
-    >>>                      feature_table_path)
+    >>>                      temporary_path, feature_table_path)
 
     """
     import os
     import pandas as pd
 
-    from mhealthx.data_io import get_convert_audio, arff_to_csv, row_to_table
+    from mhealthx.data_io import get_convert_audio, row_to_table
     from mhealthx.utils import run_command
 
     try:
         # 1. Retrieve each row + audio file from a Synapse table.
         # 2. Convert voice file to .wav format.
-        out_path = os.path.abspath('.')
+        out_path = temporary_path #os.path.abspath('.')
         row, new_file = get_convert_audio(synapse_table,
                                           row,
                                           column_name,
@@ -134,14 +137,13 @@ def openSMILE(synapse_table, row, column_name, convert_file_append,
 
         # 3. Run openSMILE's SMILExtract audio feature extraction command.
         cline, args, arg1, argn = run_command(command=command,
-                                                  flag1=flag1,
-                                                  arg1=new_file,
-                                                  flags=flags,
-                                                  args=args,
-                                                  flagn=flagn,
-                                                  argn=''.join([new_file,
-                                                                '.csv']),
-                                                  closing=closing)
+                                              flag1=flag1,
+                                              arg1=new_file,
+                                              flags=flags,
+                                              args=args,
+                                              flagn=flagn,
+                                              argn=''.join([new_file,'.csv']),
+                                              closing=closing)
 
         # 4. Construct a feature row from the original and openSMILE rows.
         row_data = pd.read_csv(argn, sep=";")
@@ -149,9 +151,10 @@ def openSMILE(synapse_table, row, column_name, convert_file_append,
         feature_row = pd.concat([row, row_data], axis=0)
 
         # 5. Write the feature row to a feature table.
-        feature_table = os.path.join(feature_table_path, #os.path.abspath('.'),
-                            'phonation_features_openSMILE-2.1.0_IS13_ComParE.csv')
+        feature_table = os.path.join(feature_table_path,
+                        'phonation_features_openSMILE-2.1.0_IS13_ComParE.csv')
         row_to_table(feature_row, feature_table)
+
     except:
         feature_row = None
         feature_table = None

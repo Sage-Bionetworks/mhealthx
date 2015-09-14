@@ -95,6 +95,9 @@ outputs_group.add_argument("-c", "--cache",
                            default=os.path.join(os.environ['HOME'],
                                                 'mhealthx_cache'),
                            metavar='STR')
+outputs_group.add_argument("-t", "--temp",
+                           help='temporary local output folder (optional)',
+                           metavar='STR')
 outputs_group.add_argument("-i", "--input",
                            help="input (prep) folder "
                                 "(if not $HOME/mhealthx_cache/mhealthxprep)",
@@ -178,6 +181,7 @@ if synID_phonation:
                                                'flagn',
                                                'args',
                                                'closing',
+                                               'temporary_path',
                                                'feature_table_path'],
                                   output_names=['feature_row',
                                                 'feature_table']))
@@ -202,6 +206,7 @@ if synID_phonation:
     openSMILE.inputs.args = os.path.join(thirdparty, 'openSMILE-2.1.0',
                                          'config', 'IS13_ComParE.conf')
     openSMILE.inputs.closing = '-nologfile 1'
+    openSMILE.inputs.temporary_path = args.temp
     openSMILE.inputs.feature_table_path = feature_table_path
     #Flow.connect(openSMILE, 'feature_table', Sink, 'phonation.@features')
 
