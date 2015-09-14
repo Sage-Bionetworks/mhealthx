@@ -13,7 +13,7 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 def openSMILE(synapse_table, row, column_name, convert_file_append,
               convert_command, convert_input_args, convert_output_args,
               username, password, command, flag1, flags, flagn,
-              args, closing, temporary_path, feature_table_path):
+              args, closing, temporary_path, feature_table_path, save_rows):
     """
     Retrieve, convert, process audio file, and store feature row to a table.
 
@@ -22,7 +22,7 @@ def openSMILE(synapse_table, row, column_name, convert_file_append,
         2. Convert voice file to .wav format.
         3. Run openSMILE's SMILExtract audio feature extraction command.
         4. Construct a feature row from the original and openSMILE rows.
-        5. Write the feature row to a feature table.
+        5. Write the feature row to a table or append to a feature table.
 
     Parameters
     ----------
@@ -60,6 +60,8 @@ def openSMILE(synapse_table, row, column_name, convert_file_append,
         path for temporary output of audio files (optional, else cache dir)
     feature_table_path : string
         path to the output table file (parent directory)
+    save_rows : Boolean
+        save individual rows rather than write to a single feature table?
 
     Returns
     -------
@@ -100,6 +102,7 @@ def openSMILE(synapse_table, row, column_name, convert_file_append,
     >>> closing = '-nologfile 1'
     >>> temporary_path = '/Users/arno/Desktop' #'/home/ubuntu'
     >>> feature_table_path = '.'
+    >>> save_rows = True
     >>> for i in range(1):
     >>>     #row = row_series[i]
     >>>     row = row_files[i]
@@ -111,7 +114,7 @@ def openSMILE(synapse_table, row, column_name, convert_file_append,
     >>>                      convert_command, convert_input_args,
     >>>                      convert_output_args, username, password, command,
     >>>                      flag1, flags, flagn, args, closing,
-    >>>                      temporary_path, feature_table_path)
+    >>>                      temporary_path, feature_table_path, save_rows)
 
     """
     import os
@@ -150,10 +153,15 @@ def openSMILE(synapse_table, row, column_name, convert_file_append,
         row_data = row_data.ix[0, :]
         feature_row = pd.concat([row, row_data], axis=0)
 
-        # 5. Write the feature row to a feature table.
-        feature_table = os.path.join(feature_table_path,
-                        'phonation_features_openSMILE-2.1.0_IS13_ComParE.csv')
-        row_to_table(feature_row, feature_table)
+        # 5. Write the feature row to a table or append to a feature table.
+        if save_rows:
+            feature_table = os.path.join(feature_table_path,
+                                         os.path.basename(argn))
+            feature_row.to_csv(feature_table)
+        else:
+            feature_table = os.path.join(feature_table_path,
+                            'phonation_features_openSMILE-2.1.0_IS13_ComParE.csv')
+            row_to_table(feature_row, feature_table)
 
     except:
         feature_row = None

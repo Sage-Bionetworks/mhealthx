@@ -162,7 +162,7 @@ if synID_phonation:
     # 2. Convert voice file to .wav format.
     # 3. Run openSMILE's SMILExtract audio feature extraction command.
     # 4. Construct a feature row from the original and openSMILE rows.
-    # 5. Write the feature row to a feature table.
+    # 5. Write the feature row to a table or append to a feature table.
     # ------------------------------------------------------------------------
     openSMILE = Node(name='openSMILE',
                      interface=Fn(function=openSMILE,
@@ -182,7 +182,8 @@ if synID_phonation:
                                                'args',
                                                'closing',
                                                'temporary_path',
-                                               'feature_table_path'],
+                                               'feature_table_path',
+                                               'save_rows'],
                                   output_names=['feature_row',
                                                 'feature_table']))
     Flow.add_nodes([openSMILE])
@@ -208,6 +209,7 @@ if synID_phonation:
     openSMILE.inputs.closing = '-nologfile 1'
     openSMILE.inputs.temporary_path = args.temp
     openSMILE.inputs.feature_table_path = feature_table_path
+    openSMILE.inputs.save_rows = True
     #Flow.connect(openSMILE, 'feature_table', Sink, 'phonation.@features')
 
 
