@@ -123,49 +123,49 @@ def openSMILE(synapse_table, row, column_name, convert_file_append,
     from mhealthx.data_io import get_convert_audio, row_to_table
     from mhealthx.utils import run_command
 
-    try:
-        # 1. Retrieve each row + audio file from a Synapse table.
-        # 2. Convert voice file to .wav format.
-        out_path = temporary_path #os.path.abspath('.')
-        row, new_file = get_convert_audio(synapse_table,
-                                          row,
-                                          column_name,
-                                          convert_file_append,
-                                          convert_command,
-                                          convert_input_args,
-                                          convert_output_args,
-                                          out_path,
-                                          username,
-                                          password)
+    #try:
+    # 1. Retrieve each row + audio file from a Synapse table.
+    # 2. Convert voice file to .wav format.
+    out_path = temporary_path #os.path.abspath('.')
+    row, new_file = get_convert_audio(synapse_table,
+                                      row,
+                                      column_name,
+                                      convert_file_append,
+                                      convert_command,
+                                      convert_input_args,
+                                      convert_output_args,
+                                      out_path,
+                                      username,
+                                      password)
 
-        # 3. Run openSMILE's SMILExtract audio feature extraction command.
-        cline, args, arg1, argn = run_command(command=command,
-                                              flag1=flag1,
-                                              arg1=new_file,
-                                              flags=flags,
-                                              args=args,
-                                              flagn=flagn,
-                                              argn=''.join([new_file,'.csv']),
-                                              closing=closing)
+    # 3. Run openSMILE's SMILExtract audio feature extraction command.
+    cline, args, arg1, argn = run_command(command=command,
+                                          flag1=flag1,
+                                          arg1=new_file,
+                                          flags=flags,
+                                          args=args,
+                                          flagn=flagn,
+                                          argn=''.join([new_file,'.csv']),
+                                          closing=closing)
 
-        # 4. Construct a feature row from the original and openSMILE rows.
-        row_data = pd.read_csv(argn, sep=";")
-        row_data = row_data.ix[0, :]
-        feature_row = pd.concat([row, row_data], axis=0)
+    # 4. Construct a feature row from the original and openSMILE rows.
+    row_data = pd.read_csv(argn, sep=";")
+    row_data = row_data.ix[0, :]
+    feature_row = pd.concat([row, row_data], axis=0)
 
-        # 5. Write the feature row to a table or append to a feature table.
-        if save_rows:
-            feature_table = os.path.join(feature_table_path,
-                                         os.path.basename(argn))
-            feature_row.to_csv(feature_table)
-        else:
-            feature_table = os.path.join(feature_table_path,
-                            'phonation_features_openSMILE-2.1.0_IS13_ComParE.csv')
-            row_to_table(feature_row, feature_table)
+    # 5. Write the feature row to a table or append to a feature table.
+    if save_rows:
+        feature_table = os.path.join(feature_table_path,
+                                     os.path.basename(argn))
+        feature_row.to_csv(feature_table)
+    else:
+        feature_table = os.path.join(feature_table_path,
+                        'phonation_features_openSMILE-2.1.0_IS13_ComParE.csv')
+        row_to_table(feature_row, feature_table)
 
-    except:
-        feature_row = None
-        feature_table = None
+    # except:
+    #     feature_row = None
+    #     feature_table = None
 
     return feature_row, feature_table
 

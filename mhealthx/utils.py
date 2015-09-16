@@ -60,32 +60,32 @@ def run_command(command, flag1='', arg1='', flags='', args=[],
     """
     from nipype.interfaces.base import CommandLine
 
-    try:
-        # Join flags with args:
-        if type(flags) == list and type(args) == list:
-            flag_arg_tuples = zip(flags, args)
-            flags_args = ''
-            for flag_arg_tuple in flag_arg_tuples:
-                flags_args = ' '.join([flags_args, ' '.join(flag_arg_tuple)])
-        elif type(flags) == str and type(args) == str:
-            flags_args = ' '.join([flags, args])
-        else:
-            raise IOError("-flags and -args should both be strings or lists")
+    # Join flags with args:
+    if type(flags) == list and type(args) == list:
+        flag_arg_tuples = zip(flags, args)
+        flags_args = ''
+        for flag_arg_tuple in flag_arg_tuples:
+            flags_args = ' '.join([flags_args, ' '.join(flag_arg_tuple)])
+    elif type(flags) == str and type(args) == str:
+        flags_args = ' '.join([flags, args])
+    else:
+        raise IOError("-flags and -args should both be strings or lists")
 
-        options = ' '.join([' '.join([flag1, arg1]), flags_args,
-                            ' '.join([flagn, argn]), closing])
-        command_line = ' '.join([command, options])
+    options = ' '.join([' '.join([flag1, arg1]), flags_args,
+                        ' '.join([flagn, argn]), closing])
+    command_line = ' '.join([command, options])
 
-        # Nipype command line wrapper:
-        cli = CommandLine(command=command)
-        cli.inputs.args = options
-        cli.cmdline
-        cli.run()
-    except:
-        command_line = None
-        args = None
-        arg1 = None
-        argn = None
+    # Nipype command line wrapper:
+    cli = CommandLine(command=command)
+    cli.inputs.args = options
+    cli.cmdline
+    cli.run()
+
+    # except:
+    #     command_line = None
+    #     args = None
+    #     arg1 = None
+    #     argn = None
 
     return command_line, args, arg1, argn
 
@@ -126,27 +126,21 @@ def rename_file(old_file, new_filename='', new_path='', file_append='',
     import os
     from shutil import copyfile
 
-    if old_file is None:
-        new_filepath = None
+    old_path, base_file_name = os.path.split(old_file)
+
+    if new_filename:
+        base_file_name = new_filename
+
+    if new_path:
+        new_filepath = os.path.join(new_path, base_file_name)
     else:
-        try:
-            old_path, base_file_name = os.path.split(old_file)
+        new_filepath = os.path.join(old_path, base_file_name)
 
-            if new_filename:
-                base_file_name = new_filename
+    if file_append:
+        new_filepath = ''.join((new_filepath, file_append))
 
-            if new_path:
-                new_filepath = os.path.join(new_path, base_file_name)
-            else:
-                new_filepath = os.path.join(old_path, base_file_name)
-
-            if file_append:
-                new_filepath = ''.join((new_filepath, file_append))
-
-            if create_file:
-                copyfile(old_file, new_filepath)
-        except:
-            new_filepath = None
+    if create_file:
+        copyfile(old_file, new_filepath)
 
     return new_filepath
 
