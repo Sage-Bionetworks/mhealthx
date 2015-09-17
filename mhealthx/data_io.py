@@ -46,26 +46,26 @@ def convert_audio_file(old_file, new_file, command='ffmpeg',
     >>> new_file = convert_audio_file(old_file, file_append, new_file, command, input_args, output_args)
 
     """
-    #import os
+    import os
     from nipype.interfaces.base import CommandLine
 
-    # if old_file is None:
-    #     new_file = None
-    # else:
-    #     if not os.path.isfile(old_file):
-    #         new_file = None
-    #     else:
-    #         try:
+    if old_file is None:
+        new_file = None
+    else:
+        if not os.path.isfile(old_file):
+            new_file = None
+        else:
+            try:
 
-    # Nipype command line wrapper:
-    cli = CommandLine(command = command)
-    cli.inputs.args = ' '.join([input_args, old_file,
-                                output_args, new_file])
-    cli.cmdline
-    cli.run()
+                # Nipype command line wrapper:
+                cli = CommandLine(command = command)
+                cli.inputs.args = ' '.join([input_args, old_file,
+                                            output_args, new_file])
+                cli.cmdline
+                cli.run()
 
-    # except:
-    #     new_file = None
+            except:
+                new_file = None
 
     return new_file
 
@@ -146,8 +146,6 @@ def get_convert_audio(synapse_table, row, column_name,
     from mhealthx.synapse_io import read_files_from_row
     from mhealthx.data_io import convert_audio_file
 
-    #try:
-
     row, file_path = read_files_from_row(synapse_table, row, column_name,
                                          out_path, username, password)
     if convert_file_append:
@@ -157,10 +155,9 @@ def get_convert_audio(synapse_table, row, column_name,
                                       command=convert_command,
                                       input_args=convert_input_args,
                                       output_args=convert_output_args)
-    #except:
-    #    new_file = None
-
     return row, new_file
+
+
 
 
 def arff_to_csv(arff_file, output_csv_file=None):
