@@ -42,8 +42,8 @@ from mhealthx.extractors import openSMILE
 parser = argparse.ArgumentParser(description="""
                     Extract features from mHealth data
                     stored on Sage Bionetwork's Synapse.org.
-                    Example: mhealthx --phonation syn4590865 -t /software
-                    (-t: path to installed third-party software; -u, -p:
+                    Example: mhealthx --phonation syn4590865 -d /software
+                    (-d: path to installed software dependencies; -u, -p:
                     Synapse login for first use on a given machine)
 """,
                                  formatter_class = lambda prog:
@@ -54,7 +54,7 @@ parser.add_argument("-v", "--version", help="version number",
 parser.add_argument("-n", "--numproc",
                     help='number of processors (default: 1)',
                     type=int, default=1, metavar='INT')
-parser.add_argument("--stop",
+parser.add_argument("-s", "--stop",
                     help='stop at this many rows of the Synapse tables',
                     type=int, metavar='INT', default=sys.maxint)
 parser.add_argument("-g", "--graph",
@@ -96,7 +96,7 @@ outputs_group.add_argument("-c", "--cache",
                                                 'mhealthx_cache'),
                            metavar='STR')
 outputs_group.add_argument("-t", "--temp",
-                           help='temporary local output folder (optional)',
+                           help='temp folder (if not same as --cache)',
                            metavar='STR')
 outputs_group.add_argument("-i", "--inputs",
                            help="input (prep) folder "
@@ -111,6 +111,10 @@ args = parser.parse_args()
 username = args.username
 password = args.password
 dependencies = args.dependencies
+if args.temp:
+    temporary_path = args.temp
+else:
+    temporary_path = args.cache
 synID_phonation = args.phonation
 synID_balance = args.balance
 synID_tapping = args.tapping
@@ -203,11 +207,11 @@ if synID_phonation:
     openSMILE.inputs.command = 'SMILExtract'
     openSMILE.inputs.flag1 = '-I'
     openSMILE.inputs.flags = '-C'
-    openSMILE.inputs.flagn = '-csvoutput' #'-O'
+    openSMILE.inputs.flagn = '-csvoutput'
     openSMILE.inputs.args = os.path.join(dependencies, 'openSMILE-2.1.0',
                                          'config', 'IS13_ComParE.conf')
     openSMILE.inputs.closing = '-nologfile 1'
-    openSMILE.inputs.temporary_path = args.temp
+    openSMILE.inputs.temporary_path = temporary_path
     openSMILE.inputs.feature_table_path = feature_table_path
     openSMILE.inputs.save_rows = True
     #Flow.connect(openSMILE, 'feature_table', Sink, 'phonation.@features')

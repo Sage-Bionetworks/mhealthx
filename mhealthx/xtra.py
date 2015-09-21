@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """
-Input/output functions to read and write data files or tables.
-
-See synapse_io.py for reading from and writing to Synapse.org.
+Unused functions.
 
 Authors:
     - Arno Klein, 2015  (arno@sagebase.org)  http://binarybottle.com
@@ -12,94 +10,76 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
-def convert_audio_file(old_file, new_file, command='ffmpeg',
-                       input_args='-i', output_args='-ac 2'):
+def rename_file(old_file, new_filename='', new_path='', file_append='',
+                create_file=False):
     """
-    Convert audio file to new format.
+    Rename (and optionally copy) a file / path / file_append.
 
     Parameters
     ----------
     old_file : string
-        full path to the input file
-    new_file : string
-        full path to the output file
-    command : string
-        executable command without arguments
-    input_args : string
-        arguments preceding input file name in command
-    output_args : string
-        arguments preceding output file name in command
+        old file name (full path)
+    new_filename : string
+        new file name (not the full path)
+    new_path : string
+        replacement path
+    file_append : string
+        append to file names
+    create_file : Boolean
+        copy file (or just create a string)?
 
     Returns
     -------
-    new_file : string
-        full path to the output file
+    new_filepath : string
+        new file name (full path, if remove_path not set)
 
     Examples
     --------
-    >>> from mhealthx.data_io import convert_audio_file
-    >>> old_file = '/Users/arno/mhealthx_cache/mhealthx/feature_files/test.m4a'
-    >>> new_file = 'test.wav'
-    >>> command = 'ffmpeg'
-    >>> input_args = '-i'
-    >>> output_args = '-ac 2'
-    >>> new_file = convert_audio_file(old_file, file_append, new_file, command, input_args, output_args)
-
+    >>> from mhealthx.utils import rename_file
+    >>> old_file = '/homedir/wav/test1.wav'
+    >>> new_filename = ''
+    >>> new_path = '.'
+    >>> file_append = '.csv'
+    >>> create_file = True
+    >>> new_filepath = rename_file(old_file, new_filename, new_path, file_append, create_file)
     """
     import os
-    from nipype.interfaces.base import CommandLine
+    from shutil import copyfile
 
-    if old_file is None:
-        new_file = None
+    old_path, base_file_name = os.path.split(old_file)
+
+    if new_filename:
+        base_file_name = new_filename
+
+    if new_path:
+        new_filepath = os.path.join(new_path, base_file_name)
     else:
-        if not os.path.isfile(old_file):
-            new_file = None
-        else:
-            try:
+        new_filepath = os.path.join(old_path, base_file_name)
 
-                # Nipype command line wrapper:
-                cli = CommandLine(command = command)
-                cli.inputs.args = ' '.join([input_args, old_file,
-                                            output_args, new_file])
-                cli.cmdline
-                cli.run()
+    if file_append:
+        new_filepath = ''.join((new_filepath, file_append))
 
-            except:
-                new_file = None
+    if create_file:
+        copyfile(old_file, new_filepath)
 
-    return new_file
+    return new_filepath
 
 
-def get_convert_audio(synapse_table, row, column_name,
-                      convert_file_append='', convert_command='ffmpeg',
-                      convert_input_args='-i', convert_output_args='-ac 2',
-                      out_path=None, username='', password=''):
+def copy_synapse_table(synapse_table_id, synapse_project_id, table_name='',
+                       remove_columns=[], username='', password=''):
     """
-    Read data from a row of a Synapse table and convert audio file.
-
-    Calls ::
-        from mhealthx.synapse_io import read_files_from_row
-        from mhealthx.data_io import convert_audio_file
+    Copy Synapse table to another Synapse project.
 
     Parameters
     ----------
-    synapse_table : string or Schema
-        a synapse ID or synapse table Schema object
-    row : pandas Series or string
-        row of a Synapse table converted to a Series or csv file
-    column_name : string
-        name of file handle column
-    convert_file_append : string
-        append to file name to indicate converted file format (e.g., '.wav')
-    convert_command : string
-        executable command without arguments
-    convert_input_args : string
-        arguments preceding input file name for convert_command
-    convert_output_args : string
-        arguments preceding output file name for convert_command
-    out_path : string or None
-        a local path in which to store downloaded files.
-        If None, stores them in (~/.synapseCache)
+    synapse_table_id : string
+        Synapse ID for table to copy
+    synapse_project_id : string
+        copy table to project with this Synapse ID
+    table_name : string
+        schema name of table
+    remove_columns : list of strings
+        column headers for columns to be removed
     username : string
         Synapse username (only needed once on a given machine)
     password : string
@@ -107,57 +87,175 @@ def get_convert_audio(synapse_table, row, column_name,
 
     Returns
     -------
-    row : pandas Series
-        same as passed in: row of a Synapse table as a file or Series
-    new_file : string
-        full path to the converted file
+    table_data : Pandas DataFrame
+        Synapse table contents
+    table_name : string
+        schema name of table
+    synapse_project_id : string
+        Synapse ID for project within which table is to be written
 
     Examples
     --------
-    >>> from mhealthx.data_io import get_convert_audio
-    >>> from mhealthx.synapse_io import extract_rows, read_files_from_row
-    >>> import synapseclient
-    >>> syn = synapseclient.Synapse()
-    >>> syn.login()
+    >>> from mhealthx.xtra import copy_synapse_table
+    >>> synapse_table_id = 'syn4590865'
+    >>> synapse_project_id = 'syn4899451'
+    >>> table_name = 'Copy of ' + synapse_table_id
+    >>> remove_columns = ['audio_audio.m4a', 'audio_countdown.m4a']
+    >>> username = ''
+    >>> password = ''
+    >>> table_data, table_name, synapse_project_id = copy_synapse_table(synapse_table_id, synapse_project_id, table_name, remove_columns, username, password)
+
+    """
+    import synapseclient
+    from synapseclient import Schema
+    from synapseclient.table import Table, as_table_columns
+
+    syn = synapseclient.Synapse()
+
+    # Log in to Synapse:
+    if username and password:
+        syn.login(username, password)
+    else:
+        syn.login()
+
+    # Download Synapse table as a dataframe:
+    results = syn.tableQuery("select * from {0}".format(synapse_table_id))
+    table_data = results.asDataFrame()
+
+    # Remove specified columns:
+    if remove_columns:
+        for remove_column in remove_columns:
+            del table_data[remove_column]
+
+    # Upload to Synapse table:
+    table_data.index = range(table_data.shape[0])
+    schema = Schema(name=table_name, columns=as_table_columns(table_data),
+                    parent=synapse_project_id,
+                    includeRowIdAndRowVersion=False)
+    table = syn.store(Table(schema, table_data))
+
+    return table_data, table_name, synapse_project_id
+
+
+def write_synapse_table(table_data, synapse_project_id, table_name='',
+                        username='', password=''):
+    """
+    Write data to a Synapse table.
+
+    Parameters
+    ----------
+    table_data : Pandas DataFrame
+        Synapse table contents
+    synapse_project_id : string
+        Synapse ID for project within which table is to be written
+    table_name : string
+        schema name of table
+    username : string
+        Synapse username (only needed once on a given machine)
+    password : string
+        Synapse password (only needed once on a given machine)
+
+    Examples
+    --------
+    >>> from mhealthx.xio import read_files_from_synapse_row
+    >>> from mhealthx.xtra import write_synapse_table
     >>> synapse_table = 'syn4590865'
-    >>> row_series, row_files = extract_rows(synapse_table, save_path='.', limit=3, username='', password='')
-    >>> column_name = 'audio_audio.m4a' #, 'audio_countdown.m4a']
-    >>> convert_file_append = '.wav'
-    >>> convert_command = 'ffmpeg'
-    >>> convert_input_args = '-i'
-    >>> convert_output_args = '-ac 2'
+    >>> row =
+    >>> column_name = ''
     >>> out_path = '.'
     >>> username = ''
     >>> password = ''
-    >>> for i in range(1):
-    >>>     row = row_series[i]
-    >>>     row, filepath = read_files_from_row(synapse_table, row,
-    >>>         column_name, out_path, username, password)
-    >>>     print(row)
-    >>>     row, new_file = get_convert_audio(synapse_table,
-    >>>                                       row, column_name,
-    >>>                                       convert_file_append,
-    >>>                                       convert_command,
-    >>>                                       convert_input_args,
-    >>>                                       convert_output_args,
-    >>>                                       out_path, username, password)
+    >>> table_data, files = read_files_from_synapse_row(synapse_table, row, column_name, out_path, username, password)
+    >>> synapse_project_id = 'syn4899451'
+    >>> table_name = 'Contents of ' + synapse_table
+    >>> write_synapse_table(table_data, synapse_project_id, table_name, username, password)
 
     """
-    from mhealthx.synapse_io import read_files_from_row
-    from mhealthx.data_io import convert_audio_file
+    import synapseclient
+    from synapseclient import Schema, Table, as_table_columns
 
-    row, file_path = read_files_from_row(synapse_table, row, column_name,
-                                         out_path, username, password)
-    if convert_file_append:
-        renamed_file = file_path + convert_file_append
-        new_file = convert_audio_file(old_file=file_path,
-                                      new_file=renamed_file,
-                                      command=convert_command,
-                                      input_args=convert_input_args,
-                                      output_args=convert_output_args)
-    return row, new_file
+    syn = synapseclient.Synapse()
+
+    # Log in to Synapse:
+    if username and password:
+        syn.login(username, password)
+    else:
+        syn.login()
+
+    table_data.index = range(table_data.shape[0])
+
+    schema = Schema(name=table_name, columns=as_table_columns(table_data),
+                    parent=synapse_project_id, includeRowIdAndRowVersion=False)
+
+    syn.store(Table(schema, table_data))
 
 
+def feature_file_to_synapse_table(feature_file, raw_feature_file,
+                                  source_file_id, provenance_activity_id,
+                                  command, command_line,
+                                  synapse_table_id, username='', password=''):
+    """
+    Upload files and file handle IDs to Synapse.
+
+    Parameters
+    ----------
+    feature_file : string
+        path to file to upload to Synapse
+    raw_feature_file : string
+        path to file to upload to Synapse
+    source_file_id : string
+        Synapse file handle ID to source file used to generate features
+    provenance_activity_id : string
+        Synapse provenance activity ID
+    command : string
+        name of command run to generate raw feature file
+    command_line : string
+        full command line run to generate raw feature file
+    synapse_table_id : string
+        Synapse table ID for table to store file handle IDs, etc.
+    username : string
+        Synapse username (only needed once on a given machine)
+    password : string
+        Synapse password (only needed once on a given machine)
+
+    Examples
+    --------
+    >>> from mhealthx.xtra import feature_file_to_synapse_table
+    >>> feature_file = '/Users/arno/Local/wav/test1.wav'
+    >>> raw_feature_file = '/Users/arno/Local/wav/test1.wav'
+    >>> source_file_id = ''
+    >>> provenance_activity_id = ''
+    >>> command_line = 'SMILExtract -C blah -I blah -O blah'
+    >>> synapse_table_id = 'syn4899451'
+    >>> username = ''
+    >>> password = ''
+    >>> feature_file_to_synapse_table(feature_file, raw_feature_file, source_file_id, provenance_activity_id, command_line, synapse_table_id, username, password)
+
+    """
+    import synapseclient
+    from synapseclient.table import Table
+
+    syn = synapseclient.Synapse()
+
+    # Log in to Synapse:
+    if username and password:
+        syn.login(username, password)
+    else:
+        syn.login()
+
+    # Store feature and raw feature files and get file handle IDs:
+    file_handle = syn._chunkedUploadFile(feature_file)
+    file_id = file_handle['id']
+    raw_file_handle = syn._chunkedUploadFile(raw_feature_file)
+    raw_file_id = raw_file_handle['id']
+
+    # Add new row to Synapse table:
+    new_rows = [[file_id, raw_file_id, source_file_id,
+                 provenance_activity_id, command, command_line]]
+    schema = syn.get(synapse_table_id)
+    table = syn.store(Table(schema, new_rows))
+
+    return synapse_table_id
 
 
 def arff_to_csv(arff_file, output_csv_file=None):
@@ -191,7 +289,7 @@ def arff_to_csv(arff_file, output_csv_file=None):
 
     Examples
     --------
-    >>> from mhealthx.data_io import arff_to_csv
+    >>> from mhealthx.xtra import arff_to_csv
     >>> arff_file = '/Users/arno/csv/test1.csv'
     >>> output_csv_file = None #'test.csv'
     >>> row_data, output_csv_file = arff_to_csv(arff_file, output_csv_file)
@@ -265,38 +363,6 @@ def arff_to_csv(arff_file, output_csv_file=None):
     return row_data, output_csv_file
 
 
-def row_to_table(row_data, output_table):
-    """
-    Add row to table using nipype (thread-safe in multi-processor execution).
-
-    (Requires Python module lockfile)
-
-    Parameters
-    ----------
-    row_data : pandas Series
-        row of data
-    output_table : string
-        add row to this table file
-
-    Examples
-    --------
-    >>> import pandas as pd
-    >>> from mhealthx.data_io import row_to_table
-    >>> row_data = pd.Series({'A': ['A0'], 'B': ['B0'], 'C': ['C0']})
-    >>> output_table = 'test.csv'
-    >>> row_to_table(row_data, output_table)
-    """
-    from nipype.algorithms import misc
-
-    addrow = misc.AddCSVRow()
-    addrow.inputs.in_file = output_table
-    addrow.inputs.set(**row_data.to_dict())
-    addrow.run()
-
-
-
-
-
 def concatenate_tables_vertically(tables, output_csv_file=None):
     """
     Vertically concatenate multiple table files or pandas DataFrames
@@ -319,7 +385,7 @@ def concatenate_tables_vertically(tables, output_csv_file=None):
     Examples
     --------
     >>> import pandas as pd
-    >>> from mhealthx.data_io import concatenate_tables_vertically
+    >>> from mhealthx.xtra import concatenate_tables_vertically
     >>> df1 = pd.DataFrame({'A': ['A0', 'A1', 'A2', 'A3'],
     >>>                     'B': ['B0', 'B1', 'B2', 'B3'],
     >>>                     'C': ['C0', 'C1', 'C2', 'C3']},
@@ -399,7 +465,7 @@ def concatenate_tables_horizontally(tables, output_csv_file=None):
     Examples
     --------
     >>> import pandas as pd
-    >>> from mhealthx.data_io import concatenate_tables_horizontally
+    >>> from mhealthx.xtra import concatenate_tables_horizontally
     >>> df1 = pd.DataFrame({'A': ['A0', 'A1', 'A2', 'A3'],
     >>>                     'B': ['B0', 'B1', 'B2', 'B3'],
     >>>                     'C': ['C0', 'C1', 'C2', 'C3']},
@@ -415,7 +481,7 @@ def concatenate_tables_horizontally(tables, output_csv_file=None):
     import os
     import pandas as pd
 
-    from mhealthx.data_io import concatenate_tables_vertically as cat_vert
+    from mhealthx.xtra import concatenate_tables_vertically as cat_vert
 
     if tables is None:
         table_data = None
@@ -492,7 +558,7 @@ def concatenate_two_tables_horizontally(table1, table2, output_csv_file=None):
     Examples
     --------
     >>> import pandas as pd
-    >>> from mhealthx.data_io import concatenate_two_tables_horizontally
+    >>> from mhealthx.xtra import concatenate_two_tables_horizontally
     >>> table1 = pd.DataFrame({'A': ['A0', 'A1', 'A2', 'A3'],
     >>>                     'B': ['B0', 'B1', 'B2', 'B3'],
     >>>                     'C': ['C0', 'C1', 'C2', 'C3']},
@@ -504,7 +570,7 @@ def concatenate_two_tables_horizontally(table1, table2, output_csv_file=None):
     >>> output_csv_file = None #'./test.csv'
     >>> table_data, output_csv_file = concatenate_two_tables_horizontally(table1, table2, output_csv_file)
     """
-    from mhealthx.data_io import concatenate_tables_horizontally as cat_horz
+    from mhealthx.xtra import concatenate_tables_horizontally as cat_horz
 
     tables = [table1, table2]
     table_data, output_csv_file = cat_horz(tables, output_csv_file)
@@ -512,6 +578,8 @@ def concatenate_two_tables_horizontally(table1, table2, output_csv_file=None):
     return table_data, output_csv_file
 
 
+# ============================================================================
+# Run above functions to convert all voice files to wav and upload to Synapse:
 # ============================================================================
 if __name__ == '__main__':
 

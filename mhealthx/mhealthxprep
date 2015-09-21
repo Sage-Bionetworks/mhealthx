@@ -28,10 +28,9 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 import os
 import argparse
 from nipype import config, logging
-from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node
-from mhealthx.synapse_io import extract_rows
+from mhealthx.xio import extract_synapse_rows
 
 # ============================================================================
 #
@@ -136,7 +135,7 @@ if synID_phonation:
     # Retrieve information about all audio files in Synapse table:
     # ------------------------------------------------------------------------
     GetPhonationRows = Node(name='retrieve_phonation_rows',
-                            interface=Fn(function=extract_rows,
+                            interface=Fn(function=extract_synapse_rows,
                                          input_names=['synapse_table',
                                                       'save_path',
                                                       'limit',
