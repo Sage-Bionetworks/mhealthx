@@ -57,6 +57,10 @@ cd openSMILE-2.1.0
 bash buildStandalone.sh -p /shared/software
 PATH="/shared/software/bin:$PATH"
 
+# Install essentia:
+#./waf configure --mode=release --with-python --lightweight=libav
+#./waf -> "cannot find -lavresample"
+
 # Install mhealthx nipype workflow for feature extraction:
 cd /shared/software
 git clone git@github.com:binarybottle/mhealthx.git
