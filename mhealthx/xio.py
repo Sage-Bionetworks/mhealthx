@@ -402,6 +402,69 @@ def get_convert_audio(synapse_table, row, column_name,
     return row, new_file
 
 
+def write_wav(data, filename, samplerate=44100, amplitude=32700):
+    """
+    Convert a list or array of numbers to a .wav format audio file.
+
+    After: http://blog.acipo.com/wave-generation-in-python/
+    and    https://gist.github.com/Pretz/1773870
+    and    http://codingmess.blogspot.com/2008/07/
+                  how-to-make-simple-wav-file-with-python.html
+
+    Parameters
+    ----------
+    data : list or array of floats or integers
+        input data to convert to audio file
+    filename : string
+        name of output audio file
+    samplerate : integer
+        number of desired samples per second for audio file
+    amplitude : integer
+        maximum amplitude for audio file
+
+    Returns
+    -------
+    filename : string
+        name of output audio file
+
+    Examples
+    --------
+    >>> from mhealthx.xio import write_wav
+    >>> import numpy as np
+    >>> from scipy.signal import resample
+    >>> filename = 'write_wav.wav'
+    >>> samplerate = 44100
+    >>> amplitude = 32700
+    >>> data = np.random.random(500000)
+    >>> data /= np.max(np.abs(data))
+    >>> #data = resample(data, samplerate/framerate)
+    >>> filename = write_wav(data, filename, samplerate, amplitude)
+    """
+    import wave
+    import struct
+
+    wavfile = wave.open(filename, "w")
+    nchannels = 1
+    sampwidth = 2
+    framerate = samplerate
+    nframes = len(data)
+    comptype = "NONE"
+    compname = "not compressed"
+    wavfile.setparams((nchannels,
+                       sampwidth,
+                       framerate,
+                       nframes,
+                       comptype,
+                       compname))
+    data = [int(amplitude * x) for x in data]
+    for x in data:
+        value = struct.pack('<h', x)
+        wavfile.writeframesraw(value)
+    wavfile.writeframes('')
+    wavfile.close()
+    print("{0} written".format(filename))
+
+
 def row_to_table(row_data, output_table):
     """
     Add row to table using nipype (thread-safe in multi-processor execution).
