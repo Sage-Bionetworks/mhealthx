@@ -55,11 +55,66 @@ wget -nc http://binarybottle.com/software/openSMILE-2.1.0.tar.gz
 tar xvf openSMILE-2.1.0.tar.gz
 cd openSMILE-2.1.0
 bash buildStandalone.sh -p /shared/software
-PATH="/shared/software/bin:$PATH"
+#PATH="/shared/software/bin:$PATH"
 
-# Install essentia:
-#./waf configure --mode=release --with-python --lightweight=libav
-#./waf -> "cannot find -lavresample"
+# Install Essentia dependencies:
+sudo apt-get install libyaml-dev libfftw3-dev libavcodec-dev libavformat-dev libavutil-dev libavresample-dev python-dev libsamplerate0-dev libtag1-dev
+#    build-essential
+sudo apt-get install pkg-config
+pip install pyyaml
+
+# Install Essentia:
+#cd /shared/software
+##git clone https://github.com/MTG/essentia.git
+##cd essentia
+#wget -nc https://github.com/MTG/essentia/archive/v2.1_beta2.tar.gz
+#tar xvf essentia-v2.1_beta2.tar.gz
+#cd essentia-v2.1_beta2
+#./waf configure --mode=release --with-python --with-cpptests --with-examples
+#./waf
+##sudo mkdir /usr/local/include/essentia
+##sudo mkdir /usr/local/include/essentia/scheduler
+##chmod 777 src
+##chmod 777 src/version.h
+##chmod 777 src/algorithms
+##chmod 777 src/algorithms/essentia_algorithms_reg.cpp
+##./waf build
+#sudo ./waf install
+
+# Install Kaldi dependencies:
+sudo apt-get install libtool subversion
+sudo apt-get install libatlas-dev libatlas-base-dev
+
+# Install Kaldi:
+cd /shared/software
+git clone https://github.com/kaldi-asr/kaldi.git kaldi-trunk --origin golden
+cd /shared/software/kaldi-trunk/tools
+make
+cd /shared/software/kaldi-trunk/src
+./configure; make depend; make
+
+# Install YAAFE dependencies:
+#sudo apt-get install cmake-curses-gui libargtable2-0 libargtable2-dev libsndfile1 libsndfile1-dev libmpg123-0 libmpg123-dev libfftw3-3 libfftw3-dev liblapack-dev libhdf5-serial-dev libhdf5-7
+##   cmake
+# Install YAAFE:
+#mkdir build; cd build
+#ccmake -DCMAKE_PREFIX_PATH=/shared/software/yaafe-v0.64/build/lib -DCMAKE_INSTALL_PREFIX=/shared/software/yaafe-v0.64/ ..
+#make; make install
+
+# Install jAudio dependencies:
+#sudo apt-get install ant
+#sudo apt-get install openjdk-7-jdk
+# Install jAudio:
+#git clone https://github.com/anjackson/jAudio.git
+#cd /shared/software/jAudio
+#ant jar
+#...
+
+# Install grt:
+#sudo apt-get install g++-4.8
+
+# Install text to audio conversion:
+pip install scikit-learn
 
 # Install mhealthx nipype workflow for feature extraction:
 cd /shared/software
