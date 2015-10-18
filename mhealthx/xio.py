@@ -285,7 +285,7 @@ def convert_audio_file(old_file, new_file, command='ffmpeg',
     >>> old_file = '/Users/arno/mhealthx_cache/mhealthx/feature_files/test.m4a'
     >>> new_file = 'test.wav'
     >>> command = 'ffmpeg'
-    >>> input_args = '-i'
+    >>> input_args = '-y -i'
     >>> output_args = '-ac 2'
     >>> new_file = convert_audio_file(old_file, new_file, command, input_args, output_args)
 
@@ -313,7 +313,7 @@ def convert_audio_file(old_file, new_file, command='ffmpeg',
 
 def get_convert_audio(synapse_table, row, column_name,
                       convert_file_append='', convert_command='ffmpeg',
-                      convert_input_args='-i', convert_output_args='-ac 2',
+                      convert_input_args='-y -i', convert_output_args='-ac 2',
                       out_path='.', username='', password=''):
     """
     Read data from a row of a Synapse table and convert audio file.
@@ -365,7 +365,7 @@ def get_convert_audio(synapse_table, row, column_name,
     >>> column_name = 'audio_audio.m4a' #, 'audio_countdown.m4a']
     >>> convert_file_append = '.wav'
     >>> convert_command = 'ffmpeg'
-    >>> convert_input_args = '-i'
+    >>> convert_input_args = '-y -i'
     >>> convert_output_args = '-ac 2'
     >>> out_path = '.'
     >>> username = ''
@@ -402,6 +402,46 @@ def get_convert_audio(synapse_table, row, column_name,
     return row, new_file
 
 
+# def read_accel_json(data, filename, samplerate=44100, amplitude=32700):
+#     """
+#     Convert a list or array of numbers to a .wav format audio file.
+#
+#     After: http://blog.acipo.com/wave-generation-in-python/
+#     and    https://gist.github.com/Pretz/1773870
+#     and    http://codingmess.blogspot.com/2008/07/
+#                   how-to-make-simple-wav-file-with-python.html
+#
+#     Parameters
+#     ----------
+#     data : list or array of floats or integers
+#         input data to convert to audio file
+#     filename : string
+#         name of output audio file
+#     samplerate : integer
+#         number of desired samples per second for audio file
+#     amplitude : integer
+#         maximum amplitude for audio file
+#
+#     Returns
+#     -------
+#     filename : string
+#         name of output .wav audio file
+#
+#     Examples
+#     --------
+#     >>> from mhealthx.xio import write_wav
+#     >>> import numpy as np
+#     >>> from scipy.signal import resample
+#     >>> filename = 'write_wav.wav'
+#     >>> samplerate = 44100
+#     >>> amplitude = 32700
+#     >>> data = np.random.random(500000)
+#     >>> data /= np.max(np.abs(data))
+#     >>> #data = resample(data, samplerate/framerate)
+#     >>> filename = write_wav(data, filename, samplerate, amplitude)
+#     """
+
+
 def write_wav(data, filename, samplerate=44100, amplitude=32700):
     """
     Convert a list or array of numbers to a .wav format audio file.
@@ -425,7 +465,7 @@ def write_wav(data, filename, samplerate=44100, amplitude=32700):
     Returns
     -------
     filename : string
-        name of output audio file
+        name of output .wav audio file
 
     Examples
     --------
@@ -456,13 +496,18 @@ def write_wav(data, filename, samplerate=44100, amplitude=32700):
                        nframes,
                        comptype,
                        compname))
+
     data = [int(amplitude * x) for x in data]
+
     for x in data:
         value = struct.pack('<h', x)
         wavfile.writeframesraw(value)
+
     wavfile.writeframes('')
     wavfile.close()
     print("{0} written".format(filename))
+
+    return filename
 
 
 def row_to_table(row_data, output_table):

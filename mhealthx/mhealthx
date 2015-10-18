@@ -33,6 +33,7 @@ from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node
 from mhealthx.extractors import openSMILE
+from mhealthx.xio import get_convert_audio
 
 # ============================================================================
 #
@@ -161,24 +162,49 @@ if not os.path.isdir(feature_table_path):
 if synID_phonation:
 
     # ------------------------------------------------------------------------
-    # openSMILE:
+    # Phonation data:
     # 1. Retrieve each row + audio file from a Synapse table.
     # 2. Convert voice file to .wav format.
-    # 3. Run openSMILE's SMILExtract audio feature extraction command.
-    # 4. Construct a feature row from the original and openSMILE rows.
-    # 5. Write the feature row to a table or append to a feature table.
+    # ------------------------------------------------------------------------
+    getPhonation = Node(name='get_phonation_data',
+                        interface=Fn(function=get_convert_audio,
+                                     input_names=['synapse_table',
+                                                  'row',
+                                                  'column_name',
+                                                  'convert_file_append',
+                                                  'convert_command',
+                                                  'convert_input_args',
+                                                  'convert_output_args',
+                                                  'out_path',
+                                                  'username',
+                                                  'password'],
+                                     output_names=['row',
+                                                   'new_file']))
+    getPhonation.inputs.synapse_table = synID_phonation
+    row_files = [os.path.join(row_path, f)
+                 for i,f in enumerate(sorted(os.listdir(row_path)))
+                 if i < args.stop
+                 and os.path.isfile(os.path.join(row_path,f))]
+    getPhonation.iterables = ("row", row_files)
+    getPhonation.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
+    getPhonation.inputs.convert_file_append = '.wav'
+    getPhonation.inputs.convert_command = 'ffmpeg'
+    getPhonation.inputs.convert_input_args = '-i'
+    getPhonation.inputs.convert_output_args = '-ac 2'
+    getPhonation.inputs.out_path = temporary_path
+    getPhonation.inputs.username = ''
+    getPhonation.inputs.password = ''
+
+    # ------------------------------------------------------------------------
+    # openSMILE:
+    # 1. Run openSMILE's SMILExtract audio feature extraction command.
+    # 2. Construct a feature row from the original and openSMILE rows.
+    # 3. Write the feature row to a table or append to a feature table.
     # ------------------------------------------------------------------------
     openSMILE = Node(name='openSMILE',
                      interface=Fn(function=openSMILE,
-                                  input_names=['synapse_table',
+                                  input_names=['audio_file',
                                                'row',
-                                               'column_name',
-                                               'convert_file_append',
-                                               'convert_command',
-                                               'convert_input_args',
-                                               'convert_output_args',
-                                               'username',
-                                               'password',
                                                'command',
                                                'flag1',
                                                'flags',
@@ -190,20 +216,8 @@ if synID_phonation:
                                                'save_rows'],
                                   output_names=['feature_row',
                                                 'feature_table']))
-    Flow.add_nodes([openSMILE])
-    openSMILE.inputs.synapse_table = synID_phonation
-    row_files = [os.path.join(row_path, f)
-                 for i,f in enumerate(sorted(os.listdir(row_path)))
-                 if i < args.stop
-                 and os.path.isfile(os.path.join(row_path,f))]
-    openSMILE.iterables = ("row", row_files)
-    openSMILE.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
-    openSMILE.inputs.convert_file_append = '.wav'
-    openSMILE.inputs.convert_command = 'ffmpeg'
-    openSMILE.inputs.convert_input_args = '-i'
-    openSMILE.inputs.convert_output_args = '-ac 2'
-    openSMILE.inputs.username = ''
-    openSMILE.inputs.password = ''
+    Flow.connect(getPhonation, 'new_file', openSMILE, 'audio_file')
+    Flow.connect(getPhonation, 'row', openSMILE, 'row')
     openSMILE.inputs.command = 'SMILExtract'
     openSMILE.inputs.flag1 = '-I'
     openSMILE.inputs.flags = '-C'
@@ -215,8 +229,6 @@ if synID_phonation:
     openSMILE.inputs.feature_table_path = feature_table_path
     openSMILE.inputs.save_rows = True
     #Flow.connect(openSMILE, 'feature_table', Sink, 'phonation.@features')
-
-
 
     # ------------------------------------------------------------------------
     # Store openSMILE features to its own Synapse table:
@@ -283,6 +295,70 @@ if synID_phonation:
     #              StoreOpenSMILE, 'synapse_table_id')
     # StoreOpenSMILE.inputs.username = ''
     # StoreOpenSMILE.inputs.password = ''
+
+# ============================================================================
+#
+# Balance
+#
+# ============================================================================
+if synID_balance:
+
+    # ------------------------------------------------------------------------
+    # openSMILE:
+    # 1. Retrieve each row + audio file from a Synapse table.
+    # 2. Convert voice file to .wav format.
+    # 3. Run openSMILE's SMILExtract audio feature extraction command.
+    # 4. Construct a feature row from the original and openSMILE rows.
+    # 5. Write the feature row to a table or append to a feature table.
+    # ------------------------------------------------------------------------
+    openSMILE = Node(name='openSMILE',
+                     interface=Fn(function=openSMILE,
+                                  input_names=['synapse_table',
+                                               'row',
+                                               'column_name',
+                                               'convert_file_append',
+                                               'convert_command',
+                                               'convert_input_args',
+                                               'convert_output_args',
+                                               'username',
+                                               'password',
+                                               'command',
+                                               'flag1',
+                                               'flags',
+                                               'flagn',
+                                               'args',
+                                               'closing',
+                                               'temporary_path',
+                                               'feature_table_path',
+                                               'save_rows'],
+                                  output_names=['feature_row',
+                                                'feature_table']))
+    Flow.add_nodes([openSMILE])
+    openSMILE.inputs.synapse_table = synID_phonation
+    row_files = [os.path.join(row_path, f)
+                 for i,f in enumerate(sorted(os.listdir(row_path)))
+                 if i < args.stop
+                 and os.path.isfile(os.path.join(row_path,f))]
+    openSMILE.iterables = ("row", row_files)
+    openSMILE.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
+    openSMILE.inputs.convert_file_append = '.wav'
+    openSMILE.inputs.convert_command = 'ffmpeg'
+    openSMILE.inputs.convert_input_args = '-i'
+    openSMILE.inputs.convert_output_args = '-ac 2'
+    openSMILE.inputs.username = ''
+    openSMILE.inputs.password = ''
+    openSMILE.inputs.command = 'SMILExtract'
+    openSMILE.inputs.flag1 = '-I'
+    openSMILE.inputs.flags = '-C'
+    openSMILE.inputs.flagn = '-csvoutput'
+    openSMILE.inputs.args = os.path.join(dependencies, 'openSMILE-2.1.0',
+                                         'config', 'IS13_ComParE.conf')
+    openSMILE.inputs.closing = '-nologfile 1'
+    openSMILE.inputs.temporary_path = temporary_path
+    openSMILE.inputs.feature_table_path = feature_table_path
+    openSMILE.inputs.save_rows = True
+    #Flow.connect(openSMILE, 'feature_table', Sink, 'phonation.@features')
+
 
 
 # ============================================================================
