@@ -33,7 +33,7 @@ from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node
 from mhealthx.extractors import openSMILE
-from mhealthx.xio import get_convert_audio, read_file_from_synapse_table
+from mhealthx.xio import get_convert_audio, get_convert_accel
 
 # ============================================================================
 #
@@ -259,19 +259,22 @@ if synID_balance:
 
     # ------------------------------------------------------------------------
     # Balance data:
-    # 1. Retrieve each row + audio file from a Synapse table.
-    # 2. Convert balance data to .wav format.
+    # 1. Retrieve each row + balance json file from a Synapse table.
+    # 2. Convert balance data from json to wav format for each axis.
     # ------------------------------------------------------------------------
-    getBalance = Node(name='get_balance_data',
-                      interface=Fn(function=read_file_from_synapse_table,
+    getBalance = Node(name='get_balance_data_convert_to_audio',
+                      interface=Fn(function=get_convert_accel,
                                    input_names=['synapse_table',
                                                 'row',
                                                 'column_name',
+                                                'amplitude',
                                                 'out_path',
                                                 'username',
                                                 'password'],
                                    output_names=['row',
-                                                 'file_path']))
+                                                 'xfile',
+                                                 'yfile',
+                                                 'zfile']))
     getBalance.inputs.synapse_table = synID_balance
     row_files = [os.path.join(row_path, f)
                  for i,f in enumerate(sorted(os.listdir(row_path)))
@@ -279,35 +282,25 @@ if synID_balance:
                  and os.path.isfile(os.path.join(row_path,f))]
     getBalance.iterables = ("row", row_files)
     getBalance.inputs.column_name = 'accel_walking_rest.json.items'
-    getBalance.inputs.convert_file_append = '.wav'
-    getBalance.inputs.convert_command = 'ffmpeg'
-    getBalance.inputs.convert_input_args = '-y -i'
-    getBalance.inputs.convert_output_args = '-ac 2'
+    getBalance.inputs.amplitude = 32700
     getBalance.inputs.out_path = '.'
     getBalance.inputs.username = ''
     getBalance.inputs.password = ''
 
     # ------------------------------------------------------------------------
-    # openSMILE on balance data:
+    # openSMILE on each axis of balance data:
     # 1. Run openSMILE's SMILExtract audio feature extraction command.
     # 2. Construct a feature row from the original and openSMILE rows.
     # 3. Write the feature row to a table or append to a feature table.
     # ------------------------------------------------------------------------
-    SMILEbalance = SMILEphonation.clone('openSMILE_balance')
-    Flow.connect(getBalance, 'new_file', SMILEbalance, 'audio_file')
-    Flow.connect(getBalance, 'row', SMILEbalance, 'row')
-    SMILEbalance.inputs.feature_table_prepend = 'balance_countdown_features_'
-    opensmile_version = 'openSMILE-2.1.0'
-    #opensmile_version = 'openSMILE-2.2rc1'
-    opensmile_config_file = 'IS13_ComParE.conf'
-    #opensmile_config_file = os.path.join('gemaps',
-    #                                     'GeMAPSv01a_core.lld.conf.inc')
-    SMILEbalance.inputs.args = os.path.join(dependencies, opensmile_version,
-                                            'config', opensmile_config_file)
-    SMILEbalance.inputs.feature_table_prepend = 'balance_features_'
-    #Flow.connect(SMILEbalance, 'feature_table', Sink, 'balance.@features')
-
-
+    SMILEbalanceX = SMILEphonation.clone('openSMILE_balance_x')
+    Flow.connect(getBalance, 'new_file', SMILEbalanceX, 'audio_file')
+    Flow.connect(getBalance, 'row', SMILEbalanceX, 'row')
+    SMILEbalanceY = SMILEbalanceX.clone('openSMILE_balance_y')
+    SMILEbalanceZ = SMILEbalanceX.clone('openSMILE_balance_z')
+    SMILEbalanceX.inputs.feature_table_prepend = 'balance_x-axis_features_'
+    SMILEbalanceY.inputs.feature_table_prepend = 'balance_y-axis_features_'
+    SMILEbalanceZ.inputs.feature_table_prepend = 'balance_z-axis_features_'
 
 
 # ============================================================================
