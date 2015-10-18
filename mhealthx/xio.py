@@ -402,44 +402,49 @@ def get_convert_audio(synapse_table, row, column_name,
     return row, new_file
 
 
-# def read_accel_json(data, filename, samplerate=44100, amplitude=32700):
-#     """
-#     Convert a list or array of numbers to a .wav format audio file.
-#
-#     After: http://blog.acipo.com/wave-generation-in-python/
-#     and    https://gist.github.com/Pretz/1773870
-#     and    http://codingmess.blogspot.com/2008/07/
-#                   how-to-make-simple-wav-file-with-python.html
-#
-#     Parameters
-#     ----------
-#     data : list or array of floats or integers
-#         input data to convert to audio file
-#     filename : string
-#         name of output audio file
-#     samplerate : integer
-#         number of desired samples per second for audio file
-#     amplitude : integer
-#         maximum amplitude for audio file
-#
-#     Returns
-#     -------
-#     filename : string
-#         name of output .wav audio file
-#
-#     Examples
-#     --------
-#     >>> from mhealthx.xio import write_wav
-#     >>> import numpy as np
-#     >>> from scipy.signal import resample
-#     >>> filename = 'write_wav.wav'
-#     >>> samplerate = 44100
-#     >>> amplitude = 32700
-#     >>> data = np.random.random(500000)
-#     >>> data /= np.max(np.abs(data))
-#     >>> #data = resample(data, samplerate/framerate)
-#     >>> filename = write_wav(data, filename, samplerate, amplitude)
-#     """
+def read_accel_json(input_file):
+    """
+    Read accelerometer json file.
+
+    Parameters
+    ----------
+    input_file : string
+        name of input accelerometer json file
+
+    Returns
+    -------
+    X : list
+        X-axis accelerometer data
+    Y : list
+        X-axis accelerometer data
+    Z : list
+        X-axis accelerometer data
+    T : list
+        time points for accelerometer data
+
+    Examples
+    --------
+    >>> from mhealthx.xio import read_accel_json
+    >>> input_file = '/Users/arno/Desktop/mpower_data/accel_walking_rest.json.items-be382ddf-a69f-4836-b3e4-3ebee7146ffd8619560118692286819.tmp'
+    >>> X, Y, Z, T = read_accel_json(input_file)
+    """
+    import json
+
+    f = open(input_file, 'r')
+    json_strings = f.readlines()
+    parsed_jsons = json.loads(json_strings[0])
+
+    X = []
+    Y = []
+    Z = []
+    T = []
+    for x in parsed_jsons:
+        X.append(x['x'])
+        Y.append(x['y'])
+        Z.append(x['z'])
+        T.append(x['timestamp'])
+
+    return X, Y, Z, T
 
 
 def write_wav(data, filename, samplerate=44100, amplitude=32700):
