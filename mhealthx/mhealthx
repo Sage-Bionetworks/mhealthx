@@ -186,7 +186,7 @@ if synID_phonation:
                  if i < args.stop
                  and os.path.isfile(os.path.join(row_path,f))]
     getPhonation.iterables = ("row", row_files)
-    getPhonation.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
+    getPhonation.inputs.column_name = 'audio_audio.m4a'
     getPhonation.inputs.convert_file_append = '.wav'
     getPhonation.inputs.convert_command = 'ffmpeg'
     getPhonation.inputs.convert_input_args = '-y -i'
@@ -196,39 +196,59 @@ if synID_phonation:
     getPhonation.inputs.password = ''
 
     # ------------------------------------------------------------------------
+    # Repeat for phonation countdown data:
+    # ------------------------------------------------------------------------
+    getPhonation0 = getPhonation.clone('get_phonation_countdown_data')
+    getPhonation0.inputs.column_name = 'audio_countdown.m4a'
+
+    # ------------------------------------------------------------------------
     # openSMILE:
     # 1. Run openSMILE's SMILExtract audio feature extraction command.
     # 2. Construct a feature row from the original and openSMILE rows.
     # 3. Write the feature row to a table or append to a feature table.
     # ------------------------------------------------------------------------
-    openSMILE = Node(name='openSMILE',
-                     interface=Fn(function=openSMILE,
-                                  input_names=['audio_file',
-                                               'row',
-                                               'command',
-                                               'flag1',
-                                               'flags',
-                                               'flagn',
-                                               'args',
-                                               'closing',
-                                               'feature_table_path',
-                                               'feature_table_prepend',
-                                               'save_rows'],
-                                  output_names=['feature_row',
-                                                'feature_table']))
-    Flow.connect(getPhonation, 'new_file', openSMILE, 'audio_file')
-    Flow.connect(getPhonation, 'row', openSMILE, 'row')
-    openSMILE.inputs.command = 'SMILExtract'
-    openSMILE.inputs.flag1 = '-I'
-    openSMILE.inputs.flags = '-C'
-    openSMILE.inputs.flagn = '-csvoutput'
-    openSMILE.inputs.args = os.path.join(dependencies, 'openSMILE-2.1.0',
-                                         'config', 'IS13_ComParE.conf')
-    openSMILE.inputs.closing = '-nologfile 1'
-    openSMILE.inputs.feature_table_path = feature_table_path
-    openSMILE.inputs.feature_table_prepend = 'phonation_features_'
-    openSMILE.inputs.save_rows = True
-    #Flow.connect(openSMILE, 'feature_table', Sink, 'phonation.@features')
+    SMILEphonation = Node(name='openSMILE_phonation',
+                          interface=Fn(function=openSMILE,
+                                       input_names=['audio_file',
+                                                    'row',
+                                                    'command',
+                                                    'flag1',
+                                                    'flags',
+                                                    'flagn',
+                                                    'args',
+                                                    'closing',
+                                                    'feature_table_path',
+                                                    'feature_table_prepend',
+                                                    'save_rows'],
+                                       output_names=['feature_row',
+                                                     'feature_table']))
+    Flow.connect(getPhonation, 'new_file', SMILEphonation, 'audio_file')
+    Flow.connect(getPhonation, 'row', SMILEphonation, 'row')
+    SMILEphonation.inputs.command = 'SMILExtract'
+    SMILEphonation.inputs.flag1 = '-I'
+    SMILEphonation.inputs.flags = '-C'
+    SMILEphonation.inputs.flagn = '-csvoutput'
+    opensmile_version = 'openSMILE-2.1.0'
+    #opensmile_version = 'openSMILE-2.2rc1'
+    opensmile_config_file = 'IS13_ComParE.conf'
+    #opensmile_config_file = os.path.join('gemaps',
+    #                                     'GeMAPSv01a_core.lld.conf.inc')
+    SMILEphonation.inputs.args = os.path.join(dependencies, opensmile_version,
+                                         'config', opensmile_config_file)
+    SMILEphonation.inputs.closing = '-nologfile 1'
+    SMILEphonation.inputs.feature_table_path = feature_table_path
+    SMILEphonation.inputs.feature_table_prepend = 'phonation_features_'
+    SMILEphonation.inputs.save_rows = True
+    #Flow.connect(SMILEphonation, 'feature_table', Sink, 'phonation.@features')
+
+    # ------------------------------------------------------------------------
+    # Repeat for phonation countdown data:
+    # ------------------------------------------------------------------------
+    SMILEphonation0 = getPhonation0.clone('openSMILE_phonation_countdown')
+    Flow.connect(getPhonation0, 'new_file', SMILEphonation0, 'audio_file')
+    Flow.connect(getPhonation0, 'row', SMILEphonation0, 'row')
+    SMILEphonation0.inputs.feature_table_prepend = \
+        'phonation_countdown_features_'
 
     # ------------------------------------------------------------------------
     # Store openSMILE features to its own Synapse table:

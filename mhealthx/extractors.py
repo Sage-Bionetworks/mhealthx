@@ -87,7 +87,7 @@ def openSMILE(audio_file, row, command, flag1, flags, flagn, args,
     >>> flag1 = '-I'
     >>> flags = '-C'
     >>> flagn = '-csvoutput' #'-O'
-    >>> thirdparty = '/home/arno/software'
+    >>> thirdparty = '/software'
     >>> args = os.path.join(thirdparty, 'openSMILE-2.1.0', 'config',
     >>>                     'IS13_ComParE.conf')
     >>> closing = '-nologfile 1'
