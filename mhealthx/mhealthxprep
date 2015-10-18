@@ -132,7 +132,7 @@ if not os.path.isdir(row_path):
 if synID_phonation:
 
     # ------------------------------------------------------------------------
-    # Retrieve information about all audio files in Synapse table:
+    # Retrieve information about all phonation files in Synapse table:
     # ------------------------------------------------------------------------
     GetPhonationRows = Node(name='retrieve_phonation_rows',
                             interface=Fn(function=extract_synapse_rows,
@@ -152,6 +152,24 @@ if synID_phonation:
         GetPhonationRows.inputs.limit = None
     GetPhonationRows.inputs.username = ''
     GetPhonationRows.inputs.password = ''
+
+if synID_balance:
+
+    # ------------------------------------------------------------------------
+    # Retrieve information about all balance files in Synapse table:
+    # ------------------------------------------------------------------------
+    GetBalanceRows = GetPhonationRows.clone('retrieve_balance_rows')
+    GetBalanceRows.inputs.synapse_table = synID_balance
+    Flow.add_nodes([GetBalanceRows])
+
+if synID_tapping:
+
+    # ------------------------------------------------------------------------
+    # Retrieve information about all tapping files in Synapse table:
+    # ------------------------------------------------------------------------
+    GetTappingRows = GetPhonationRows.clone('retrieve_tapping_rows')
+    GetTappingRows.inputs.synapse_table = synID_tapping
+    Flow.add_nodes([GetTappingRows])
 
 # ============================================================================
 #
