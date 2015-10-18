@@ -40,8 +40,8 @@ from mhealthx.xio import extract_synapse_rows
 parser = argparse.ArgumentParser(description="""
                     Prepare to extract features from mHealth data by
                     downloading data stored on Sage Bionetwork's Synapse.org.
-                    Example: mhealthx --phonation syn4590865 -t /software
-                    (-t: path to installed third-party software; -u, -p:
+                    Example: mhealthx --phonation syn4590865 -d /software
+                    (-d: path to installed software dependencies; -u, -p:
                     Synapse login for first use on a given machine)
 """,
                                  formatter_class = lambda prog:
@@ -65,8 +65,8 @@ parser.add_argument("--plugin_args", dest="plugin_args",
                     help="optional plugin arguments:"
                          " --plugin_args \"dict(qsub_args='-q many')\"")
 setup_group = parser.add_argument_group('setup')
-setup_group.add_argument("-t", "--thirdparty",
-                         help="path to third-party software",
+setup_group.add_argument("-d", "--dependencies",
+                         help="path to software dependencies",
                          metavar='STR')
 setup_group.add_argument("-u", "--username",
                          help="Synapse username", metavar='STR')
@@ -91,7 +91,7 @@ outputs_group.add_argument("-c", "--cache",
 args = parser.parse_args()
 username = args.username
 password = args.password
-thirdparty = args.thirdparty
+dependencies = args.dependencies
 synID_phonation = args.phonation
 synID_balance = args.balance
 synID_tapping = args.tapping

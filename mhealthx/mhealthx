@@ -189,9 +189,9 @@ if synID_phonation:
     getPhonation.inputs.column_name = 'audio_audio.m4a' #'audio_countdown.m4a'
     getPhonation.inputs.convert_file_append = '.wav'
     getPhonation.inputs.convert_command = 'ffmpeg'
-    getPhonation.inputs.convert_input_args = '-i'
+    getPhonation.inputs.convert_input_args = '-y -i'
     getPhonation.inputs.convert_output_args = '-ac 2'
-    getPhonation.inputs.out_path = temporary_path
+    getPhonation.inputs.out_path = '.'
     getPhonation.inputs.username = ''
     getPhonation.inputs.password = ''
 
@@ -301,7 +301,7 @@ if synID_phonation:
 # Balance
 #
 # ============================================================================
-if synID_balance:
+#if synID_balance:
 
     # ------------------------------------------------------------------------
     # openSMILE:
