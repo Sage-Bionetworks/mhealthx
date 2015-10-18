@@ -248,7 +248,7 @@ if synID_phonation:
     # ------------------------------------------------------------------------
     # Repeat for phonation countdown data:
     # ------------------------------------------------------------------------
-    SMILEphonation0 = getPhonation0.clone('openSMILE_phonation_countdown')
+    SMILEphonation0 = SMILEphonation.clone('openSMILE_phonation_countdown')
     Flow.connect(getPhonation0, 'new_file', SMILEphonation0, 'audio_file')
     Flow.connect(getPhonation0, 'row', SMILEphonation0, 'row')
     SMILEphonation0.inputs.feature_table_prepend = \
@@ -292,6 +292,12 @@ if synID_balance:
     getBalance.inputs.password = ''
 
     # ------------------------------------------------------------------------
+    # Repeat for walking data:
+    # ------------------------------------------------------------------------
+    getWalking = getBalance.clone('get_walking_data')
+    getWalking.inputs.column_name = 'accel_walking_outbound.json.items'
+
+    # ------------------------------------------------------------------------
     # openSMILE on each axis of balance data:
     # 1. Run openSMILE's SMILExtract audio feature extraction command.
     # 2. Construct a feature row from the original and openSMILE rows.
@@ -305,6 +311,18 @@ if synID_balance:
     SMILEbalanceX.inputs.feature_table_prepend = 'balance_x-axis_features_'
     SMILEbalanceY.inputs.feature_table_prepend = 'balance_y-axis_features_'
     SMILEbalanceZ.inputs.feature_table_prepend = 'balance_z-axis_features_'
+
+    # ------------------------------------------------------------------------
+    # Repeat for walking data:
+    # ------------------------------------------------------------------------
+    SMILEwalkingX = SMILEbalanceX.clone('openSMILE_walking_x')
+    Flow.connect(getWalking, 'new_file', SMILEwalkingX, 'audio_file')
+    Flow.connect(getWalking, 'row', SMILEwalkingX, 'row')
+    SMILEwalkingY = SMILEbalanceX.clone('openSMILE_walking_y')
+    SMILEwalkingZ = SMILEbalanceX.clone('openSMILE_walking_z')
+    SMILEwalkingX.inputs.feature_table_prepend = 'walking_x-axis_features_'
+    SMILEwalkingY.inputs.feature_table_prepend = 'walking_y-axis_features_'
+    SMILEwalkingZ.inputs.feature_table_prepend = 'walking_z-axis_features_'
 
 
 # ============================================================================
