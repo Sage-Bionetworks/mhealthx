@@ -11,7 +11,7 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 
 
 def openSMILE(audio_file, row, command, flag1, flags, flagn, args,
-              closing, feature_table_path, save_rows):
+              closing, feature_table_path, feature_table_prepend, save_rows):
     """
     Process audio file and store feature row to a table.
 
@@ -38,10 +38,10 @@ def openSMILE(audio_file, row, command, flag1, flags, flagn, args,
         command line arguments: ["config.conf", "input.wav", "output.csv"]
     closing : string
         closing string in command
-    temporary_path : string
-        path for temporary output of audio files (optional, else cache dir)
     feature_table_path : string
         path to the output table file (parent directory)
+    feature_table_prepend : string
+        prepend to output table file
     save_rows : Boolean
         save individual rows rather than write to a single feature table?
 
@@ -91,12 +91,12 @@ def openSMILE(audio_file, row, command, flag1, flags, flagn, args,
     >>> args = os.path.join(thirdparty, 'openSMILE-2.1.0', 'config',
     >>>                     'IS13_ComParE.conf')
     >>> closing = '-nologfile 1'
-    >>> temporary_path = '/home/arno' #'/home/ubuntu'
     >>> feature_table_path = '.'
+    >>> feature_table_prepend = 'phonation_'
     >>> save_rows = True
     >>> feature_row, feature_table = openSMILE(audio_file, row, command,
     >>>                      flag1, flags, flagn, args, closing,
-    >>>                      feature_table_path, save_rows)
+    >>>                      feature_table_path, feature_table_prepend, save_rows)
 
     """
     import os
@@ -137,7 +137,8 @@ def openSMILE(audio_file, row, command, flag1, flags, flagn, args,
                     print("I/O error({0}): {1}".format(e.errno, e.strerror))
                     feature_table = None
             else:
-                conf = 'phonation_features_openSMILE-2.1.0_IS13_ComParE.csv'
+                conf = feature_table_prepend + \
+                       'openSMILE-2.1.0_IS13_ComParE.csv'
                 feature_table = os.path.join(feature_table_path, conf)
                 try:
                     row_to_table(feature_row, feature_table)
