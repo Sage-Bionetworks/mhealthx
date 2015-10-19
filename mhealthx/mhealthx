@@ -154,7 +154,6 @@ if not os.path.isdir(args.outputs):
 if not os.path.isdir(args.cache):
     print("Create missing cache directory: {0}".format(args.cache))
     os.makedirs(args.cache)
-row_path = os.path.join(args.inputs, 'row_files')
 feature_table_path = os.path.join(args.outputs, 'feature_tables')
 if not os.path.isdir(feature_table_path):
     os.makedirs(feature_table_path)
@@ -171,7 +170,7 @@ if synID_phonation:
     # 1. Retrieve each row + audio file from a Synapse table.
     # 2. Convert voice file to .wav format.
     # ------------------------------------------------------------------------
-    getPhonation = Node(name='get_phonation_data',
+    getPhonation = Node(name='phonation_data',
                         interface=Fn(function=get_convert_audio,
                                      input_names=['synapse_table',
                                                   'row',
@@ -186,11 +185,12 @@ if synID_phonation:
                                      output_names=['row',
                                                    'new_file']))
     getPhonation.inputs.synapse_table = synID_phonation
-    row_files = [os.path.join(row_path, f)
-                 for i,f in enumerate(sorted(os.listdir(row_path)))
+    row_path_phonation = os.path.join(args.inputs, 'row_files_phonation')
+    rows_phon = [os.path.join(row_path_phonation, f)
+                 for i, f in enumerate(sorted(os.listdir(row_path_phonation)))
                  if i < args.stop
-                 and os.path.isfile(os.path.join(row_path,f))]
-    getPhonation.iterables = ("row", row_files)
+                 and os.path.isfile(os.path.join(row_path_phonation, f))]
+    getPhonation.iterables = ("row", rows_phon)
     getPhonation.inputs.column_name = 'audio_audio.m4a'
     getPhonation.inputs.convert_file_append = '.wav'
     getPhonation.inputs.convert_command = 'ffmpeg'
@@ -203,7 +203,7 @@ if synID_phonation:
     # ------------------------------------------------------------------------
     # Repeat for phonation countdown data:
     # ------------------------------------------------------------------------
-    getPhonation0 = getPhonation.clone('get_phonation_countdown_data')
+    getPhonation0 = getPhonation.clone('phonation_countdown_data')
     getPhonation0.inputs.column_name = 'audio_countdown.m4a'
 
     # ------------------------------------------------------------------------
@@ -260,70 +260,71 @@ if synID_phonation:
 # Balance (accelerometer)
 #
 # ============================================================================
-if synID_balance:
-
-    # ------------------------------------------------------------------------
-    # Balance data:
-    # 1. Retrieve each row + balance json file from a Synapse table.
-    # 2. Convert balance data from json to wav format for each axis.
-    # ------------------------------------------------------------------------
-    getBalance = Node(name='get_balance_data_convert_to_audio',
-                      interface=Fn(function=get_convert_accel,
-                                   input_names=['synapse_table',
-                                                'row',
-                                                'column_name',
-                                                'amplitude',
-                                                'out_path',
-                                                'username',
-                                                'password'],
-                                   output_names=['row',
-                                                 'xfile',
-                                                 'yfile',
-                                                 'zfile']))
-    getBalance.inputs.synapse_table = synID_balance
-    row_files = [os.path.join(row_path, f)
-                 for i,f in enumerate(sorted(os.listdir(row_path)))
-                 if i < args.stop
-                 and os.path.isfile(os.path.join(row_path,f))]
-    getBalance.iterables = ("row", row_files)
-    getBalance.inputs.column_name = 'accel_walking_rest.json.items'
-    getBalance.inputs.amplitude = 32700
-    getBalance.inputs.out_path = '.'
-    getBalance.inputs.username = ''
-    getBalance.inputs.password = ''
-
-    # ------------------------------------------------------------------------
-    # Repeat for walking data:
-    # ------------------------------------------------------------------------
-    getWalking = getBalance.clone('get_walking_data')
-    getWalking.inputs.column_name = 'accel_walking_outbound.json.items'
-
-    # ------------------------------------------------------------------------
-    # openSMILE on each axis of balance data:
-    # 1. Run openSMILE's SMILExtract audio feature extraction command.
-    # 2. Construct a feature row from the original and openSMILE rows.
-    # 3. Write the feature row to a table or append to a feature table.
-    # ------------------------------------------------------------------------
-    SMILEbalanceX = SMILEphonation.clone('openSMILE_balance_x')
-    Flow.connect(getBalance, 'new_file', SMILEbalanceX, 'audio_file')
-    Flow.connect(getBalance, 'row', SMILEbalanceX, 'row')
-    SMILEbalanceY = SMILEbalanceX.clone('openSMILE_balance_y')
-    SMILEbalanceZ = SMILEbalanceX.clone('openSMILE_balance_z')
-    SMILEbalanceX.inputs.feature_table_prepend = 'balance_x-axis_features_'
-    SMILEbalanceY.inputs.feature_table_prepend = 'balance_y-axis_features_'
-    SMILEbalanceZ.inputs.feature_table_prepend = 'balance_z-axis_features_'
-
-    # ------------------------------------------------------------------------
-    # Repeat for walking data:
-    # ------------------------------------------------------------------------
-    SMILEwalkingX = SMILEbalanceX.clone('openSMILE_walking_x')
-    Flow.connect(getWalking, 'new_file', SMILEwalkingX, 'audio_file')
-    Flow.connect(getWalking, 'row', SMILEwalkingX, 'row')
-    SMILEwalkingY = SMILEbalanceX.clone('openSMILE_walking_y')
-    SMILEwalkingZ = SMILEbalanceX.clone('openSMILE_walking_z')
-    SMILEwalkingX.inputs.feature_table_prepend = 'walking_x-axis_features_'
-    SMILEwalkingY.inputs.feature_table_prepend = 'walking_y-axis_features_'
-    SMILEwalkingZ.inputs.feature_table_prepend = 'walking_z-axis_features_'
+# if synID_balance:
+#
+#     # ------------------------------------------------------------------------
+#     # Balance data:
+#     # 1. Retrieve each row + balance json file from a Synapse table.
+#     # 2. Convert balance data from json to wav format for each axis.
+#     # ------------------------------------------------------------------------
+#     getBalance = Node(name='get_balance_data_convert_to_audio',
+#                       interface=Fn(function=get_convert_accel,
+#                                    input_names=['synapse_table',
+#                                                 'row',
+#                                                 'column_name',
+#                                                 'amplitude',
+#                                                 'out_path',
+#                                                 'username',
+#                                                 'password'],
+#                                    output_names=['row',
+#                                                  'xfile',
+#                                                  'yfile',
+#                                                  'zfile']))
+#     getBalance.inputs.synapse_table = synID_balance
+#     row_path_balance = os.path.join(args.inputs, 'row_files_balance')
+#     row_files = [os.path.join(row_path_balance, f)
+#                  for i,f in enumerate(sorted(os.listdir(row_path_balance)))
+#                  if i < args.stop
+#                  and os.path.isfile(os.path.join(row_path_balance,f))]
+#     getBalance.iterables = ("row", row_files)
+#     getBalance.inputs.column_name = 'accel_walking_rest.json.items'
+#     getBalance.inputs.amplitude = 32700
+#     getBalance.inputs.out_path = '.'
+#     getBalance.inputs.username = ''
+#     getBalance.inputs.password = ''
+#
+#     # ------------------------------------------------------------------------
+#     # Repeat for walking data:
+#     # ------------------------------------------------------------------------
+#     getWalking = getBalance.clone('get_walking_data')
+#     getWalking.inputs.column_name = 'accel_walking_outbound.json.items'
+#
+#     # ------------------------------------------------------------------------
+#     # openSMILE on each axis of balance data:
+#     # 1. Run openSMILE's SMILExtract audio feature extraction command.
+#     # 2. Construct a feature row from the original and openSMILE rows.
+#     # 3. Write the feature row to a table or append to a feature table.
+#     # ------------------------------------------------------------------------
+#     SMILEbalanceX = SMILEphonation.clone('openSMILE_balance_x')
+#     Flow.connect(getBalance, 'new_file', SMILEbalanceX, 'audio_file')
+#     Flow.connect(getBalance, 'row', SMILEbalanceX, 'row')
+#     SMILEbalanceY = SMILEbalanceX.clone('openSMILE_balance_y')
+#     SMILEbalanceZ = SMILEbalanceX.clone('openSMILE_balance_z')
+#     SMILEbalanceX.inputs.feature_table_prepend = 'balance_x-axis_features_'
+#     SMILEbalanceY.inputs.feature_table_prepend = 'balance_y-axis_features_'
+#     SMILEbalanceZ.inputs.feature_table_prepend = 'balance_z-axis_features_'
+#
+#     # ------------------------------------------------------------------------
+#     # Repeat for walking data:
+#     # ------------------------------------------------------------------------
+#     SMILEwalkingX = SMILEbalanceX.clone('openSMILE_walking_x')
+#     Flow.connect(getWalking, 'new_file', SMILEwalkingX, 'audio_file')
+#     Flow.connect(getWalking, 'row', SMILEwalkingX, 'row')
+#     SMILEwalkingY = SMILEbalanceX.clone('openSMILE_walking_y')
+#     SMILEwalkingZ = SMILEbalanceX.clone('openSMILE_walking_z')
+#     SMILEwalkingX.inputs.feature_table_prepend = 'walking_x-axis_features_'
+#     SMILEwalkingY.inputs.feature_table_prepend = 'walking_y-axis_features_'
+#     SMILEwalkingZ.inputs.feature_table_prepend = 'walking_z-axis_features_'
 
 
 # ============================================================================
