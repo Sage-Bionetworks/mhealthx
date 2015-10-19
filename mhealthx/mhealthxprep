@@ -2,11 +2,12 @@
 """
 This pipeline runs feature extraction on mHealth data stored on Synapse.org.
 
-Example: mhealthx --phonation syn4590865 -d /home/arno/software/audio
+Example: mhealthxprep --phonation syn4590865 -d /home/arno/software
 
-Example: mhealthx --phonation syn4590865 \
-                  --balance syn4590866 \
-                  --tapping syn4590864 -d /home/arno/software/audio
+Example: mhealthxprep --phonation syn4590865 \
+                      --balance syn4590866 \
+                      --tapping syn4590864 \
+                      -d /home/arno/software -s 3
 
 - First-time use on a given machine: include -u and -p for Synapse login.
 - Replace -d argument with path to installed feature extraction software.
@@ -124,9 +125,7 @@ Flow.base_dir = args.cache
 if not os.path.isdir(args.cache):
     print("Create missing cache directory: {0}".format(args.cache))
     os.makedirs(args.cache)
-row_path = os.path.join(args.cache, main_workflow_name, 'row_files')
-if not os.path.isdir(row_path):
-    os.makedirs(row_path)
+row_path = os.path.join(args.cache, main_workflow_name)
 
 # ============================================================================
 #
@@ -134,6 +133,10 @@ if not os.path.isdir(row_path):
 #
 # ============================================================================
 if synID_phonation:
+
+    row_path_phonation = os.path.join(row_path, 'row_files_phonation')
+    if not os.path.isdir(row_path_phonation):
+        os.makedirs(row_path_phonation)
 
     # ------------------------------------------------------------------------
     # Retrieve information about all phonation files in Synapse table:
@@ -149,7 +152,7 @@ if synID_phonation:
                                                        'row_files']))
     Flow.add_nodes([GetPhonationRows])
     GetPhonationRows.inputs.synapse_table = synID_phonation
-    GetPhonationRows.inputs.save_path = row_path
+    GetPhonationRows.inputs.save_path = row_path_phonation
     if args.stop:
         GetPhonationRows.inputs.limit = args.stop
     else:
@@ -159,20 +162,30 @@ if synID_phonation:
 
 if synID_balance:
 
+    row_path_balance = os.path.join(row_path, 'row_files_balance')
+    if not os.path.isdir(row_path_balance):
+        os.makedirs(row_path_balance)
+
     # ------------------------------------------------------------------------
     # Retrieve information about all balance files in Synapse table:
     # ------------------------------------------------------------------------
     GetBalanceRows = GetPhonationRows.clone('retrieve_balance_rows')
     GetBalanceRows.inputs.synapse_table = synID_balance
+    GetBalanceRows.inputs.save_path = row_path_balance
     Flow.add_nodes([GetBalanceRows])
 
 if synID_tapping:
+
+    row_path_tapping = os.path.join(row_path, 'row_files_tapping')
+    if not os.path.isdir(row_path_tapping):
+        os.makedirs(row_path_tapping)
 
     # ------------------------------------------------------------------------
     # Retrieve information about all tapping files in Synapse table:
     # ------------------------------------------------------------------------
     GetTappingRows = GetPhonationRows.clone('retrieve_tapping_rows')
     GetTappingRows.inputs.synapse_table = synID_tapping
+    GetTappingRows.inputs.save_path = row_path_tapping
     Flow.add_nodes([GetTappingRows])
 
 # ============================================================================
