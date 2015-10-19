@@ -340,7 +340,6 @@ def get_convert_audio(synapse_table, row, column_name,
         arguments preceding output file name for convert_command
     out_path : string or None
         a local path in which to store downloaded files.
-        If None, stores them in (~/.synapseCache)
     username : string
         Synapse username (only needed once on a given machine)
     password : string
@@ -461,7 +460,7 @@ def write_wav(data, filename, samplerate=44100, amplitude=32700):
     data : list or array of floats or integers
         input data to convert to audio file
     filename : string
-        name of output audio file
+        name of output audio file (absolute path)
     samplerate : integer
         number of desired samples per second for audio file
     amplitude : integer
@@ -485,6 +484,7 @@ def write_wav(data, filename, samplerate=44100, amplitude=32700):
     >>> #data = resample(data, samplerate/framerate)
     >>> filename = write_wav(data, filename, samplerate, amplitude)
     """
+    import os
     import wave
     import struct
 
@@ -510,7 +510,9 @@ def write_wav(data, filename, samplerate=44100, amplitude=32700):
 
     wavfile.writeframes('')
     wavfile.close()
-    print("{0} written".format(filename))
+
+    if not os.path.isfile(filename):
+        raise IOError("{0} has not been written.".format(filename))
 
     return filename
 
@@ -579,6 +581,7 @@ def get_convert_accel(synapse_table, row, column_name, amplitude=32700,
     >>>                                       out_path, username, password)
 
     """
+    import os
     import numpy as np
 
     from mhealthx.xio import read_file_from_synapse_table, \
@@ -588,7 +591,6 @@ def get_convert_accel(synapse_table, row, column_name, amplitude=32700,
     row, file_path = read_file_from_synapse_table(synapse_table, row,
                                                   column_name, out_path,
                                                   username, password)
-
     # Read accelerometer json file:
     x, y, z, t = read_accel_json(file_path)
 
@@ -610,9 +612,9 @@ def get_convert_accel(synapse_table, row, column_name, amplitude=32700,
         amplitude = 32700
 
     # Write the x, y, z-axis accelerometer data as wav files:
-    xfile = write_wav(x, 'x-axis_accelerometer.wav', samplerate, amplitude)
-    yfile = write_wav(y, 'y-axis_accelerometer.wav', samplerate, amplitude)
-    zfile = write_wav(z, 'z-axis_accelerometer.wav', samplerate, amplitude)
+    xfile = write_wav(x, file_path + '_x-axis.wav', samplerate, amplitude)
+    yfile = write_wav(y, file_path + '_y-axis.wav', samplerate, amplitude)
+    zfile = write_wav(z, file_path + '_z-axis.wav', samplerate, amplitude)
 
     return row, xfile, yfile, zfile
 

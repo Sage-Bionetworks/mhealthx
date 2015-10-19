@@ -11,7 +11,7 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 
 
 def openSMILE(audio_file, row, command, flag1, flags, flagn, args,
-              closing, feature_table_path, feature_table_prepend, save_rows):
+              closing, table_stem, save_rows):
     """
     Process audio file and store feature row to a table.
 
@@ -38,9 +38,7 @@ def openSMILE(audio_file, row, command, flag1, flags, flagn, args,
         command line arguments: ["config.conf", "input.wav", "output.csv"]
     closing : string
         closing string in command
-    feature_table_path : string
-        path to the output table file (parent directory)
-    feature_table_prepend : string
+    table_stem : string
         prepend to output table file
     save_rows : Boolean
         save individual rows rather than write to a single feature table?
@@ -54,6 +52,21 @@ def openSMILE(audio_file, row, command, flag1, flags, flagn, args,
 
     Examples
     --------
+    >>> # openSMILE setup, with examples below:
+    >>>
+    >>> import os
+    >>> from mhealthx.extractors import openSMILE
+    >>> command = 'SMILExtract'
+    >>> flag1 = '-I'
+    >>> flags = '-C'
+    >>> flagn = '-csvoutput'
+    >>> args = os.path.join('/software', 'openSMILE-2.1.0', 'config',
+    >>>                     'IS13_ComParE.conf')
+    >>> closing = '-nologfile 1'
+    >>> save_rows = True
+    >>>
+    >>> # Example 1: phonation data
+    >>>
     >>> from mhealthx.xio import get_convert_audio
     >>> from mhealthx.xio import extract_synapse_rows, read_file_from_synapse_table
     >>> import synapseclient
@@ -75,28 +88,43 @@ def openSMILE(audio_file, row, command, flag1, flags, flagn, args,
     >>>         column_name, out_path, username, password)
     >>>     print(row)
     >>>     row, audio_file = get_convert_audio(synapse_table,
-    >>>                                       row, column_name,
-    >>>                                       convert_file_append,
-    >>>                                       convert_command,
-    >>>                                       convert_input_args,
-    >>>                                       convert_output_args,
-    >>>                                       out_path, username, password)
-    >>> import os
-    >>> from mhealthx.extractors import openSMILE
-    >>> command = 'SMILExtract'
-    >>> flag1 = '-I'
-    >>> flags = '-C'
-    >>> flagn = '-csvoutput' #'-O'
-    >>> thirdparty = '/software'
-    >>> args = os.path.join(thirdparty, 'openSMILE-2.1.0', 'config',
-    >>>                     'IS13_ComParE.conf')
-    >>> closing = '-nologfile 1'
-    >>> feature_table_path = '.'
-    >>> feature_table_prepend = 'phonation_'
-    >>> save_rows = True
+    >>>                                         row, column_name,
+    >>>                                         convert_file_append,
+    >>>                                         convert_command,
+    >>>                                         convert_input_args,
+    >>>                                         convert_output_args,
+    >>>                                         out_path, username, password)
+    >>> table_stem = './phonation'
     >>> feature_row, feature_table = openSMILE(audio_file, row, command,
     >>>                      flag1, flags, flagn, args, closing,
-    >>>                      feature_table_path, feature_table_prepend, save_rows)
+    >>>                      table_stem, save_rows)
+    >>>
+    >>> # Example 2: accelerometer data
+    >>>
+    >>> from mhealthx.xio import extract_synapse_rows, read_file_from_synapse_table, get_convert_accel
+    >>> import synapseclient
+    >>> syn = synapseclient.Synapse()
+    >>> syn.login()
+    >>> synapse_table = 'syn4590866'
+    >>> row_series, row_files = extract_synapse_rows(synapse_table, save_path='.', limit=3, username='', password='')
+    >>> column_name = 'accel_walking_rest.json.items'
+    >>> amplitude = 32700
+    >>> out_path = '.'
+    >>> username = ''
+    >>> password = ''
+    >>> for i in range(1):
+    >>>     row = row_series[i]
+    >>>     row, filepath = read_file_from_synapse_table(synapse_table, row,
+    >>>         column_name, out_path, username, password)
+    >>>     print(row)
+    >>>     row, xfile, yfile, zfile = get_convert_accel(synapse_table,
+    >>>                                       row, column_name,
+    >>>                                       amplitude,
+    >>>                                       out_path, username, password)
+    >>> table_stem = './balance'
+    >>> feature_row, feature_table = openSMILE(xfile, row, command,
+    >>>                      flag1, flags, flagn, args, closing,
+    >>>                      table_stem, save_rows)
 
     """
     import os
@@ -129,17 +157,15 @@ def openSMILE(audio_file, row, command, flag1, flags, flagn, args,
 
             # 5. Write feature row to a table or append to a feature table.
             if save_rows:
-                feature_table = os.path.join(feature_table_path,
-                                             os.path.basename(argn))
+                feature_table = '{0}_{1}'.format(table_stem,
+                                                 os.path.basename(argn))
                 try:
                     feature_row.to_csv(feature_table)
                 except IOError as e:
                     print("I/O error({0}): {1}".format(e.errno, e.strerror))
                     feature_table = None
             else:
-                conf = feature_table_prepend + \
-                       'openSMILE-2.1.0_IS13_ComParE.csv'
-                feature_table = os.path.join(feature_table_path, conf)
+                feature_table = table_stem + '.csv'
                 try:
                     row_to_table(feature_row, feature_table)
                 except IOError as e:
