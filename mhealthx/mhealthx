@@ -2,11 +2,12 @@
 """
 This pipeline runs feature extraction on mHealth data stored on Synapse.org.
 
-Example: mhealthx --phonation syn4590865 -d /home/arno/software/audio
+Example: mhealthx --phonation syn4590865 -d /home/arno/software
 
 Example: mhealthx --phonation syn4590865 \
                   --balance syn4590866 \
-                  --tapping syn4590864 -d /home/arno/software/audio
+                  --tapping syn4590864 \
+                  -d /home/arno/software -s 3
 
 - First-time use on a given machine: include -u and -p for Synapse login.
 - Replace -d argument with path to installed feature extraction software.

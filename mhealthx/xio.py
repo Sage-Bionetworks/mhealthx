@@ -557,14 +557,13 @@ def get_convert_accel(synapse_table, row, column_name, amplitude=32700,
 
     Examples
     --------
-    >>> from mhealthx.xio import get_convert_audio
-    >>> from mhealthx.xio import extract_synapse_rows, read_file_from_synapse_table
+    >>> from mhealthx.xio import extract_synapse_rows, read_file_from_synapse_table, get_convert_accel
     >>> import synapseclient
     >>> syn = synapseclient.Synapse()
     >>> syn.login()
     >>> synapse_table = 'syn4590866'
     >>> row_series, row_files = extract_synapse_rows(synapse_table, save_path='.', limit=3, username='', password='')
-    >>> column_name = 'accel_walking_rest.json.items']
+    >>> column_name = 'accel_walking_rest.json.items'
     >>> amplitude = 32700
     >>> out_path = '.'
     >>> username = ''
@@ -574,7 +573,7 @@ def get_convert_accel(synapse_table, row, column_name, amplitude=32700,
     >>>     row, filepath = read_file_from_synapse_table(synapse_table, row,
     >>>         column_name, out_path, username, password)
     >>>     print(row)
-    >>>     row, new_file = get_convert_accel(synapse_table,
+    >>>     row, xfile, yfile, zfile = get_convert_accel(synapse_table,
     >>>                                       row, column_name,
     >>>                                       amplitude,
     >>>                                       out_path, username, password)
@@ -607,7 +606,7 @@ def get_convert_accel(synapse_table, row, column_name, amplitude=32700,
     samplerate = 1 / np.mean(deltas)  # 44100
 
     # Set amplitude to an arbitrary integer if not properly set:
-    if isinstance(amplitude) != int:
+    if not isinstance(amplitude, int):
         amplitude = 32700
 
     # Write the x, y, z-axis accelerometer data as wav files:
