@@ -33,147 +33,6 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
-def gait(data, sample_rate=100.0, threshold=0.20, order=4, cutoff=5):
-    """
-    Estimate heel strike times from time series (accelerometer) data.
-
-    From Yang, et al., 2012:
-
-    "The heel contacts are detected by peaks preceding the sign change of
-    AP acceleration [3]. In order to automatically detect a heel contact
-    event, firstly, the AP acceleration is low pass filtered by the 4th
-    order zero lag Butterworth filter whose cut frequency is set to 5 Hz.
-    After that, transitional positions where AP acceleration changes from
-    positive to negative can be identified. Finally the peaks of AP
-    acceleration preceding the transitional positions, and greater than
-    the product of a threshold and the maximum value of the AP acceleration
-    are denoted as heel contact events...
-    This threshold is defined as the ratio to the maximum value
-    of the AP acceleration, for example 0.5 indicates the threshold is set
-    at 50% of the maximum AP acceleration. Its default value is set to 0.4
-    as determined experimentally in this paper, where this value allowed
-    correct detection of all gait events in control subjects. However,
-    when a more irregular pattern is analysed, the threshold should be
-    less than 0.4. The user can test different threshold values and find
-    the best one according to the gait event detection results."
-
-    Parameters
-    ----------
-    data : numpy array
-        y-axis (anterior-posterior) accelerometer data
-    sample_rate : integer
-        sample rate of accelerometer reading (Hz)
-    threshold : float
-        ratio to the maximum value of the anterior-posterior acceleration
-    order : integer
-        order of the Butterworth filter
-    cutoff : integer
-        cutoff frequency of the Butterworth filter (Hz)
-
-    Returns
-    -------
-    heel_strikes : numpy array
-        heel strike timings
-    step_durations : numpy array
-        step durations
-    avg_step_duration : float
-        average step duration
-    std_step_duration : float
-        standard deviation of step duration
-
-    Examples
-    --------
-    >>> from mhealthx.xio import read_accel_json, compute_sample_rate
-    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
-    >>> x, y, z, t = read_accel_json(input_file)
-    >>> sample_rate = compute_sample_rate(t)
-    >>> from mhealthx.extractors.iGAIT import gait
-    >>> threshold = 0.2
-    >>> order = 4
-    >>> cutoff = 5
-    >>> data = y
-    >>> heel_strikes, step_durations, avg_step_duration, std_step_duration = gait(data, sample_rate, threshold, order, cutoff)
-
-    """
-    import numpy as np
-    from scipy.signal import butter, lfilter
-
-    def butter_lowpass(cutoff, sample_rate, order=4):
-        """
-        After http://stackoverflow.com/questions/25191620/
-        creating-lowpass-filter-in-scipy-understanding-methods-and-units
-        """
-        nyquist = 0.5 * sample_rate
-        normal_cutoff = cutoff / nyquist
-        b, a = butter(order, normal_cutoff, btype='low', analog=False)
-        return b, a
-
-    def butter_lowpass_filter(data, cutoff, sample_rate, order=4):
-        """
-        After http://stackoverflow.com/questions/25191620/
-        creating-lowpass-filter-in-scipy-understanding-methods-and-units
-        """
-        b, a = butter_lowpass(cutoff, sample_rate, order=order)
-        y = lfilter(b, a, data)
-        return y
-
-    def crossings_nonzero_pos2neg(data):
-        """http://stackoverflow.com/questions/3843017/
-        efficiently-detect-sign-changes-in-python"""
-        pos = data > 0
-        return (pos[:-1] & ~pos[1:]).nonzero()[0]
-
-    # Demean data (not in iGAIT):
-    data -= np.mean(data)
-
-    # Low-pass filter the AP accelerometer data by the 4th order zero lag
-    # Butterworth filter whose cut frequency is set to 5 Hz:
-    filtered = butter_lowpass_filter(data, cutoff, sample_rate, order)
-
-    # Find transitional positions where AP accelerometer changes from
-    # positive to negative.
-    transitions = crossings_nonzero_pos2neg(filtered)
-
-    # Find the peaks of AP acceleration preceding the transitional positions,
-    # and greater than the product of a threshold and the maximum value of
-    # the AP acceleration:
-    strikes = []
-    filter_threshold = np.abs(threshold * np.max(filtered))
-    for i in range(1, len(transitions)):
-        segment = range(transitions[i-1], transitions[i])
-        imax = np.argmax(filtered[segment])
-        if filtered[segment[imax]] > filter_threshold:
-            strikes.append(segment[imax])
-
-    plot_test = False
-    if plot_test:
-        from pylab import plt
-        t = np.linspace(0, len(data), len(data))
-        plt.plot(t, data, 'b-', label='data')
-        plt.plot(t, filtered, 'g-', linewidth=2, label='filtered data')
-        plt.plot(t[transitions], filtered[transitions],
-                 'ko', linewidth=2, label='transition points')
-        plt.plot(t[strikes], filtered[strikes],
-                 'rs', linewidth=2, label='heel strikes')
-        plt.xlabel('Time [sec]')
-        plt.grid()
-        plt.legend(loc='lower left', shadow=True)
-        plt.show()
-
-    heel_strikes = np.asarray(strikes)
-    heel_strikes -= strikes[0]
-    heel_strikes = [x/sample_rate for x in heel_strikes]
-
-    step_durations = []
-    for i in range(1, len(heel_strikes)):
-        step_durations.append(heel_strikes[i] - heel_strikes[i-1])
-
-    avg_step_duration = np.mean(step_durations)
-    std_step_duration = np.std(step_durations)
-
-    return heel_strikes, step_durations, avg_step_duration, std_step_duration
-
-
 def autocorrelation(data, unbiased=True, normalized=True):
     """
     Compute the autocorrelation coefficients for time series data.
@@ -232,7 +91,7 @@ def autocorrelation(data, unbiased=True, normalized=True):
     """
     import numpy as np
 
-    N = len(data)
+    N = np.size(data)
     fvi = np.fft.fft(data, n=2*N)
     coefficients = np.real(np.fft.ifft(fvi * np.conjugate(fvi))[:N])
     if unbiased:
@@ -246,10 +105,9 @@ def autocorrelation(data, unbiased=True, normalized=True):
     return coefficients
 
 
-def gait_regularity_symmetry(data, step_period, stride_period):
+def gait_regularity_symmetry(x, y, z, step_period, stride_period):
     """
-    Compute the step and stride regularity and symmetry from time series data
-    (accelerometer data in a given direction).
+    Compute step and stride regularity and symmetry from accelerometer data.
 
     From Yang, et al., 2012:
 
@@ -270,8 +128,12 @@ def gait_regularity_symmetry(data, step_period, stride_period):
 
     Parameters
     ----------
-    data : numpy array
-        time series data
+    x : list
+        x-axis accelerometer data
+    y : list
+        y-axis accelerometer data
+    z : list
+        z-axis accelerometer data
     step_period : integer
         step period
     stride_period : integer
@@ -279,59 +141,284 @@ def gait_regularity_symmetry(data, step_period, stride_period):
 
     Returns
     -------
-    step_regularity : float
-        step regularity measure in a given direction
-    stride_regularity : float
-        stride regularity measure in given direction
-    symmetry : float
-        symmetry measure in given direction
+    step_regularity_x : float
+        step regularity measure in medial-lateral direction
+    step_regularity_y : float
+        step regularity measure in anterior-posterior direction
+    step_regularity_z : float
+        step regularity measure in vertical direction
+    stride_regularity_x : float
+        stride regularity measure in medial-lateral direction
+    stride_regularity_y : float
+        stride regularity measure in anterior-posterior direction
+    stride_regularity_z : float
+        stride regularity measure in vertical direction
+    symmetry_x : float
+        symmetry measure in medial-lateral direction
+    symmetry_y : float
+        symmetry measure in anterior-posterior direction
+    symmetry_z : float
+        symmetry measure in vertical direction
 
     Examples
     --------
-    >>> from mhealthx.xio import read_accel_json, compute_sample_rate
-    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
-    >>> x, y, z, t = read_accel_json(input_file)
-    >>> sample_rate = compute_sample_rate(t)
-    >>> from mhealthx.extractors.iGAIT import gait
-    >>> threshold = 0.1
-    >>> order = 4
-    >>> cutoff = 5
-    >>> data = y
-    >>> heel_strikes, step_durations, avg_step_duration, std_step_duration = gait(data, sample_rate, threshold, order, cutoff)
-    >>>
-    >>> import numpy as np
+    >>> from mhealthx.xio import read_accel_json
     >>> from mhealthx.extractors.iGAIT import gait_regularity_symmetry
-    >>> data = np.random.random(1000)
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file)
     >>> step_period = 2
-    >>> stride_period = 10
-    >>> gait_regularity_symmetry(data, step_period, stride_period)
+    >>> stride_period = 1
+    >>> a = gait_regularity_symmetry(x, y, z, step_period, stride_period)
 
-    From "Efficient computation of autocorrelations; demonstration in MatLab
-    and Python" (Dec. 29, 2013) by Jesper Toft Kristensen:
-    http://jespertoftkristensen.com/JTK/Blog/Entries/2013/12/29_Efficient_
-    computation_of_autocorrelations%3B_demonstration_in_MatLab_and_Python.html
     """
     import numpy as np
 
     from mhealthx.extractors.iGAIT import autocorrelation
 
-    coefficients = autocorrelation(data, unbiased=True, normalized=True)
+    coefficients_x = autocorrelation(x, unbiased=True, normalized=True)
+    coefficients_y = autocorrelation(y, unbiased=True, normalized=True)
+    coefficients_z = autocorrelation(z, unbiased=True, normalized=True)
 
     plot_test = False
     if plot_test:
         from pylab import plt
-        t = np.linspace(0, len(coefficients), len(coefficients))
-        plt.plot(t, coefficients, 'b-', label='coefficients')
+        t = np.linspace(0, np.size(coefficients_y), np.size(coefficients_y))
+        plt.plot(t, coefficients_y, 'b-', label='coefficients')
         plt.xlabel('Time [sec]')
         plt.grid()
         plt.legend(loc='lower left', shadow=True)
         plt.show()
 
-    step_regularity = coefficients(step_period)
-    stride_regularity = coefficients(stride_period)
-    symmetry = np.abs(stride_regularity - step_regularity)
+    step_regularity_x = coefficients_x[step_period]
+    step_regularity_y = coefficients_y[step_period]
+    step_regularity_z = coefficients_z[step_period]
+    stride_regularity_x = coefficients_x[stride_period]
+    stride_regularity_y = coefficients_y[stride_period]
+    stride_regularity_z = coefficients_z[stride_period]
+    symmetry_x = np.abs(stride_regularity_x - step_regularity_x)
+    symmetry_y = np.abs(stride_regularity_y - step_regularity_y)
+    symmetry_z = np.abs(stride_regularity_z - step_regularity_z)
 
-    return step_regularity, stride_regularity, symmetry
+    return step_regularity_x, step_regularity_y, step_regularity_z, \
+           stride_regularity_x, stride_regularity_y, stride_regularity_z, \
+           symmetry_x, symmetry_y, symmetry_z
+
+
+def gait(x, y, z, t, sample_rate, duration,
+         threshold=0.20, order=4, cutoff=5):
+    """
+    Estimate various gait measures from time series (accelerometer) data.
+
+    From Yang, et al., 2012:
+
+    Re: heel strikes:
+    "The heel contacts are detected by peaks preceding the sign change of
+    AP acceleration [3]. In order to automatically detect a heel contact
+    event, firstly, the AP acceleration is low pass filtered by the 4th
+    order zero lag Butterworth filter whose cut frequency is set to 5 Hz.
+    After that, transitional positions where AP acceleration changes from
+    positive to negative can be identified. Finally the peaks of AP
+    acceleration preceding the transitional positions, and greater than
+    the product of a threshold and the maximum value of the AP acceleration
+    are denoted as heel contact events...
+    This threshold is defined as the ratio to the maximum value
+    of the AP acceleration, for example 0.5 indicates the threshold is set
+    at 50% of the maximum AP acceleration. Its default value is set to 0.4
+    as determined experimentally in this paper, where this value allowed
+    correct detection of all gait events in control subjects. However,
+    when a more irregular pattern is analysed, the threshold should be
+    less than 0.4. The user can test different threshold values and find
+    the best one according to the gait event detection results."
+
+    Parameters
+    ----------
+    x : list
+        x-axis accelerometer data
+    y : list
+        y-axis accelerometer data
+    z : list
+        z-axis accelerometer data
+    t : list
+        time points for accelerometer data
+    sample_rate : float
+        sample rate of accelerometer reading (Hz)
+    duration : float
+        duration of accelerometer reading (s)
+    threshold : float
+        ratio to the maximum value of the anterior-posterior acceleration
+    order : integer
+        order of the Butterworth filter
+    cutoff : integer
+        cutoff frequency of the Butterworth filter (Hz)
+
+    Returns
+    -------
+    heel_strikes : numpy array
+        heel strike timings
+    number_of_steps : integer
+        estimated number of steps based on heel strikes
+    cadence : float
+        number of steps divided by duration
+    step_durations : numpy array
+        step durations
+    avg_step_duration : float
+        average step duration
+    sd_step_durations : float
+        standard deviation of step durations
+    strides : list of two lists of floats
+        stride timings for each side
+    avg_number_of_strides : float
+        estimated number of strides based on alternating heel strikes
+    stride_durations : list of two lists of floats
+        estimated stride durations
+    avg_stride_duration : float
+        average stride duration
+    sd_step_durations : float
+        standard deviation of stride durations
+    step_regularity_x : float
+        measure of step regularity in x-axis
+    step_regularity_y : float
+        measure of step regularity in y-axis
+    step_regularity_z : float
+        measure of step regularity in z-axis
+    stride_regularity_x : float
+        measure of stride regularity in x-axis
+    stride_regularity_y : float
+        measure of stride regularity in y-axis
+    stride_regularity_z : float
+        measure of stride regularity in z-axis
+    symmetry_x : float
+        measure of gait symmetry in x-axis
+    symmetry_y : float
+        measure of gait symmetry in y-axis
+    symmetry_z : float
+        measure of gait symmetry in z-axis
+
+    Examples
+    --------
+    >>> from mhealthx.xio import read_accel_json, compute_sample_rate
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file)
+    >>> from mhealthx.extractors.iGAIT import gait
+    >>> threshold = 0.2
+    >>> order = 4
+    >>> cutoff = 5
+    >>> data = y
+    >>> a = gait(x, y, z, t, sample_rate, duration, threshold, order, cutoff)
+
+    """
+    import numpy as np
+    from scipy.signal import butter, lfilter
+
+    def butter_lowpass(cutoff, sample_rate, order=4):
+        """
+        After http://stackoverflow.com/questions/25191620/
+        creating-lowpass-filter-in-scipy-understanding-methods-and-units
+        """
+        nyquist = 0.5 * sample_rate
+        normal_cutoff = cutoff / nyquist
+        b, a = butter(order, normal_cutoff, btype='low', analog=False)
+        return b, a
+
+    def butter_lowpass_filter(data, cutoff, sample_rate, order=4):
+        """
+        After http://stackoverflow.com/questions/25191620/
+        creating-lowpass-filter-in-scipy-understanding-methods-and-units
+        """
+        b, a = butter_lowpass(cutoff, sample_rate, order=order)
+        y = lfilter(b, a, data)
+        return y
+
+    def crossings_nonzero_pos2neg(data):
+        """http://stackoverflow.com/questions/3843017/
+        efficiently-detect-sign-changes-in-python"""
+        pos = data > 0
+        return (pos[:-1] & ~pos[1:]).nonzero()[0]
+
+    # Demean data (not in iGAIT):
+    data = y
+    data -= np.mean(data)
+
+    # Low-pass filter the AP accelerometer data by the 4th order zero lag
+    # Butterworth filter whose cut frequency is set to 5 Hz:
+    filtered = butter_lowpass_filter(data, cutoff, sample_rate, order)
+
+    # Find transitional positions where AP accelerometer changes from
+    # positive to negative.
+    transitions = crossings_nonzero_pos2neg(filtered)
+
+    # Find the peaks of AP acceleration preceding the transitional positions,
+    # and greater than the product of a threshold and the maximum value of
+    # the AP acceleration:
+    strikes = []
+    filter_threshold = np.abs(threshold * np.max(filtered))
+    for i in range(1, np.size(transitions)):
+        segment = range(transitions[i-1], transitions[i])
+        imax = np.argmax(filtered[segment])
+        if filtered[segment[imax]] > filter_threshold:
+            strikes.append(segment[imax])
+
+    plot_test = False
+    if plot_test:
+        from pylab import plt
+        t = np.linspace(0, np.size(data), np.size(data))
+        plt.plot(t, data, 'b-', label='data')
+        plt.plot(t, filtered, 'g-', linewidth=2, label='filtered data')
+        plt.plot(t[transitions], filtered[transitions],
+                 'ko', linewidth=2, label='transition points')
+        plt.plot(t[strikes], filtered[strikes],
+                 'rs', linewidth=2, label='heel strikes')
+        plt.xlabel('Time [sec]')
+        plt.grid()
+        plt.legend(loc='lower left', shadow=True)
+        plt.show()
+
+    heel_strikes = np.asarray(strikes)
+    heel_strikes -= strikes[0]
+    heel_strikes = [hs/sample_rate for hs in heel_strikes]
+
+    step_durations = []
+    for i in range(1, np.size(heel_strikes)):
+        step_durations.append(heel_strikes[i] - heel_strikes[i-1])
+
+    avg_step_duration = np.mean(step_durations)
+    sd_step_durations = np.std(step_durations)
+
+    number_of_steps = np.size(heel_strikes)
+    cadence = number_of_steps / duration
+
+    strides1 = heel_strikes[0::2]
+    strides2 = heel_strikes[1::2]
+    stride_durations1 = []
+    for i in range(1, np.size(strides1)):
+        stride_durations1.append(strides1[i] - strides1[i-1])
+    stride_durations2 = []
+    for i in range(1, np.size(strides2)):
+        stride_durations2.append(strides2[i] - strides2[i-1])
+
+    strides = [strides1, strides2]
+    stride_durations = [stride_durations1, stride_durations2]
+
+    avg_number_of_strides = np.mean([np.size(strides1), np.size(strides2)])
+    avg_stride_duration = np.mean((np.mean(stride_durations1),
+                                   np.mean(stride_durations2)))
+    sd_stride_durations = np.mean((np.std(stride_durations1),
+                                   np.std(stride_durations2)))
+
+    step_period = 1 / avg_step_duration
+    stride_period = 1 / avg_stride_duration
+
+    step_regularity_x, step_regularity_y, step_regularity_z, \
+           stride_regularity_x, stride_regularity_y, stride_regularity_z, \
+           symmetry_x, symmetry_y, symmetry_z = \
+        gait_regularity_symmetry(x, y, z, step_period, stride_period)
+
+    return heel_strikes, number_of_steps, cadence, step_durations, \
+           avg_step_duration, sd_step_durations, strides, stride_durations, \
+           avg_number_of_strides, avg_stride_duration, sd_stride_durations, \
+           step_regularity_x, step_regularity_y, step_regularity_z, \
+           stride_regularity_x, stride_regularity_y, stride_regularity_z, \
+           symmetry_x, symmetry_y, symmetry_z
 
 
 def rms(data):

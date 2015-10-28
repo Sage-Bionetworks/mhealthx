@@ -494,6 +494,88 @@ def read_accel_json(input_file, start=0):
     return x, y, z, t, sample_rate, duration
 
 
+def get_accel(synapse_table, row, column_name, start=0,
+              out_path='.', username='', password=''):
+    """
+    Read accelerometer json data from Synapse table row.
+
+    Calls ::
+        from mhealthx.xio import read_file_from_synapse_table
+        from mhealthx.xio import read_accel_json
+
+    Parameters
+    ----------
+    synapse_table : string or Schema
+        a synapse ID or synapse table Schema object
+    row : pandas Series or string
+        row of a Synapse table converted to a Series or csv file
+    column_name : string
+        name of file handle column
+    start : integer
+        starting index (remove beginning)
+    out_path : string or None
+        a local path in which to store downloaded files.
+        If None, stores them in (~/.synapseCache)
+    username : string
+        Synapse username (only needed once on a given machine)
+    password : string
+        Synapse password (only needed once on a given machine)
+
+    Returns
+    -------
+    x : list
+        x-axis accelerometer data
+    y : list
+        y-axis accelerometer data
+    z : list
+        z-axis accelerometer data
+    t : list
+        time points for accelerometer data
+    sample_rate : float
+        sample rate
+    duration : float
+        duration of time series
+    row : pandas Series
+        same as passed in: row of a Synapse table as a file or Series
+    file_path : string
+        path to accelerometer file
+
+    Examples
+    --------
+    >>> from mhealthx.xio import extract_synapse_rows, read_file_from_synapse_table, get_accel
+    >>> import synapseclient
+    >>> syn = synapseclient.Synapse()
+    >>> syn.login()
+    >>> synapse_table = 'syn4590866'
+    >>> row_series, row_files = extract_synapse_rows(synapse_table, save_path='.', limit=3, username='', password='')
+    >>> column_name = 'accel_walking_rest.json.items'
+    >>> start = 150
+    >>> out_path = '.'
+    >>> username = ''
+    >>> password = ''
+    >>> for i in range(1):
+    >>>     row = row_series[i]
+    >>>     row, filepath = read_file_from_synapse_table(synapse_table, row,
+    >>>         column_name, out_path, username, password)
+    >>>     print(row)
+    >>>     x, y, z, t, sample_rate, duration, row, file_path = get_accel(synapse_table,
+    >>>                                       row, column_name,
+    >>>                                       start,
+    >>>                                       out_path, username, password)
+
+    """
+    from mhealthx.xio import read_file_from_synapse_table, read_accel_json
+
+    # Load row data and accelerometer json file (full path):
+    row, file_path = read_file_from_synapse_table(synapse_table, row,
+                                                  column_name, out_path,
+                                                  username, password)
+    # Read accelerometer json file:
+    x, y, z, t, sample_rate, duration = read_accel_json(file_path, start)
+
+    return x, y, z, t, sample_rate, duration, row, file_path
+
+
 def write_wav(data, filename, samplerate=44100, amplitude=32700):
     """
     Convert a list or array of numbers to a .wav format audio file.
@@ -563,111 +645,6 @@ def write_wav(data, filename, samplerate=44100, amplitude=32700):
         raise IOError("{0} has not been written.".format(filename))
 
     return filename
-
-
-def get_convert_accel(synapse_table, row, column_name, start=0,
-                      amplitude=32700, out_path='.',
-                      username='', password=''):
-    """
-    Read accelerometer json data from Synapse table row,
-    convert the data for each (x,y,z) axis to a wav file.
-
-    Calls ::
-        from mhealthx.xio import read_file_from_synapse_table
-        from mhealthx.xio import read_accel_json
-        from mhealthx.xio import write_wav
-
-    Parameters
-    ----------
-    synapse_table : string or Schema
-        a synapse ID or synapse table Schema object
-    row : pandas Series or string
-        row of a Synapse table converted to a Series or csv file
-    column_name : string
-        name of file handle column
-    start : integer
-        starting index (remove beginning)
-    amplitude : integer
-        maximum amplitude of output wav file
-    out_path : string or None
-        a local path in which to store downloaded files.
-        If None, stores them in (~/.synapseCache)
-    username : string
-        Synapse username (only needed once on a given machine)
-    password : string
-        Synapse password (only needed once on a given machine)
-
-    Returns
-    -------
-    row : pandas Series
-        same as passed in: row of a Synapse table as a file or Series
-    xfile : string
-        full path to the converted x-axis accelerometer wav file
-    yfile : string
-        full path to the converted y-axis accelerometer wav file
-    zfile : string
-        full path to the converted z-axis accelerometer wav file
-
-    Examples
-    --------
-    >>> from mhealthx.xio import extract_synapse_rows, read_file_from_synapse_table, get_convert_accel
-    >>> import synapseclient
-    >>> syn = synapseclient.Synapse()
-    >>> syn.login()
-    >>> synapse_table = 'syn4590866'
-    >>> row_series, row_files = extract_synapse_rows(synapse_table, save_path='.', limit=3, username='', password='')
-    >>> column_name = 'accel_walking_rest.json.items'
-    >>> start = 150
-    >>> amplitude = 32700
-    >>> out_path = '.'
-    >>> username = ''
-    >>> password = ''
-    >>> for i in range(1):
-    >>>     row = row_series[i]
-    >>>     row, filepath = read_file_from_synapse_table(synapse_table, row,
-    >>>         column_name, out_path, username, password)
-    >>>     print(row)
-    >>>     row, xfile, yfile, zfile = get_convert_accel(synapse_table,
-    >>>                                       row, column_name,
-    >>>                                       start, amplitude,
-    >>>                                       out_path, username, password)
-
-    """
-    import numpy as np
-
-    from mhealthx.xio import read_file_from_synapse_table, \
-                             read_accel_json, write_wav
-
-    # Load row data and accelerometer json file (full path):
-    row, file_path = read_file_from_synapse_table(synapse_table, row,
-                                                  column_name, out_path,
-                                                  username, password)
-    # Read accelerometer json file:
-    x, y, z, t, sample_rate, duration = read_accel_json(file_path, start)
-
-    # Normalize data for each axis:
-    x /= np.max(np.abs(np.asarray(x)))
-    y /= np.max(np.abs(np.asarray(y)))
-    z /= np.max(np.abs(np.asarray(z)))
-
-    # Compute sample rate:
-    deltas = []
-    tprev = t[0]
-    for tnext in t[1::]:
-        deltas.append(tnext - tprev)
-        tprev = tnext
-    samplerate = 1 / np.mean(deltas)  # 44100
-
-    # Set amplitude to an arbitrary integer if not properly set:
-    if not isinstance(amplitude, int):
-        amplitude = 32700
-
-    # Write the x, y, z-axis accelerometer data as wav files:
-    xfile = write_wav(x, file_path + '_x-axis.wav', samplerate, amplitude)
-    yfile = write_wav(y, file_path + '_y-axis.wav', samplerate, amplitude)
-    zfile = write_wav(z, file_path + '_z-axis.wav', samplerate, amplitude)
-
-    return row, xfile, yfile, zfile
 
 
 def row_to_table(row_data, output_table):
