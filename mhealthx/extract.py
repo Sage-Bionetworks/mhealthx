@@ -11,7 +11,7 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 
 
 def run_openSMILE(audio_file, command, flag1, flags, flagn, args, closing,
-                  row, table_stem, save_rows=False):
+                  row, table_stem, save_rows):
     """
     Process audio file and store feature row to a table.
 

@@ -355,7 +355,7 @@ if synID_balance and not setup_rows:
     # ------------------------------------------------------------------------
     # Repeat for walking data:
     # ------------------------------------------------------------------------
-    getWalking = getBalance.clone('walking_data_to_audio')
+    getWalking = getBalance.clone('walking_data')
     getWalking.inputs.column_name = 'accel_walking_outbound.json.items'
 
     # ------------------------------------------------------------------------
@@ -378,17 +378,17 @@ if synID_balance and not setup_rows:
                                                   'save_rows'],
                                      output_names=['feature_row',
                                                    'feature_table']))
-    Flow.connect(getBalance, 'x', iGAITwalking, 'x')
-    Flow.connect(getBalance, 'y', iGAITwalking, 'y')
-    Flow.connect(getBalance, 'z', iGAITwalking, 'z')
-    Flow.connect(getBalance, 't', iGAITwalking, 't')
-    Flow.connect(getBalance, 'sample_rate', iGAITwalking, 'sample_rate')
-    Flow.connect(getBalance, 'duration', iGAITwalking, 'duration')
+    Flow.connect(getWalking, 'x', iGAITwalking, 'x')
+    Flow.connect(getWalking, 'y', iGAITwalking, 'y')
+    Flow.connect(getWalking, 'z', iGAITwalking, 'z')
+    Flow.connect(getWalking, 't', iGAITwalking, 't')
+    Flow.connect(getWalking, 'sample_rate', iGAITwalking, 'sample_rate')
+    Flow.connect(getWalking, 'duration', iGAITwalking, 'duration')
     iGAITwalking.inputs.threshold = 0.2
     iGAITwalking.inputs.order = 4
     iGAITwalking.inputs.cutoff = 5
-    Flow.connect(getBalance, 'row', iGAITwalking, 'row')
-    Flow.connect(getBalance, 'file_path', iGAITwalking, 'file_path')
+    Flow.connect(getWalking, 'row', iGAITwalking, 'row')
+    Flow.connect(getWalking, 'file_path', iGAITwalking, 'file_path')
     iGAITwalking.inputs.column_name = 'accel_walking_rest.json.items'
     iGAITwalking.inputs.table_stem = os.path.join(feature_table_path,
                                                   'walking_iGAIT')
@@ -405,7 +405,7 @@ if synID_balance and not setup_rows:
                                                  'amplitude'],
                                     output_names=['filename']))
     WAVbalanceX.inputs.samplerate = 44100
-    WAVbalanceX.inputs.amplitude = 32700
+    WAVbalanceX.inputs.amplitude = 256  # 32700
     WAVbalanceY = WAVbalanceX.clone('convert_balance_y_to_wav')
     WAVbalanceZ = WAVbalanceX.clone('convert_balance_z_to_wav')
     Flow.connect(getBalance, 'x', WAVbalanceX, 'data')
@@ -435,15 +435,15 @@ if synID_balance and not setup_rows:
     # 3. Write the feature row to a table or append to a feature table.
     # ------------------------------------------------------------------------
     SMILEbalanceX = Node(name='openSMILE_balance_x',
-                         interface=Fn(function=openSMILE,
+                         interface=Fn(function=run_openSMILE,
                                       input_names=['audio_file',
-                                                   'row',
                                                    'command',
                                                    'flag1',
                                                    'flags',
                                                    'flagn',
                                                    'args',
                                                    'closing',
+                                                   'row',
                                                    'table_stem',
                                                    'save_rows'],
                                       output_names=['feature_row',
@@ -462,6 +462,8 @@ if synID_balance and not setup_rows:
     Flow.connect(WAVbalanceX, 'filename', SMILEbalanceX, 'audio_file')
     Flow.connect(WAVbalanceY, 'filename', SMILEbalanceY, 'audio_file')
     Flow.connect(WAVbalanceZ, 'filename', SMILEbalanceZ, 'audio_file')
+    Flow.connect(getBalance, 'row', SMILEbalanceY, 'row')
+    Flow.connect(getBalance, 'row', SMILEbalanceZ, 'row')
     SMILEbalanceX.inputs.table_stem = \
         os.path.join(feature_table_path, 'balance_x{0}'.format(smile_string1))
     SMILEbalanceY.inputs.table_stem = \
@@ -481,9 +483,9 @@ if synID_balance and not setup_rows:
     Flow.connect(getWalking, 'row', SMILEwalkingX, 'row')
     Flow.connect(getWalking, 'row', SMILEwalkingY, 'row')
     Flow.connect(getWalking, 'row', SMILEwalkingZ, 'row')
-    Flow.connect(getWalking, 'xfile', SMILEwalkingX, 'audio_file')
-    Flow.connect(getWalking, 'yfile', SMILEwalkingY, 'audio_file')
-    Flow.connect(getWalking, 'zfile', SMILEwalkingZ, 'audio_file')
+    Flow.connect(WAVwalkingX, 'filename', SMILEwalkingX, 'audio_file')
+    Flow.connect(WAVwalkingY, 'filename', SMILEwalkingY, 'audio_file')
+    Flow.connect(WAVwalkingZ, 'filename', SMILEwalkingZ, 'audio_file')
     SMILEwalkingX.inputs.table_stem = \
         os.path.join(feature_table_path, 'walking_x{0}'.format(smile_string1))
     SMILEwalkingY.inputs.table_stem = \

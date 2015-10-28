@@ -594,7 +594,7 @@ def write_wav(data, filename, samplerate=44100, amplitude=32700):
     samplerate : integer
         number of desired samples per second for audio file
     amplitude : integer
-        maximum amplitude for audio file
+        maximum amplitude for audio file (32700 is within signed short)
 
     Returns
     -------
