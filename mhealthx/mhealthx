@@ -329,6 +329,7 @@ if synID_balance and not setup_rows:
                                    input_names=['synapse_table',
                                                 'row',
                                                 'column_name',
+                                                'start',
                                                 'amplitude',
                                                 'out_path',
                                                 'username',
@@ -345,6 +346,7 @@ if synID_balance and not setup_rows:
                 and os.path.isfile(os.path.join(row_path_balance, f))]
     getBalance.iterables = ("row", rows_bal)
     getBalance.inputs.column_name = 'accel_walking_rest.json.items'
+    getBalance.inputs.start = 150
     getBalance.inputs.amplitude = 32700
     getBalance.inputs.out_path = '.'
     getBalance.inputs.username = ''

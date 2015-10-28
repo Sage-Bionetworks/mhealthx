@@ -401,51 +401,6 @@ def get_convert_audio(synapse_table, row, column_name,
     return row, new_file
 
 
-def read_accel_json(input_file):
-    """
-    Read accelerometer json file.
-
-    Parameters
-    ----------
-    input_file : string
-        name of input accelerometer json file
-
-    Returns
-    -------
-    x : list
-        x-axis accelerometer data
-    y : list
-        y-axis accelerometer data
-    z : list
-        z-axis accelerometer data
-    t : list
-        time points for accelerometer data
-
-    Examples
-    --------
-    >>> from mhealthx.xio import read_accel_json
-    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
-    >>> x, y, z, t = read_accel_json(input_file)
-    """
-    import json
-
-    f = open(input_file, 'r')
-    json_strings = f.readlines()
-    parsed_jsons = json.loads(json_strings[0])
-
-    x = []
-    y = []
-    z = []
-    t = []
-    for parsed_json in parsed_jsons:
-        x.append(parsed_json['x'])
-        y.append(parsed_json['y'])
-        z.append(parsed_json['z'])
-        t.append(parsed_json['timestamp'])
-
-    return x, y, z, t
-
-
 def compute_sample_rate(t):
     """
     Compute sample rate.
@@ -459,13 +414,15 @@ def compute_sample_rate(t):
     -------
     sample_rate : float
         sample rate
+    duration : float
+        duration of time series
 
     Examples
     --------
+    >>> import numpy as np
     >>> from mhealthx.xio import read_accel_json, compute_sample_rate
-    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
-    >>> x, y, z, t = read_accel_json(input_file)
-    >>> sample_rate = compute_sample_rate(t)
+    >>> t = np.linspace(.1, 1000, 10000)
+    >>> sample_rate, duration = compute_sample_rate(t)
     """
     import numpy as np
 
@@ -476,7 +433,65 @@ def compute_sample_rate(t):
         tprev = tnext
     sample_rate = 1 / np.mean(deltas)
 
-    return sample_rate
+    duration = t[-1] - t[0]
+
+    return sample_rate, duration
+
+
+def read_accel_json(input_file, start=0):
+    """
+    Read accelerometer json file.
+
+    Parameters
+    ----------
+    input_file : string
+        name of input accelerometer json file
+    start : integer
+        starting index (remove beginning)
+
+    Returns
+    -------
+    x : list
+        x-axis accelerometer data
+    y : list
+        y-axis accelerometer data
+    z : list
+        z-axis accelerometer data
+    t : list
+        time points for accelerometer data
+    sample_rate : float
+        sample rate
+    duration : float
+        duration of time series
+
+    Examples
+    --------
+    >>> from mhealthx.xio import read_accel_json
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    >>> start = 150
+    >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file, start)
+    """
+    import json
+
+    from mhealthx.xio import compute_sample_rate
+
+    f = open(input_file, 'r')
+    json_strings = f.readlines()
+    parsed_jsons = json.loads(json_strings[0])
+
+    x = []
+    y = []
+    z = []
+    t = []
+    for parsed_json in parsed_jsons[start::]:
+        x.append(parsed_json['x'])
+        y.append(parsed_json['y'])
+        z.append(parsed_json['z'])
+        t.append(parsed_json['timestamp'])
+
+    sample_rate, duration = compute_sample_rate(t)
+
+    return x, y, z, t, sample_rate, duration
 
 
 def write_wav(data, filename, samplerate=44100, amplitude=32700):
@@ -550,8 +565,9 @@ def write_wav(data, filename, samplerate=44100, amplitude=32700):
     return filename
 
 
-def get_convert_accel(synapse_table, row, column_name, amplitude=32700,
-                      out_path='.', username='', password=''):
+def get_convert_accel(synapse_table, row, column_name, start=0,
+                      amplitude=32700, out_path='.',
+                      username='', password=''):
     """
     Read accelerometer json data from Synapse table row,
     convert the data for each (x,y,z) axis to a wav file.
@@ -569,6 +585,8 @@ def get_convert_accel(synapse_table, row, column_name, amplitude=32700,
         row of a Synapse table converted to a Series or csv file
     column_name : string
         name of file handle column
+    start : integer
+        starting index (remove beginning)
     amplitude : integer
         maximum amplitude of output wav file
     out_path : string or None
@@ -599,6 +617,7 @@ def get_convert_accel(synapse_table, row, column_name, amplitude=32700,
     >>> synapse_table = 'syn4590866'
     >>> row_series, row_files = extract_synapse_rows(synapse_table, save_path='.', limit=3, username='', password='')
     >>> column_name = 'accel_walking_rest.json.items'
+    >>> start = 150
     >>> amplitude = 32700
     >>> out_path = '.'
     >>> username = ''
@@ -610,11 +629,10 @@ def get_convert_accel(synapse_table, row, column_name, amplitude=32700,
     >>>     print(row)
     >>>     row, xfile, yfile, zfile = get_convert_accel(synapse_table,
     >>>                                       row, column_name,
-    >>>                                       amplitude,
+    >>>                                       start, amplitude,
     >>>                                       out_path, username, password)
 
     """
-    import os
     import numpy as np
 
     from mhealthx.xio import read_file_from_synapse_table, \
@@ -625,7 +643,7 @@ def get_convert_accel(synapse_table, row, column_name, amplitude=32700,
                                                   column_name, out_path,
                                                   username, password)
     # Read accelerometer json file:
-    x, y, z, t = read_accel_json(file_path)
+    x, y, z, t, sample_rate, duration = read_accel_json(file_path, start)
 
     # Normalize data for each axis:
     x /= np.max(np.abs(np.asarray(x)))
