@@ -424,7 +424,7 @@ def read_accel_json(input_file):
     Examples
     --------
     >>> from mhealthx.xio import read_accel_json
-    >>> input_file = '/Users/arno/Desktop/mpower_data/accel_walking_rest.json.items-be382ddf-a69f-4836-b3e4-3ebee7146ffd8619560118692286819.tmp'
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
     >>> x, y, z, t = read_accel_json(input_file)
     """
     import json
@@ -444,6 +444,39 @@ def read_accel_json(input_file):
         t.append(parsed_json['timestamp'])
 
     return x, y, z, t
+
+
+def compute_sample_rate(t):
+    """
+    Compute sample rate.
+
+    Parameters
+    ----------
+    t : list
+        time points
+
+    Returns
+    -------
+    sample_rate : float
+        sample rate
+
+    Examples
+    --------
+    >>> from mhealthx.xio import read_accel_json, compute_sample_rate
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    >>> x, y, z, t = read_accel_json(input_file)
+    >>> sample_rate = compute_sample_rate(t)
+    """
+    import numpy as np
+
+    deltas = []
+    tprev = t[0]
+    for tnext in t[1::]:
+        deltas.append(tnext - tprev)
+        tprev = tnext
+    sample_rate = 1 / np.mean(deltas)
+
+    return sample_rate
 
 
 def write_wav(data, filename, samplerate=44100, amplitude=32700):
