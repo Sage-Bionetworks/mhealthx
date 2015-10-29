@@ -13,7 +13,7 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 def run_openSMILE(audio_file, command, flag1, flags, flagn, args, closing,
                   row, table_stem, save_rows):
     """
-    Process audio file and store feature row to a table.
+    Run openSMILE to process audio file and store feature row to a table.
 
     Steps ::
         1. Run openSMILE's SMILExtract audio feature extraction command.
@@ -153,10 +153,10 @@ def run_openSMILE(audio_file, command, flag1, flags, flagn, args, closing,
     return feature_row, feature_table
 
 
-def run_pyGait(x, y, z, t, sample_rate, duration, threshold, order, cutoff, \
-              row, file_path, table_stem, save_rows=False):
+def run_pyGait(x, y, z, t, sample_rate, duration, threshold, order, cutoff,
+               row, file_path, table_stem, save_rows=False):
     """
-    Process audio file and store feature row to a table.
+    Run pyGait (replication of iGAIT) accelerometer feature extraction code.
 
     Steps ::
         1. Run pyGait accelerometer feature extraction.
@@ -220,10 +220,9 @@ def run_pyGait(x, y, z, t, sample_rate, duration, threshold, order, cutoff, \
     import os
     import pandas as pd
 
-    from mhealthx.xio import row_to_table, read_file_from_synapse_table
-    from mhealthx.extractors.pyGait import gait
+    from mhealthx.xio import row_to_table
+    from mhealthx.extractors.pyGait import gait, root_mean_square
 
-    # Run (replication of) iGAIT's accelerometer feature extraction code:
     heel_strikes, number_of_steps, cadence, step_durations, \
     avg_step_duration, sd_step_durations, strides, stride_durations, \
     avg_number_of_strides, avg_stride_duration, sd_stride_durations, \
@@ -232,22 +231,29 @@ def run_pyGait(x, y, z, t, sample_rate, duration, threshold, order, cutoff, \
     symmetry_x, symmetry_y, symmetry_z = gait(x, y, z, t, sample_rate, \
                                               duration, threshold, order, \
                                               cutoff)
-    row_data = pd.DataFrame({'number_of_steps' : number_of_steps,
-                             'cadence' : cadence,
-                             'avg_step_duration' : avg_step_duration,
-                             'sd_step_durations' : sd_step_durations,
-                             'avg_number_of_strides' : avg_number_of_strides,
-                             'avg_stride_duration' : avg_stride_duration,
-                             'sd_stride_durations' : sd_stride_durations,
-                             'step_regularity_x' : step_regularity_x,
-                             'step_regularity_y' : step_regularity_y,
-                             'step_regularity_z' : step_regularity_z,
-                             'stride_regularity_x' : stride_regularity_x,
-                             'stride_regularity_y' : stride_regularity_y,
-                             'stride_regularity_z' : stride_regularity_z,
-                             'symmetry_x' : symmetry_x,
-                             'symmetry_y' : symmetry_y,
-                             'symmetry_z' : symmetry_z}, index=[0])
+    RMS_x = root_mean_square(x)
+    RMS_y = root_mean_square(y)
+    RMS_z = root_mean_square(z)
+
+    row_data = pd.DataFrame({'number_of_steps': number_of_steps,
+                             'cadence': cadence,
+                             'avg_step_duration': avg_step_duration,
+                             'sd_step_durations': sd_step_durations,
+                             'avg_number_of_strides': avg_number_of_strides,
+                             'avg_stride_duration': avg_stride_duration,
+                             'sd_stride_durations': sd_stride_durations,
+                             'step_regularity_x': step_regularity_x,
+                             'step_regularity_y': step_regularity_y,
+                             'step_regularity_z': step_regularity_z,
+                             'stride_regularity_x': stride_regularity_x,
+                             'stride_regularity_y': stride_regularity_y,
+                             'stride_regularity_z': stride_regularity_z,
+                             'symmetry_x': symmetry_x,
+                             'symmetry_y': symmetry_y,
+                             'symmetry_z': symmetry_z,
+                             'RMS_x': RMS_x,
+                             'RMS_y': RMS_y,
+                             'RMS_z': RMS_z}, index=[0])
 
     if isinstance(row, pd.Series) and not row.empty:
         feature_row = pd.concat([row, row_data.transpose()], axis=0)
