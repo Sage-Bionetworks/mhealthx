@@ -210,7 +210,7 @@ def run_iGAIT(x, y, z, t, sample_rate, duration, threshold, order, cutoff, \
     >>> order = 4
     >>> cutoff = 5
     >>> data = y
-    >>> row = pd.Series({'a':1, 'b':2, 'c':3}, index=[0])
+    >>> row = pd.Series({'a':[1], 'b':[2], 'c':[3]})
     >>> file_path = '/fake/path'
     >>> table_stem = './walking'
     >>> save_rows = True
@@ -250,7 +250,8 @@ def run_iGAIT(x, y, z, t, sample_rate, duration, threshold, order, cutoff, \
                              'symmetry_z' : symmetry_z}, index=[0])
 
     if isinstance(row, pd.Series) and not row.empty:
-        feature_row = pd.concat([row, row_data], axis=1)
+        feature_row = pd.concat([row, row_data.transpose()], axis=0)
+        feature_row = feature_row.transpose()
     else:
         feature_row = row_data
 
