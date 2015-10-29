@@ -8,23 +8,34 @@ Computer methods and programs in biomedicine 108:715-723.
 DOI:10.1016/j.cmpb.2012.04.004
 http://www.ncbi.nlm.nih.gov/pubmed/22575802
 
+iGait was written as a Matlab file and compiled as a Windows application.
+
 iGAIT inputs ::
     - sample rate
     - distance (not included here)
     - threshold (anterior-posterior acceleration, to detect heel contact)
 
-iGait was written as a Matlab file and compiled as a Windows application.
+iGAIT features ::
+    - spatio-temporal features, from estimates of heel strikes:
+        - cadence = number of steps divided by walking time
+        - distance-based measures (mean step length, velocity)
+    - regularity and symmetry (each direction):
+        - step/stride regularity
+        - symmetry
+    - root mean square (each direction)
+    - spectral features (each direction):
+        - integral of the power spectral density (IPSD)
+        - main frequency: frequency with the maximum value of PSD
+        - frequencies when PSD is cumulated (CPSD)
 
-Features ::
-    - cadence (step/min)
-    - distance-related (not included here): velocity, mean step length
-    - RMS (each direction)
-    - integral of the power spectral density (PSD, each direction)
-    - main frequency: frequency with the maximum value of PSD
-    - frequency of cumulated IPSD at 50/75/90/99% energy (each direction)
-    - autocorrelation coefficients-derived:
-        - symmetry (vertical and anterior-posterior directions)
-        - regularity of stride/step (each direction)
+pyGait functions compute all of iGAIT's features except
+those that require an input distance (mean step length, velocity)
+and the spectral features::
+    - gait_features() for all heel strike-based estimates:
+        - cadence
+        - regularity and symmetry (each direction)
+    - root_mean_square():
+        - root mean square (each direction)
 
 Authors:
     - Arno Klein, 2015  (arno@sagebase.org)  http://binarybottle.com
@@ -207,11 +218,16 @@ def gait_regularity_symmetry(x, y, z, step_period, stride_period):
 def gait(x, y, z, t, sample_rate, duration,
          threshold=0.20, order=4, cutoff=5):
     """
-    Estimate various gait measures from time series (accelerometer) data.
+    Extract gait features from estimated heel strikes from accelerometer data.
 
-    From Yang, et al., 2012:
+    This function extracts all of iGAIT's features that depend on the estimate
+    of heel strikes, but do not require an input distance::
 
-    Re: heel strikes:
+        - cadence = number of steps divided by walking time
+        - step/stride regularity
+        - step/stride symmetry
+
+    Re: heel strikes (from Yang, et al., 2012):
     "The heel contacts are detected by peaks preceding the sign change of
     AP acceleration [3]. In order to automatically detect a heel contact
     event, firstly, the AP acceleration is low pass filtered by the 4th
@@ -421,14 +437,39 @@ def gait(x, y, z, t, sample_rate, duration,
            symmetry_x, symmetry_y, symmetry_z
 
 
-def rms(data):
+def root_mean_square(data):
     """
-    The root mean square of acceleration indicates the intensity of motion.
+    Compute root mean square of data.
+
+    from Yang, et al., 2012:
+    "The root mean square of acceleration indicates the intensity of motion.
     The RMS values of the three acceleration directions (VT, AP and ML)
-    are calculated as: RMS_d = sqrt( (sum[i=0:N-1](xdi - [xd])^2 / N) )
+    are calculated as: RMS_d = sqrt( (sum[i=1:N](xdi - [xd])^2 / N) )
     where xdi (i = 1,2,...,N; d = VT,AP,ML) is the acceleration in either
     the VT, AP or ML axis, N is the length of the acceleration signal,
-    [xd] is the mean value of acceleration in any axis.
-    """
-    pass
+    [xd] is the mean value of acceleration in any axis."
 
+    Parameters
+    ----------
+    data : numpy array of floats
+
+    Returns
+    -------
+    rms : float
+        root mean square
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from mhealthx.extractors.iGAIT import root_mean_square
+    >>> data = np.random.random(100)
+    >>> rms = root_mean_square(data)
+
+    """
+    import numpy as np
+
+    N = np.size(data)
+    demeaned_data = data - np.mean(data)
+    rms = np.sqrt(np.sum(demeaned_data**2 / N))
+
+    return rms

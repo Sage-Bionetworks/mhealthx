@@ -576,7 +576,8 @@ def get_accel(synapse_table, row, column_name, start=0,
     return x, y, z, t, sample_rate, duration, row, file_path
 
 
-def write_wav(data, filename, samplerate=44100, amplitude=32700):
+def write_wav(data, file_stem, file_append,
+              sample_rate=44100, amplitude=32700):
     """
     Convert a list or array of numbers to a .wav format audio file.
 
@@ -589,16 +590,18 @@ def write_wav(data, filename, samplerate=44100, amplitude=32700):
     ----------
     data : list or array of floats or integers
         input data to convert to audio file
-    filename : string
-        name of output audio file (absolute path)
-    samplerate : integer
+    file_stem : string
+        stem of file name of output audio file (including absolute path)
+    file_append : string
+        append string to file_stem for full output audio file path and name
+    sample_rate : integer
         number of desired samples per second for audio file
     amplitude : integer
         maximum amplitude for audio file (32700 is within signed short)
 
     Returns
     -------
-    filename : string
+    wav_file : string
         name of output .wav audio file
 
     Examples
@@ -606,22 +609,25 @@ def write_wav(data, filename, samplerate=44100, amplitude=32700):
     >>> from mhealthx.xio import write_wav
     >>> import numpy as np
     >>> from scipy.signal import resample
-    >>> filename = 'write_wav.wav'
-    >>> samplerate = 44100
+    >>> file_stem = '/desk/temp'
+    >>> file_append = 'write_wav.wav'
+    >>> sample_rate = 44100
     >>> amplitude = 32700
     >>> data = np.random.random(500000)
     >>> data /= np.max(np.abs(data))
-    >>> #data = resample(data, samplerate/framerate)
-    >>> filename = write_wav(data, filename, samplerate, amplitude)
+    >>> #data = resample(data, sample_rate/framerate)
+    >>> wav_file = write_wav(data, file_stem, file_append, sample_rate, amplitude)
     """
     import os
+    import numpy as np
     import wave
     import struct
 
-    wavfile = wave.open(filename, "w")
+    wav_file = file_stem + file_append
+    wavfile = wave.open(wav_file, "w")
     nchannels = 1
     sampwidth = 2
-    framerate = samplerate
+    framerate = sample_rate
     nframes = len(data)
     comptype = "NONE"
     compname = "not compressed"
@@ -632,19 +638,21 @@ def write_wav(data, filename, samplerate=44100, amplitude=32700):
                        comptype,
                        compname))
 
-    data = [int(amplitude * x) for x in data]
-
+    data = np.asarray(data)
+    data /= np.max(np.abs(data))
+    data *= amplitude
+    data = np.round(data)
     for x in data:
-        value = struct.pack('<h', x)
+        value = struct.pack('i', x)
         wavfile.writeframesraw(value)
 
     wavfile.writeframes('')
     wavfile.close()
 
-    if not os.path.isfile(filename):
+    if not os.path.isfile(wav_file):
         raise IOError("{0} has not been written.".format(filename))
 
-    return filename
+    return wav_file
 
 
 def row_to_table(row_data, output_table):

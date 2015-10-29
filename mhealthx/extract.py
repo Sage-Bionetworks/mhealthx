@@ -153,14 +153,14 @@ def run_openSMILE(audio_file, command, flag1, flags, flagn, args, closing,
     return feature_row, feature_table
 
 
-def run_iGAIT(x, y, z, t, sample_rate, duration, threshold, order, cutoff, \
+def run_pyGait(x, y, z, t, sample_rate, duration, threshold, order, cutoff, \
               row, file_path, table_stem, save_rows=False):
     """
     Process audio file and store feature row to a table.
 
     Steps ::
-        1. Run iGAIT accelerometer feature extraction.
-        2. Construct a feature row from the original and iGAIT rows.
+        1. Run pyGait accelerometer feature extraction.
+        2. Construct a feature row from the original and pyGait rows.
         3. Write the feature row to a table or append to a feature table.
 
     Parameters
@@ -203,7 +203,7 @@ def run_iGAIT(x, y, z, t, sample_rate, duration, threshold, order, cutoff, \
     --------
     >>> import pandas as pd
     >>> from mhealthx.xio import read_accel_json
-    >>> from mhealthx.extract import run_iGAIT
+    >>> from mhealthx.extract import run_pyGait
     >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
     >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file)
     >>> threshold = 0.2
@@ -214,14 +214,14 @@ def run_iGAIT(x, y, z, t, sample_rate, duration, threshold, order, cutoff, \
     >>> file_path = '/fake/path'
     >>> table_stem = './walking'
     >>> save_rows = True
-    >>> feature_row, feature_table = run_iGAIT(x, y, z, t, sample_rate, duration, threshold, order, cutoff, row, file_path, table_stem, save_rows)
+    >>> feature_row, feature_table = run_pyGait(x, y, z, t, sample_rate, duration, threshold, order, cutoff, row, file_path, table_stem, save_rows)
 
     """
     import os
     import pandas as pd
 
     from mhealthx.xio import row_to_table, read_file_from_synapse_table
-    from mhealthx.extractors.iGAIT import gait
+    from mhealthx.extractors.pyGait import gait
 
     # Run (replication of) iGAIT's accelerometer feature extraction code:
     heel_strikes, number_of_steps, cadence, step_durations, \
