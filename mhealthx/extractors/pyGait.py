@@ -47,27 +47,22 @@ def autocorrelation(data, unbiased=True, normalized=True):
     """
     Compute the autocorrelation coefficients for time series data.
 
-    From Yang, et al., 2012:
-
+    Here we use scipy.signal.correlate, but the results are the same as
+    from Yang, et al., 2012:
     "The autocorrelation coefficient refers to the correlation of a time
     series with its own past or future values. iGAIT uses unbiased
     autocorrelation coefficients of acceleration data to scale the regularity
     and symmetry of gait [30]. The unbiased estimate of autocorrelation
     coefficients of acceleration data can be calculated by Eq. (5) ::
-
         fc(t) = 1/(N-|t|)  *  SUM[i=1:N-|t|](xi * x_i+t)
-
     where xi (i=1,2,...,N) is the acceleration data,
     fc(t) are autocorrelation coefficients,
     t is the time lag (t=-N,-N+1,...,0,1,2,...,N).
-
     When the time lag t is equal to the periodicity of the acceleration xi,
     a peak will be found in the fc(t) series.
     The autocorrelation coefficients are divided by fc(0) in Eq. (6),
     so that the autocorrelation coefficient is equal to 1 when t=0 ::
-
         NFC(t) = fc(t) / fc(0)
-
     Here NFC(t) is the normalised autocorrelation coefficient, and fc(t) are
     autocorrelation coefficients."
 
@@ -94,20 +89,15 @@ def autocorrelation(data, unbiased=True, normalized=True):
     >>> normalized = True
     >>> coefficients = autocorrelation(data, unbiased, normalized)
 
-    From "Efficient computation of autocorrelations; demonstration in MatLab
-    and Python" (Dec. 29, 2013) by Jesper Toft Kristensen:
-    http://jespertoftkristensen.com/JTK/Blog/Entries/2013/12/29_Efficient_
-    computation_of_autocorrelations%3B_demonstration_in_MatLab_and_Python.html
     """
     import numpy as np
+    from scipy.signal import correlate
+
+    coefficients = correlate(data, data, 'full')
 
     N = np.size(data)
-    fvi = np.fft.fft(data, n=2*N)
-    coefficients = np.real(np.fft.ifft(fvi * np.conjugate(fvi))[:N])
     if unbiased:
         coefficients /= (N - np.arange(N))
-    else:
-        coefficients /= N
 
     if normalized:
         coefficients /= coefficients[0]
