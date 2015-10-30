@@ -223,20 +223,24 @@ def run_pyGait(x, y, z, t, sample_rate, duration, threshold, order, cutoff,
     from mhealthx.xio import row_to_table
     from mhealthx.extractors.pyGait import gait, root_mean_square
 
-    heel_strikes, number_of_steps, cadence, step_durations, \
+    heel_strikes, number_of_steps, cadence, velocity, \
+    avg_step_length, avg_stride_length, step_durations, \
     avg_step_duration, sd_step_durations, strides, stride_durations, \
     avg_number_of_strides, avg_stride_duration, sd_stride_durations, \
     step_regularity_x, step_regularity_y, step_regularity_z, \
     stride_regularity_x, stride_regularity_y, stride_regularity_z, \
     symmetry_x, symmetry_y, symmetry_z = gait(x, y, z, t, sample_rate, \
                                               duration, threshold, order, \
-                                              cutoff)
+                                              cutoff, distance=None)
     RMS_x = root_mean_square(x)
     RMS_y = root_mean_square(y)
     RMS_z = root_mean_square(z)
 
     row_data = pd.DataFrame({'number_of_steps': number_of_steps,
                              'cadence': cadence,
+                             'velocity': velocity,
+                             'avg_step_length': avg_step_length,
+                             'avg_stride_length': avg_stride_length,
                              'avg_step_duration': avg_step_duration,
                              'sd_step_durations': sd_step_durations,
                              'avg_number_of_strides': avg_number_of_strides,

@@ -12,7 +12,7 @@ iGait was written as a Matlab file and compiled as a Windows application.
 
 iGAIT inputs ::
     - sample rate
-    - distance (not included here)
+    - distance
     - threshold (anterior-posterior acceleration, to detect heel contact)
 
 iGAIT features ::
@@ -209,7 +209,7 @@ def gait(x, y, z, t, sample_rate, duration,
         - cadence = number of steps divided by walking time
         - step/stride regularity
         - step/stride symmetry
-        - mean step length and velocity (if distance supplied)
+        - mean step/stride length and velocity (if distance supplied)
 
     Re: heel strikes (from Yang, et al., 2012):
     "The heel contacts are detected by peaks preceding the sign change of
@@ -261,12 +261,8 @@ def gait(x, y, z, t, sample_rate, duration,
         velocity (if distance)
     avg_step_length : float
         average step length (if distance)
-    sd_step_lengths : float
-        standard deviation of step lengths (if distance)
     avg_stride_length : float
         average stride length (if distance)
-    sd_stride_lengths : float
-        standard deviation of stride lengths (if distance)
     cadence : float
         number of steps divided by duration
     step_durations : numpy array
@@ -346,11 +342,6 @@ def gait(x, y, z, t, sample_rate, duration,
         pos = data > 0
         return (pos[:-1] & ~pos[1:]).nonzero()[0]
 
-
-    # Set velocity, \
-        avg_step_length, sd_step_lengths, \
-        avg_stride_length, sd_stride_lengths
-
     # Demean data (not in iGAIT):
     data = y
     data -= np.mean(data)
@@ -402,8 +393,6 @@ def gait(x, y, z, t, sample_rate, duration,
 
     number_of_steps = np.size(heel_strikes)
     cadence = number_of_steps / duration
-    if distance:
-        velocity = distance / duration
 
     strides1 = heel_strikes[0::2]
     strides2 = heel_strikes[1::2]
@@ -431,9 +420,18 @@ def gait(x, y, z, t, sample_rate, duration,
            symmetry_x, symmetry_y, symmetry_z = \
         gait_regularity_symmetry(x, y, z, step_period, stride_period)
 
+    # Set distance-based measures to None if distance not set:
+    if distance:
+        velocity = distance / duration
+        avg_step_length = number_of_steps / distance
+        avg_stride_length = avg_number_of_strides / distance
+    else:
+        velocity = None
+        avg_step_length = None
+        avg_stride_length = None
+
     return heel_strikes, number_of_steps, cadence, velocity, \
-        avg_step_length, sd_step_lengths, \
-        avg_stride_length, sd_stride_lengths, step_durations, \
+        avg_step_length, avg_stride_length, step_durations, \
         avg_step_duration, sd_step_durations, strides, stride_durations, \
         avg_number_of_strides, avg_stride_duration, sd_stride_durations, \
         step_regularity_x, step_regularity_y, step_regularity_z, \
