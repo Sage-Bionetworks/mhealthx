@@ -28,11 +28,10 @@ iGAIT features ::
         - main frequency: frequency with the maximum value of PSD
         - frequencies when PSD is cumulated (CPSD)
 
-pyGait functions compute all of iGAIT's features except
-those that require an input distance (mean step length, velocity)
-and the spectral features::
+pyGait functions compute all of iGAIT's features except spectral features::
     - gait_features() for all heel strike-based estimates:
         - cadence
+        - mean step length and velocity (if distance supplied)
         - regularity and symmetry (each direction)
     - root_mean_square():
         - root mean square (each direction)
@@ -89,7 +88,7 @@ def autocorrelation(data, unbiased=True, normalized=True):
     Examples
     --------
     >>> import numpy as np
-    >>> from mhealthx.extractors.iGAIT import autocorrelation
+    >>> from mhealthx.extractors.pyGait import autocorrelation
     >>> data = np.random.random(100)
     >>> unbiased = True
     >>> normalized = True
@@ -174,7 +173,7 @@ def gait_regularity_symmetry(x, y, z, step_period, stride_period):
     Examples
     --------
     >>> from mhealthx.xio import read_accel_json
-    >>> from mhealthx.extractors.iGAIT import gait_regularity_symmetry
+    >>> from mhealthx.extractors.pyGait import gait_regularity_symmetry
     >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
     >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file)
     >>> step_period = 2
@@ -184,7 +183,7 @@ def gait_regularity_symmetry(x, y, z, step_period, stride_period):
     """
     import numpy as np
 
-    from mhealthx.extractors.iGAIT import autocorrelation
+    from mhealthx.extractors.pyGait import autocorrelation
 
     coefficients_x = autocorrelation(x, unbiased=True, normalized=True)
     coefficients_y = autocorrelation(y, unbiased=True, normalized=True)
@@ -216,16 +215,17 @@ def gait_regularity_symmetry(x, y, z, step_period, stride_period):
 
 
 def gait(x, y, z, t, sample_rate, duration,
-         threshold=0.20, order=4, cutoff=5):
+         threshold=0.20, order=4, cutoff=5, distance=None):
     """
     Extract gait features from estimated heel strikes from accelerometer data.
 
-    This function extracts all of iGAIT's features that depend on the estimate
-    of heel strikes, but do not require an input distance::
+    This function extracts all of iGAIT's features
+    that depend on the estimate of heel strikes::
 
         - cadence = number of steps divided by walking time
         - step/stride regularity
         - step/stride symmetry
+        - mean step length and velocity (if distance supplied)
 
     Re: heel strikes (from Yang, et al., 2012):
     "The heel contacts are detected by peaks preceding the sign change of
@@ -273,6 +273,16 @@ def gait(x, y, z, t, sample_rate, duration,
         heel strike timings
     number_of_steps : integer
         estimated number of steps based on heel strikes
+    velocity : float
+        velocity (if distance)
+    avg_step_length : float
+        average step length (if distance)
+    sd_step_lengths : float
+        standard deviation of step lengths (if distance)
+    avg_stride_length : float
+        average stride length (if distance)
+    sd_stride_lengths : float
+        standard deviation of stride lengths (if distance)
     cadence : float
         number of steps divided by duration
     step_durations : numpy array
@@ -315,12 +325,13 @@ def gait(x, y, z, t, sample_rate, duration,
     >>> from mhealthx.xio import read_accel_json, compute_sample_rate
     >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
     >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file)
-    >>> from mhealthx.extractors.iGAIT import gait
+    >>> from mhealthx.extractors.pyGait import gait
     >>> threshold = 0.2
     >>> order = 4
     >>> cutoff = 5
     >>> data = y
-    >>> a = gait(x, y, z, t, sample_rate, duration, threshold, order, cutoff)
+    >>> distance = None
+    >>> a = gait(x, y, z, t, sample_rate, duration, threshold, order, cutoff, distance)
 
     """
     import numpy as np
@@ -350,6 +361,11 @@ def gait(x, y, z, t, sample_rate, duration,
         efficiently-detect-sign-changes-in-python"""
         pos = data > 0
         return (pos[:-1] & ~pos[1:]).nonzero()[0]
+
+
+    # Set velocity, \
+        avg_step_length, sd_step_lengths, \
+        avg_stride_length, sd_stride_lengths
 
     # Demean data (not in iGAIT):
     data = y
@@ -402,6 +418,8 @@ def gait(x, y, z, t, sample_rate, duration,
 
     number_of_steps = np.size(heel_strikes)
     cadence = number_of_steps / duration
+    if distance:
+        velocity = distance / duration
 
     strides1 = heel_strikes[0::2]
     strides2 = heel_strikes[1::2]
@@ -429,12 +447,14 @@ def gait(x, y, z, t, sample_rate, duration,
            symmetry_x, symmetry_y, symmetry_z = \
         gait_regularity_symmetry(x, y, z, step_period, stride_period)
 
-    return heel_strikes, number_of_steps, cadence, step_durations, \
-           avg_step_duration, sd_step_durations, strides, stride_durations, \
-           avg_number_of_strides, avg_stride_duration, sd_stride_durations, \
-           step_regularity_x, step_regularity_y, step_regularity_z, \
-           stride_regularity_x, stride_regularity_y, stride_regularity_z, \
-           symmetry_x, symmetry_y, symmetry_z
+    return heel_strikes, number_of_steps, cadence, velocity, \
+        avg_step_length, sd_step_lengths, \
+        avg_stride_length, sd_stride_lengths, step_durations, \
+        avg_step_duration, sd_step_durations, strides, stride_durations, \
+        avg_number_of_strides, avg_stride_duration, sd_stride_durations, \
+        step_regularity_x, step_regularity_y, step_regularity_z, \
+        stride_regularity_x, stride_regularity_y, stride_regularity_z, \
+        symmetry_x, symmetry_y, symmetry_z
 
 
 def root_mean_square(data):
@@ -461,7 +481,7 @@ def root_mean_square(data):
     Examples
     --------
     >>> import numpy as np
-    >>> from mhealthx.extractors.iGAIT import root_mean_square
+    >>> from mhealthx.extractors.pyGait import root_mean_square
     >>> data = np.random.random(100)
     >>> rms = root_mean_square(data)
 
