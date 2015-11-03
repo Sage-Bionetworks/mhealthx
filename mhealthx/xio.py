@@ -438,9 +438,9 @@ def compute_sample_rate(t):
     return sample_rate, duration
 
 
-def read_accel_json(input_file, start=0):
+def read_accel_json(input_file, start=0, device_motion=True):
     """
-    Read accelerometer json file.
+    Read accelerometer or deviceMotion json file.
 
     Parameters
     ----------
@@ -448,6 +448,8 @@ def read_accel_json(input_file, start=0):
         name of input accelerometer json file
     start : integer
         starting index (remove beginning)
+    device_motion : Boolean
+        use deviceMotion vs. accelerometer json file?
 
     Returns
     -------
@@ -467,9 +469,11 @@ def read_accel_json(input_file, start=0):
     Examples
     --------
     >>> from mhealthx.xio import read_accel_json
-    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    >>> #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-90f7096a-84ac-4f29-a4d1-236ef92c3d262549858224214804657.tmp'
     >>> start = 150
-    >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file, start)
+    >>> device_motion = True
+    >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file, start, device_motion)
     """
     import json
 
@@ -484,10 +488,16 @@ def read_accel_json(input_file, start=0):
     z = []
     t = []
     for parsed_json in parsed_jsons[start::]:
-        x.append(parsed_json['x'])
-        y.append(parsed_json['y'])
-        z.append(parsed_json['z'])
-        t.append(parsed_json['timestamp'])
+        if device_motion:
+            x.append(parsed_json['userAcceleration']['x'])
+            y.append(parsed_json['userAcceleration']['y'])
+            z.append(parsed_json['userAcceleration']['z'])
+            t.append(parsed_json['timestamp'])
+        else:
+            x.append(parsed_json['x'])
+            y.append(parsed_json['y'])
+            z.append(parsed_json['z'])
+            t.append(parsed_json['timestamp'])
 
     sample_rate, duration = compute_sample_rate(t)
 
