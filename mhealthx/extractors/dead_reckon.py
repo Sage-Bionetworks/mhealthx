@@ -37,7 +37,8 @@ def velocity_from_acceleration(Ax, Ay, Az, At):
     --------
     >>> from mhealthx.extractors.dead_reckon import velocity_from_acceleration
     >>> from mhealthx.xio import read_accel_json
-    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    >>> #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-90f7096a-84ac-4f29-a4d1-236ef92c3d262549858224214804657.tmp'
     >>> start = 150
     >>> Ax, Ay, Az, At, sample_rate, duration = read_accel_json(input_file, start)
     >>> Vx, Vy, Vz = velocity_from_acceleration(Ax, Ay, Az, At)
@@ -83,7 +84,8 @@ def position_from_velocity(Vx, Vy, Vz, Vt):
     --------
     >>> from mhealthx.extractors.dead_reckon import velocity_from_acceleration, distance_from_velocity
     >>> from mhealthx.xio import read_accel_json
-    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    >>> #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-90f7096a-84ac-4f29-a4d1-236ef92c3d262549858224214804657.tmp'
     >>> start = 150
     >>> Ax, Ay, Az, At, sample_rate, duration = read_accel_json(input_file, start)
     >>> Vx, Vy, Vz = velocity_from_acceleration(Ax, Ay, Az, At)
@@ -100,61 +102,6 @@ def position_from_velocity(Vx, Vy, Vz, Vt):
         Z.append(Z[i-1] + Vz[i] * dt)
 
     return X, Y, Z
-
-
-def gravity_compensate(q, acc):
-    """
-    Compensate the accelerometer readings from gravity.
-
-    http://www.varesano.net/blog/fabio/simple-gravity-compensation-9-dom-imus
-
-    #-------------------------------------------------------------------------
-    # Compensate the accelerometer readings from gravity:
-    #-------------------------------------------------------------------------
-    # for i in range(len(data)):
-    #     a = [data[i]['userAcceleration']['x'],
-    #          data[i]['userAcceleration']['y'],
-    #          data[i]['userAcceleration']['z']]
-    #     g = [data[i]['gravity']['x'],
-    #          data[i]['gravity']['y'],
-    #          data[i]['gravity']['z']]
-    #     q = [data[i]['attitude']['x'],
-    #          data[i]['attitude']['y'],
-    #          data[i]['attitude']['z'],
-    #          data[i]['attitude']['w']]
-    #     a = gravity_compensate(q, a) # rotate a into Earth frame of reference
-
-    Parameters
-    ----------
-    q : list or numpy array of floats
-        quaternion representing orientation
-    acc : list or numpy array of floats
-        readings coming from an accelerometer expressed in g
-
-    Returns
-    -------
-    dyn_acc : list of floats
-        3d vector representing dynamic acceleration expressed in g
-
-    Examples
-    --------
-    >>> from mhealthx.extractors.dead_reckon import gravity_compensate
-    >>> q = 
-    >>> acc = 
-    >>> dyn_acc = gravity_compensate(q, acc)
-
-    """
-    g = [0.0, 0.0, 0.0]
-    
-    # Get expected direction of gravity:
-    g[0] = 2 * (q[1] * q[3] - q[0] * q[2])
-    g[1] = 2 * (q[0] * q[1] + q[2] * q[3])
-    g[2] = q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]
-    
-    # Compensate accelerometer readings with expected direction of gravity:
-    dyn_acc = [acc[0] - g[0], acc[1] - g[1], acc[2] - g[2]]
-
-    return dyn_acc
 
 
 def plotxyz(x, y, z, title='', limits=[]):
@@ -238,7 +185,8 @@ if __name__ == '__main__':
     #-------------------------------------------------------------------------
     # Load accelerometer x,y,z values (and clip beginning from start):
     #-------------------------------------------------------------------------
-    input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-90f7096a-84ac-4f29-a4d1-236ef92c3d262549858224214804657.tmp'
     start = 150
     Ax, Ay, Az, At, sample_rate, duration = read_accel_json(input_file, start)
 
