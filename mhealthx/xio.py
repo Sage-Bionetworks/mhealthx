@@ -504,7 +504,7 @@ def read_accel_json(input_file, start=0, device_motion=True):
     return x, y, z, t, sample_rate, duration
 
 
-def get_accel(synapse_table, row, column_name, start=0,
+def get_accel(synapse_table, row, column_name, start=0, device_motion=True,
               out_path='.', username='', password=''):
     """
     Read accelerometer json data from Synapse table row.
@@ -523,6 +523,8 @@ def get_accel(synapse_table, row, column_name, start=0,
         name of file handle column
     start : integer
         starting index (remove beginning)
+    device_motion : Boolean
+        use deviceMotion vs. accelerometer json file?
     out_path : string or None
         a local path in which to store downloaded files.
         If None, stores them in (~/.synapseCache)
@@ -560,6 +562,7 @@ def get_accel(synapse_table, row, column_name, start=0,
     >>> row_series, row_files = extract_synapse_rows(synapse_table, save_path='.', limit=3, username='', password='')
     >>> column_name = 'accel_walking_rest.json.items'
     >>> start = 150
+    >>> device_motion = True
     >>> out_path = '.'
     >>> username = ''
     >>> password = ''
@@ -570,7 +573,7 @@ def get_accel(synapse_table, row, column_name, start=0,
     >>>     print(row)
     >>>     x, y, z, t, sample_rate, duration, row, file_path = get_accel(synapse_table,
     >>>                                       row, column_name,
-    >>>                                       start,
+    >>>                                       start, device_motion,
     >>>                                       out_path, username, password)
 
     """
@@ -581,7 +584,8 @@ def get_accel(synapse_table, row, column_name, start=0,
                                                   column_name, out_path,
                                                   username, password)
     # Read accelerometer json file:
-    x, y, z, t, sample_rate, duration = read_accel_json(file_path, start)
+    x, y, z, t, sample_rate, duration = read_accel_json(file_path, start,
+                                                        device_motion)
 
     return x, y, z, t, sample_rate, duration, row, file_path
 
