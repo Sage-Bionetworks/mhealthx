@@ -46,6 +46,45 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
+def butter_lowpass_filter(data, cutoff, sample_rate, order=4):
+    """
+    Filter data.
+
+    After http://stackoverflow.com/questions/25191620/
+    creating-lowpass-filter-in-scipy-understanding-methods-and-units
+    """
+    from scipy.signal import butter, lfilter
+
+    nyquist = 0.5 * sample_rate
+    normal_cutoff = cutoff / nyquist
+    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+
+    y = lfilter(b, a, data)
+
+    return y
+
+
+def crossings_nonzero_pos2neg(data):
+    """
+    Find indices of zero crossings from positive to negative values.
+
+    http://stackoverflow.com/questions/3843017/
+    efficiently-detect-sign-changes-in-python
+    """
+    import numpy as np
+
+    if isinstance(data, np.ndarray):
+        pass
+    elif isinstance(data, list):
+        data = np.asarray(data)
+    else:
+        raise IOError('data should be a numpy array')
+
+    pos = data > 0
+
+    return (pos[:-1] & ~pos[1:]).nonzero()[0]
+
+
 def autocorrelation(data, unbiased=True, normalized=True, plot_test=False):
     """
     Compute the autocorrelation coefficients for time series data.
@@ -201,7 +240,7 @@ def gait_regularity_symmetry(data, step_period, stride_period):
 
 
 def extract_heel_strikes(data, sample_rate, threshold=0.2, order=4, cutoff=5,
-                         plot_test=False):
+                         plot_test=False, t=None):
     """
     Estimate heel strike times from accelerometer data.
 
@@ -238,6 +277,8 @@ def extract_heel_strikes(data, sample_rate, threshold=0.2, order=4, cutoff=5,
         cutoff frequency of the Butterworth filter (Hz)
     plot_test : Boolean
         plot heel strikes?
+    t : list or numpy array
+        accelerometer time points
 
     Returns
     -------
@@ -249,46 +290,23 @@ def extract_heel_strikes(data, sample_rate, threshold=0.2, order=4, cutoff=5,
     >>> from mhealthx.xio import read_accel_json, compute_sample_rate
     >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
     >>> device_motion = False
-    >>> #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-5981e0a8-6481-41c8-b589-fa207bfd2ab38771455825726024828.tmp'
-    >>> #device_motion = True
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-5981e0a8-6481-41c8-b589-fa207bfd2ab38771455825726024828.tmp'
+    >>> device_motion = True
     >>> start = 150
     >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file, start, device_motion)
     >>> from mhealthx.extractors.pyGait import extract_heel_strikes
     >>> threshold = 0.2
     >>> order = 4
     >>> cutoff = 5
-    >>> data = y
     >>> plot_test = True
-    >>> heel_strikes = extract_heel_strikes(data, sample_rate, threshold, order, cutoff, plot_test)
+    >>> data = y
+    >>> heel_strikes = extract_heel_strikes(data, sample_rate, threshold, order, cutoff, plot_test, t)
 
     """
     import numpy as np
-    from scipy.signal import butter, lfilter
 
-    def butter_lowpass(cutoff, sample_rate, order=4):
-        """
-        After http://stackoverflow.com/questions/25191620/
-        creating-lowpass-filter-in-scipy-understanding-methods-and-units
-        """
-        nyquist = 0.5 * sample_rate
-        normal_cutoff = cutoff / nyquist
-        b, a = butter(order, normal_cutoff, btype='low', analog=False)
-        return b, a
-
-    def butter_lowpass_filter(data, cutoff, sample_rate, order=4):
-        """
-        After http://stackoverflow.com/questions/25191620/
-        creating-lowpass-filter-in-scipy-understanding-methods-and-units
-        """
-        b, a = butter_lowpass(cutoff, sample_rate, order=order)
-        y = lfilter(b, a, data)
-        return y
-
-    def crossings_nonzero_pos2neg(data):
-        """http://stackoverflow.com/questions/3843017/
-        efficiently-detect-sign-changes-in-python"""
-        pos = data > 0
-        return (pos[:-1] & ~pos[1:]).nonzero()[0]
+    from mhealthx.extractors.pyGait import butter_lowpass_filter, \
+                                           crossings_nonzero_pos2neg
 
     # Demean data (not in iGAIT):
     data -= np.mean(data)
@@ -314,7 +332,11 @@ def extract_heel_strikes(data, sample_rate, threshold=0.2, order=4, cutoff=5,
 
     if plot_test:
         from pylab import plt
-        t = np.linspace(0, np.size(data), np.size(data))
+        if t:
+            t = np.asarray(t)
+            t -= t[0]
+        else:
+            t = np.linspace(0, np.size(data), np.size(data))
         plt.plot(t, data, 'b-', label='data')
         plt.plot(t, filtered, 'g-', linewidth=2, label='filtered data')
         plt.plot(t[transitions], filtered[transitions],
