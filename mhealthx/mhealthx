@@ -45,6 +45,7 @@ from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node
 from mhealthx.extract import run_openSMILE, run_pyGait
+from mhealthx.extractors.dead_reckon import dead_reckon
 from mhealthx.xio import extract_synapse_rows, get_convert_audio, get_accel, \
     write_wav
 
@@ -347,7 +348,7 @@ if synID_balance and not setup_rows:
     getBalance.iterables = ("row", rows_balance)
     getBalance.inputs.column_name = 'accel_walking_rest.json.items'
     getBalance.inputs.start = 150
-    getBalance.inputs.device_motion = True
+    getBalance.inputs.device_motion = False
     getBalance.inputs.out_path = '.'
     getBalance.inputs.username = ''
     getBalance.inputs.password = ''
@@ -361,6 +362,7 @@ if synID_balance and not setup_rows:
                                                 'row',
                                                 'column_name',
                                                 'start',
+                                                'device_motion',
                                                 'out_path',
                                                 'username',
                                                 'password'],
@@ -376,45 +378,109 @@ if synID_balance and not setup_rows:
     getWalking.iterables = ("row", rows_balance)
     getWalking.inputs.column_name = 'accel_walking_outbound.json.items'
     getWalking.inputs.start = 150
+    getWalking.inputs.device_motion = False
     getWalking.inputs.out_path = '.'
     getWalking.inputs.username = ''
     getWalking.inputs.password = ''
 
     # ------------------------------------------------------------------------
+    # Repeat for walking data (deviceMotion):
+    # ------------------------------------------------------------------------
+    getWalking2 = Node(name='walking_data_deviceMotion',
+                       interface=Fn(function=get_accel,
+                                    input_names=['synapse_table',
+                                                 'row',
+                                                 'column_name',
+                                                 'start',
+                                                 'device_motion',
+                                                 'out_path',
+                                                 'username',
+                                                 'password'],
+                                    output_names=['x',
+                                                  'y',
+                                                  'z',
+                                                  't',
+                                                  'sample_rate',
+                                                  'duration',
+                                                  'row',
+                                                  'file_path']))
+    getWalking2.inputs.synapse_table = synID_balance
+    getWalking2.iterables = ("row", rows_balance)
+    getWalking2.inputs.column_name = 'deviceMotion_walking_outbound.json.items'
+    getWalking2.inputs.start = 150
+    getWalking2.inputs.device_motion = True
+    getWalking2.inputs.out_path = '.'
+    getWalking2.inputs.username = ''
+    getWalking2.inputs.password = ''
+
+    # ------------------------------------------------------------------------
+    # Estimate distance from walking accelerometer data:
+    # ------------------------------------------------------------------------
+    deadReckon = Node(name='dead_reckon',
+                      interface=Fn(function=dead_reckon,
+                                   input_names=['Ax',
+                                                'Ay',
+                                                'Az',
+                                                'At'],
+                                   output_names=['x',
+                                                 'y',
+                                                 'z',
+                                                 'distance']))
+    Flow.connect(getWalking2, 'x', deadReckon, 'Ax')
+    Flow.connect(getWalking2, 'y', deadReckon, 'Ay')
+    Flow.connect(getWalking2, 'z', deadReckon, 'Az')
+    Flow.connect(getWalking2, 't', deadReckon, 'At')
+
+    # ------------------------------------------------------------------------
     # pyGait on walking data:
     # ------------------------------------------------------------------------
-    pyGaitWalk = Node(name='pyGait_walking',
-                      interface=Fn(function=run_pyGait,
-                                   input_names=['x',
-                                                'y',
-                                                'z',
-                                                't',
-                                                'sample_rate',
-                                                'duration',
-                                                'threshold',
-                                                'order',
-                                                'cutoff',
-                                                'row',
-                                                'file_path',
-                                                'table_stem',
-                                                'save_rows'],
-                                   output_names=['feature_row',
-                                                 'feature_table']))
-    Flow.connect(getWalking, 'x', pyGaitWalk, 'x')
-    Flow.connect(getWalking, 'y', pyGaitWalk, 'y')
-    Flow.connect(getWalking, 'z', pyGaitWalk, 'z')
-    Flow.connect(getWalking, 't', pyGaitWalk, 't')
-    Flow.connect(getWalking, 'sample_rate', pyGaitWalk, 'sample_rate')
-    Flow.connect(getWalking, 'duration', pyGaitWalk, 'duration')
-    pyGaitWalk.inputs.threshold = 0.2
-    pyGaitWalk.inputs.order = 4
-    pyGaitWalk.inputs.cutoff = 5
-    Flow.connect(getWalking, 'row', pyGaitWalk, 'row')
-    Flow.connect(getWalking, 'file_path', pyGaitWalk, 'file_path')
-    pyGaitWalk.inputs.column_name = 'accel_walking_rest.json.items'
-    pyGaitWalk.inputs.table_stem = os.path.join(feature_table_path,
-                                                  'walking_pyGait')
-    pyGaitWalk.inputs.save_rows = True
+    pyGaitWalkX = Node(name='pyGait_walking_x',
+                       interface=Fn(function=run_pyGait,
+                                    input_names=['data',
+                                                 'sample_rate',
+                                                 'duration',
+                                                 'threshold',
+                                                 'order',
+                                                 'cutoff',
+                                                 'distance',
+                                                 'row',
+                                                 'file_path',
+                                                 'table_stem',
+                                                 'save_rows'],
+                                    output_names=['feature_row',
+                                                  'feature_table']))
+    pyGaitWalkX.inputs.threshold = 0.2
+    pyGaitWalkX.inputs.order = 4
+    pyGaitWalkX.inputs.cutoff = 5
+    pyGaitWalkX.inputs.column_name = 'accel_walking_rest.json.items'
+    pyGaitWalkX.inputs.save_rows = True
+    pyGaitWalkY = pyGaitWalkX.clone('pyGait_walking_y')
+    pyGaitWalkZ = pyGaitWalkX.clone('pyGait_walking_z')
+
+    Flow.connect(getWalking, 'x', pyGaitWalkX, 'data')
+    Flow.connect(getWalking, 'y', pyGaitWalkY, 'data')
+    Flow.connect(getWalking, 'z', pyGaitWalkZ, 'data')
+    Flow.connect(getWalking, 'sample_rate', pyGaitWalkX, 'sample_rate')
+    Flow.connect(getWalking, 'sample_rate', pyGaitWalkY, 'sample_rate')
+    Flow.connect(getWalking, 'sample_rate', pyGaitWalkZ, 'sample_rate')
+    Flow.connect(getWalking, 'duration', pyGaitWalkX, 'duration')
+    Flow.connect(getWalking, 'duration', pyGaitWalkY, 'duration')
+    Flow.connect(getWalking, 'duration', pyGaitWalkZ, 'duration')
+    Flow.connect(deadReckon, 'distance', pyGaitWalkX, 'distance')
+    Flow.connect(deadReckon, 'distance', pyGaitWalkY, 'distance')
+    Flow.connect(deadReckon, 'distance', pyGaitWalkZ, 'distance')
+    Flow.connect(getWalking, 'row', pyGaitWalkX, 'row')
+    Flow.connect(getWalking, 'row', pyGaitWalkY, 'row')
+    Flow.connect(getWalking, 'row', pyGaitWalkZ, 'row')
+    Flow.connect(getWalking, 'file_path', pyGaitWalkX, 'file_path')
+    Flow.connect(getWalking, 'file_path', pyGaitWalkY, 'file_path')
+    Flow.connect(getWalking, 'file_path', pyGaitWalkZ, 'file_path')
+    pyGaitWalkX.inputs.table_stem = os.path.join(feature_table_path,
+                                                 'walking_pyGait_x')
+    pyGaitWalkY.inputs.table_stem = os.path.join(feature_table_path,
+                                                 'walking_pyGait_y')
+    pyGaitWalkZ.inputs.table_stem = os.path.join(feature_table_path,
+                                                 'walking_pyGait_z')
 
     # ------------------------------------------------------------------------
     # Convert balance data from json to wav format for each axis:

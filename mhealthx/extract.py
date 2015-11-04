@@ -153,8 +153,8 @@ def run_openSMILE(audio_file, command, flag1, flags, flagn, args, closing,
     return feature_row, feature_table
 
 
-def run_pyGait(x, y, z, t, sample_rate, duration, threshold, order, cutoff,
-               row, file_path, table_stem, save_rows=False):
+def run_pyGait(data, sample_rate, duration, threshold, order, cutoff,
+               distance, row, file_path, table_stem, save_rows=False):
     """
     Run pyGait (replication of iGAIT) accelerometer feature extraction code.
 
@@ -165,14 +165,8 @@ def run_pyGait(x, y, z, t, sample_rate, duration, threshold, order, cutoff,
 
     Parameters
     ----------
-    x : list
-        x-axis accelerometer data
-    y : list
-        y-axis accelerometer data
-    z : list
-        z-axis accelerometer data
-    t : list
-        time points for accelerometer data
+    data : list or numpy array
+        accelerometer data along one axis
     sample_rate : float
         sample rate of accelerometer reading (Hz)
     duration : float
@@ -183,6 +177,8 @@ def run_pyGait(x, y, z, t, sample_rate, duration, threshold, order, cutoff,
         order of the Butterworth filter
     cutoff : integer
         cutoff frequency of the Butterworth filter (Hz)
+    distance : float
+        estimate of distance traversed
     row : pandas Series
         row to prepend, unaltered, to feature row
     file_path : string
@@ -210,31 +206,31 @@ def run_pyGait(x, y, z, t, sample_rate, duration, threshold, order, cutoff,
     >>> order = 4
     >>> cutoff = 5
     >>> data = y
+    >>> distance = None
     >>> row = pd.Series({'a':[1], 'b':[2], 'c':[3]})
     >>> file_path = '/fake/path'
     >>> table_stem = './walking'
     >>> save_rows = True
-    >>> feature_row, feature_table = run_pyGait(x, y, z, t, sample_rate, duration, threshold, order, cutoff, row, file_path, table_stem, save_rows)
+    >>> feature_row, feature_table = run_pyGait(data, sample_rate, duration, threshold, order, cutoff, distance, row, file_path, table_stem, save_rows)
 
     """
     import os
     import pandas as pd
 
     from mhealthx.xio import row_to_table
-    from mhealthx.extractors.pyGait import gait, root_mean_square
+    from mhealthx.extractors.pyGait import extract_heel_strikes, gait, \
+        root_mean_square
 
-    heel_strikes, number_of_steps, cadence, velocity, \
-    avg_step_length, avg_stride_length, step_durations, \
-    avg_step_duration, sd_step_durations, strides, stride_durations, \
-    avg_number_of_strides, avg_stride_duration, sd_stride_durations, \
-    step_regularity_x, step_regularity_y, step_regularity_z, \
-    stride_regularity_x, stride_regularity_y, stride_regularity_z, \
-    symmetry_x, symmetry_y, symmetry_z = gait(x, y, z, t, sample_rate, \
-                                              duration, threshold, order, \
-                                              cutoff, distance=None)
-    RMS_x = root_mean_square(x)
-    RMS_y = root_mean_square(y)
-    RMS_z = root_mean_square(z)
+    heel_strikes = extract_heel_strikes(data, sample_rate, threshold, order,
+                                        cutoff, plot_test=False)
+
+    number_of_steps, cadence, velocity, avg_step_length, avg_stride_length,\
+    step_durations, avg_step_duration, sd_step_durations, strides, \
+    stride_durations, avg_number_of_strides, avg_stride_duration, \
+    sd_stride_durations, step_regularity, stride_regularity, \
+    symmetry = gait(heel_strikes, data, duration, distance)
+
+    RMS = root_mean_square(data)
 
     row_data = pd.DataFrame({'number_of_steps': number_of_steps,
                              'cadence': cadence,
@@ -246,18 +242,11 @@ def run_pyGait(x, y, z, t, sample_rate, duration, threshold, order, cutoff,
                              'avg_number_of_strides': avg_number_of_strides,
                              'avg_stride_duration': avg_stride_duration,
                              'sd_stride_durations': sd_stride_durations,
-                             'step_regularity_x': step_regularity_x,
-                             'step_regularity_y': step_regularity_y,
-                             'step_regularity_z': step_regularity_z,
-                             'stride_regularity_x': stride_regularity_x,
-                             'stride_regularity_y': stride_regularity_y,
-                             'stride_regularity_z': stride_regularity_z,
-                             'symmetry_x': symmetry_x,
-                             'symmetry_y': symmetry_y,
-                             'symmetry_z': symmetry_z,
-                             'RMS_x': RMS_x,
-                             'RMS_y': RMS_y,
-                             'RMS_z': RMS_z}, index=[0])
+                             'step_regularity': step_regularity,
+                             'stride_regularity': stride_regularity,
+                             'symmetry': symmetry,
+                             'RMS': RMS},
+                            index=[0])
 
     if isinstance(row, pd.Series) and not row.empty:
         feature_row = pd.concat([row, row_data.transpose()], axis=0)

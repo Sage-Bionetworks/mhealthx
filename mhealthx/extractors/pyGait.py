@@ -9,6 +9,9 @@ DOI:10.1016/j.cmpb.2012.04.004
 http://www.ncbi.nlm.nih.gov/pubmed/22575802
 
 iGait was written as a Matlab file and compiled as a Windows application.
+It assumes a fixed accelerometer position, and derived heel strike timings
+from an assumed anterior-posterior orientation along the y-axis.
+
 
 iGAIT inputs ::
     - sample rate
@@ -43,7 +46,7 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
-def autocorrelation(data, unbiased=True, normalized=True):
+def autocorrelation(data, unbiased=True, normalized=True, plot_test=False):
     """
     Compute the autocorrelation coefficients for time series data.
 
@@ -67,6 +70,8 @@ def autocorrelation(data, unbiased=True, normalized=True):
         compute unbiased autocorrelation?
     normalized : Boolean
         compute normalized autocorrelation?
+    plot_test : Boolean
+        plot?
 
     Returns
     -------
@@ -80,7 +85,8 @@ def autocorrelation(data, unbiased=True, normalized=True):
     >>> data = np.random.random(100)
     >>> unbiased = True
     >>> normalized = True
-    >>> coefficients = autocorrelation(data, unbiased, normalized)
+    >>> plot_test = True
+    >>> coefficients = autocorrelation(data, unbiased, normalized, plot_test)
 
     """
     import numpy as np
@@ -90,18 +96,44 @@ def autocorrelation(data, unbiased=True, normalized=True):
 
     N = np.size(data)
 
+    if plot_test:
+        from pylab import plt
+        t = np.linspace(0, np.size(coefficients), np.size(coefficients))
+        plt.figure()
+        plt.subplot(3, 1, 1)
+        plt.plot(t, coefficients, 'k-', label='coefficients')
+        plt.title('coefficients')
+
     if unbiased:
-        coefficients /= (N - np.arange(N))
+        coefficients /= np.hstack([np.arange(1, N), N - np.arange(N)])
+
+        if plot_test:
+            plt.subplot(3, 1, 2)
+            plt.plot(t, coefficients, 'k-', label='coefficients')
+            plt.title('unbiased coefficients')
 
     if normalized:
         coefficients /= coefficients[0]
 
+        if plot_test:
+            plt.subplot(3, 1, 3)
+            plt.plot(t, coefficients, 'k-', label='coefficients')
+            plt.title('normalized coefficients')
+
+    if plot_test:
+        plt.legend(loc='lower left', shadow=True)
+        plt.show()
+
     return coefficients
 
 
-def gait_regularity_symmetry(x, y, z, step_period, stride_period):
+def gait_regularity_symmetry(data, step_period, stride_period):
     """
     Compute step and stride regularity and symmetry from accelerometer data.
+
+    The iGAIT software assumes that the y-axis is anterior-posterior,
+    and restricts some feature extraction to this orientation.
+    In this program, we compute every measure for an arbitrary axis.
 
     From Yang, et al., 2012:
 
@@ -122,12 +154,8 @@ def gait_regularity_symmetry(x, y, z, step_period, stride_period):
 
     Parameters
     ----------
-    x : list
-        x-axis accelerometer data
-    y : list
-        y-axis accelerometer data
-    z : list
-        z-axis accelerometer data
+    data : list or numpy array
+        accelerometer data for one axis
     step_period : integer
         step period
     stride_period : integer
@@ -135,81 +163,47 @@ def gait_regularity_symmetry(x, y, z, step_period, stride_period):
 
     Returns
     -------
-    step_regularity_x : float
-        step regularity measure in medial-lateral direction
-    step_regularity_y : float
-        step regularity measure in anterior-posterior direction
-    step_regularity_z : float
-        step regularity measure in vertical direction
-    stride_regularity_x : float
-        stride regularity measure in medial-lateral direction
-    stride_regularity_y : float
-        stride regularity measure in anterior-posterior direction
-    stride_regularity_z : float
-        stride regularity measure in vertical direction
-    symmetry_x : float
-        symmetry measure in medial-lateral direction
-    symmetry_y : float
-        symmetry measure in anterior-posterior direction
-    symmetry_z : float
-        symmetry measure in vertical direction
+    step_regularity : float
+        step regularity measure along axis
+    stride_regularity : float
+        stride regularity measure along axis
+    symmetry : float
+        symmetry measure along axis
 
     Examples
     --------
     >>> from mhealthx.xio import read_accel_json
     >>> from mhealthx.extractors.pyGait import gait_regularity_symmetry
     >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
-    >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file)
+    >>> device_motion = False
+    >>> #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-5981e0a8-6481-41c8-b589-fa207bfd2ab38771455825726024828.tmp'
+    >>> #device_motion = True
+    >>> start = 150
+    >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file, start, device_motion)
+    >>> data = y
     >>> step_period = 2
     >>> stride_period = 1
-    >>> a = gait_regularity_symmetry(x, y, z, step_period, stride_period)
+    >>> step_regularity, stride_regularity, symmetry = gait_regularity_symmetry(data, step_period, stride_period)
 
     """
     import numpy as np
 
     from mhealthx.extractors.pyGait import autocorrelation
 
-    coefficients_x = autocorrelation(x, unbiased=True, normalized=True)
-    coefficients_y = autocorrelation(y, unbiased=True, normalized=True)
-    coefficients_z = autocorrelation(z, unbiased=True, normalized=True)
+    coefficients = autocorrelation(data, unbiased=True, normalized=True,
+                                   plot_test=False)
 
-    plot_test = False
-    if plot_test:
-        from pylab import plt
-        t = np.linspace(0, np.size(coefficients_y), np.size(coefficients_y))
-        plt.plot(t, coefficients_y, 'b-', label='coefficients')
-        plt.xlabel('Time [sec]')
-        plt.grid()
-        plt.legend(loc='lower left', shadow=True)
-        plt.show()
+    step_regularity = coefficients[step_period]
+    stride_regularity = coefficients[stride_period]
+    symmetry = np.abs(stride_regularity - step_regularity)
 
-    step_regularity_x = coefficients_x[step_period]
-    step_regularity_y = coefficients_y[step_period]
-    step_regularity_z = coefficients_z[step_period]
-    stride_regularity_x = coefficients_x[stride_period]
-    stride_regularity_y = coefficients_y[stride_period]
-    stride_regularity_z = coefficients_z[stride_period]
-    symmetry_x = np.abs(stride_regularity_x - step_regularity_x)
-    symmetry_y = np.abs(stride_regularity_y - step_regularity_y)
-    symmetry_z = np.abs(stride_regularity_z - step_regularity_z)
-
-    return step_regularity_x, step_regularity_y, step_regularity_z, \
-           stride_regularity_x, stride_regularity_y, stride_regularity_z, \
-           symmetry_x, symmetry_y, symmetry_z
+    return step_regularity, stride_regularity, symmetry
 
 
-def gait(x, y, z, t, sample_rate, duration,
-         threshold=0.20, order=4, cutoff=5, distance=None):
+def extract_heel_strikes(data, sample_rate, threshold=0.2, order=4, cutoff=5,
+                         plot_test=False):
     """
-    Extract gait features from estimated heel strikes from accelerometer data.
-
-    This function extracts all of iGAIT's features
-    that depend on the estimate of heel strikes::
-
-        - cadence = number of steps divided by walking time
-        - step/stride regularity
-        - step/stride symmetry
-        - mean step/stride length and velocity (if distance supplied)
+    Estimate heel strike times from accelerometer data.
 
     Re: heel strikes (from Yang, et al., 2012):
     "The heel contacts are detected by peaks preceding the sign change of
@@ -232,86 +226,40 @@ def gait(x, y, z, t, sample_rate, duration,
 
     Parameters
     ----------
-    x : list
-        x-axis accelerometer data
-    y : list
-        y-axis accelerometer data
-    z : list
-        z-axis accelerometer data
-    t : list
-        time points for accelerometer data
+    data : list or numpy array
+        accelerometer data along one axis
     sample_rate : float
         sample rate of accelerometer reading (Hz)
-    duration : float
-        duration of accelerometer reading (s)
     threshold : float
         ratio to the maximum value of the anterior-posterior acceleration
     order : integer
         order of the Butterworth filter
     cutoff : integer
         cutoff frequency of the Butterworth filter (Hz)
+    plot_test : Boolean
+        plot heel strikes?
 
     Returns
     -------
     heel_strikes : numpy array
         heel strike timings
-    number_of_steps : integer
-        estimated number of steps based on heel strikes
-    velocity : float
-        velocity (if distance)
-    avg_step_length : float
-        average step length (if distance)
-    avg_stride_length : float
-        average stride length (if distance)
-    cadence : float
-        number of steps divided by duration
-    step_durations : numpy array
-        step durations
-    avg_step_duration : float
-        average step duration
-    sd_step_durations : float
-        standard deviation of step durations
-    strides : list of two lists of floats
-        stride timings for each side
-    avg_number_of_strides : float
-        estimated number of strides based on alternating heel strikes
-    stride_durations : list of two lists of floats
-        estimated stride durations
-    avg_stride_duration : float
-        average stride duration
-    sd_step_durations : float
-        standard deviation of stride durations
-    step_regularity_x : float
-        measure of step regularity in x-axis
-    step_regularity_y : float
-        measure of step regularity in y-axis
-    step_regularity_z : float
-        measure of step regularity in z-axis
-    stride_regularity_x : float
-        measure of stride regularity in x-axis
-    stride_regularity_y : float
-        measure of stride regularity in y-axis
-    stride_regularity_z : float
-        measure of stride regularity in z-axis
-    symmetry_x : float
-        measure of gait symmetry in x-axis
-    symmetry_y : float
-        measure of gait symmetry in y-axis
-    symmetry_z : float
-        measure of gait symmetry in z-axis
 
     Examples
     --------
     >>> from mhealthx.xio import read_accel_json, compute_sample_rate
     >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
-    >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file)
-    >>> from mhealthx.extractors.pyGait import gait
+    >>> device_motion = False
+    >>> #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-5981e0a8-6481-41c8-b589-fa207bfd2ab38771455825726024828.tmp'
+    >>> #device_motion = True
+    >>> start = 150
+    >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file, start, device_motion)
+    >>> from mhealthx.extractors.pyGait import extract_heel_strikes
     >>> threshold = 0.2
     >>> order = 4
     >>> cutoff = 5
     >>> data = y
-    >>> distance = None
-    >>> a = gait(x, y, z, t, sample_rate, duration, threshold, order, cutoff, distance)
+    >>> plot_test = True
+    >>> heel_strikes = extract_heel_strikes(data, sample_rate, threshold, order, cutoff, plot_test)
 
     """
     import numpy as np
@@ -343,7 +291,6 @@ def gait(x, y, z, t, sample_rate, duration,
         return (pos[:-1] & ~pos[1:]).nonzero()[0]
 
     # Demean data (not in iGAIT):
-    data = y
     data -= np.mean(data)
 
     # Low-pass filter the AP accelerometer data by the 4th order zero lag
@@ -365,7 +312,6 @@ def gait(x, y, z, t, sample_rate, duration,
         if filtered[segment[imax]] > filter_threshold:
             strikes.append(segment[imax])
 
-    plot_test = False
     if plot_test:
         from pylab import plt
         t = np.linspace(0, np.size(data), np.size(data))
@@ -375,7 +321,7 @@ def gait(x, y, z, t, sample_rate, duration,
                  'ko', linewidth=2, label='transition points')
         plt.plot(t[strikes], filtered[strikes],
                  'rs', linewidth=2, label='heel strikes')
-        plt.xlabel('Time [sec]')
+        plt.xlabel('Time (s)')
         plt.grid()
         plt.legend(loc='lower left', shadow=True)
         plt.show()
@@ -383,6 +329,90 @@ def gait(x, y, z, t, sample_rate, duration,
     heel_strikes = np.asarray(strikes)
     heel_strikes -= strikes[0]
     heel_strikes = [hs/sample_rate for hs in heel_strikes]
+
+    return heel_strikes
+
+
+def gait(heel_strikes, data, duration, distance=None):
+    """
+    Extract gait features from estimated heel strikes from accelerometer data.
+
+    This function extracts all of iGAIT's features
+    that depend on the estimate of heel strikes::
+
+        - cadence = number of steps divided by walking time
+        - step/stride regularity
+        - step/stride symmetry
+        - mean step/stride length and velocity (if distance supplied)
+
+    Parameters
+    ----------
+    heel_strikes : numpy array
+        heel strike timings
+    data : list or numpy array
+        accelerometer data along one axis
+    duration : float
+        duration of accelerometer reading (s)
+    distance : float
+        distance traversed
+
+    Returns
+    -------
+    number_of_steps : integer
+        estimated number of steps based on heel strikes
+    velocity : float
+        velocity (if distance)
+    avg_step_length : float
+        average step length (if distance)
+    avg_stride_length : float
+        average stride length (if distance)
+    cadence : float
+        number of steps divided by duration
+    step_durations : numpy array
+        step durations
+    avg_step_duration : float
+        average step duration
+    sd_step_durations : float
+        standard deviation of step durations
+    strides : list of two lists of floats
+        stride timings for each side
+    avg_number_of_strides : float
+        estimated number of strides based on alternating heel strikes
+    stride_durations : list of two lists of floats
+        estimated stride durations
+    avg_stride_duration : float
+        average stride duration
+    sd_step_durations : float
+        standard deviation of stride durations
+    step_regularity : float
+        measure of step regularity along axis
+    stride_regularity : float
+        measure of stride regularity along axis
+    symmetry : float
+        measure of gait symmetry along axis
+
+    Examples
+    --------
+    >>> from mhealthx.xio import read_accel_json, compute_sample_rate
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    >>> device_motion = False
+    >>> #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-5981e0a8-6481-41c8-b589-fa207bfd2ab38771455825726024828.tmp'
+    >>> #device_motion = True
+    >>> start = 150
+    >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file, start, device_motion)
+    >>> from mhealthx.extractors.pyGait import extract_heel_strikes
+    >>> threshold = 0.2
+    >>> order = 4
+    >>> cutoff = 5
+    >>> data = y
+    >>> plot_test = False
+    >>> heel_strikes = extract_heel_strikes(data, sample_rate, threshold, order, cutoff, plot_test)
+    >>> from mhealthx.extractors.pyGait import gait
+    >>> distance = 90
+    >>> a = gait(heel_strikes, data, duration, distance)
+
+    """
+    import numpy as np
 
     step_durations = []
     for i in range(1, np.size(heel_strikes)):
@@ -415,10 +445,8 @@ def gait(x, y, z, t, sample_rate, duration,
     step_period = 1 / avg_step_duration
     stride_period = 1 / avg_stride_duration
 
-    step_regularity_x, step_regularity_y, step_regularity_z, \
-           stride_regularity_x, stride_regularity_y, stride_regularity_z, \
-           symmetry_x, symmetry_y, symmetry_z = \
-        gait_regularity_symmetry(x, y, z, step_period, stride_period)
+    step_regularity, stride_regularity, symmetry = \
+        gait_regularity_symmetry(data, step_period, stride_period)
 
     # Set distance-based measures to None if distance not set:
     if distance:
@@ -430,13 +458,11 @@ def gait(x, y, z, t, sample_rate, duration,
         avg_step_length = None
         avg_stride_length = None
 
-    return heel_strikes, number_of_steps, cadence, velocity, \
+    return number_of_steps, cadence, velocity, \
         avg_step_length, avg_stride_length, step_durations, \
         avg_step_duration, sd_step_durations, strides, stride_durations, \
         avg_number_of_strides, avg_stride_duration, sd_stride_durations, \
-        step_regularity_x, step_regularity_y, step_regularity_z, \
-        stride_regularity_x, stride_regularity_y, stride_regularity_z, \
-        symmetry_x, symmetry_y, symmetry_z
+        step_regularity, stride_regularity, symmetry
 
 
 def root_mean_square(data):
