@@ -48,7 +48,8 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 
 def butter_lowpass_filter(data, cutoff, sample_rate, order=4):
     """
-    Filter data.
+    Low-pass filter data by the [order]th order zero lag Butterworth filter
+    whose cut frequency is set to [cutoff] Hz.
 
     After http://stackoverflow.com/questions/25191620/
     creating-lowpass-filter-in-scipy-understanding-methods-and-units
@@ -85,7 +86,8 @@ def crossings_nonzero_pos2neg(data):
     return (pos[:-1] & ~pos[1:]).nonzero()[0]
 
 
-def autocorrelation(data, unbiased=True, normalized=True, plot_test=False):
+def autocorrelate(data, unbiased=True, normalize_1st=True,
+                  normalize_max=True, plot_test=False):
     """
     Compute the autocorrelation coefficients for time series data.
 
@@ -107,8 +109,10 @@ def autocorrelation(data, unbiased=True, normalized=True, plot_test=False):
         time series data
     unbiased : Boolean
         compute unbiased autocorrelation?
-    normalized : Boolean
-        compute normalized autocorrelation?
+    normalize_1st : Boolean
+        normalize by 1st coefficient?
+    normalize_max : Boolean
+        normalize by maximum absolute value?
     plot_test : Boolean
         plot?
 
@@ -120,12 +124,13 @@ def autocorrelation(data, unbiased=True, normalized=True, plot_test=False):
     Examples
     --------
     >>> import numpy as np
-    >>> from mhealthx.extractors.pyGait import autocorrelation
+    >>> from mhealthx.extractors.pyGait import autocorrelate
     >>> data = np.random.random(100)
     >>> unbiased = True
-    >>> normalized = True
+    >>> normalize_1st = True
+    >>> normalize_max = True
     >>> plot_test = True
-    >>> coefficients = autocorrelation(data, unbiased, normalized, plot_test)
+    >>> coefficients = autocorrelate(data, unbiased, normalize_1st, normalize_max, plot_test)
 
     """
     import numpy as np
@@ -151,9 +156,13 @@ def autocorrelation(data, unbiased=True, normalized=True, plot_test=False):
             plt.plot(t, coefficients, 'k-', label='coefficients')
             plt.title('unbiased coefficients')
 
-    if normalized:
-        coefficients /= coefficients[0]
+    if normalize_1st:
+        coefficients /= np.abs(coefficients[0])
 
+    if normalize_max:
+        coefficients /= np.max(coefficients)
+
+    if normalize_1st or normalize_max:
         if plot_test:
             plt.subplot(3, 1, 3)
             plt.plot(t, coefficients, 'k-', label='coefficients')
@@ -227,10 +236,10 @@ def gait_regularity_symmetry(data, step_period, stride_period):
     """
     import numpy as np
 
-    from mhealthx.extractors.pyGait import autocorrelation
+    from mhealthx.extractors.pyGait import autocorrelate
 
-    coefficients = autocorrelation(data, unbiased=True, normalized=True,
-                                   plot_test=False)
+    coefficients = autocorrelate(data, unbiased=True, normalize_1st=True,
+                                 normalize_max=False, plot_test=False)
 
     step_regularity = coefficients[step_period]
     stride_regularity = coefficients[stride_period]
@@ -282,16 +291,18 @@ def extract_heel_strikes(data, sample_rate, threshold=0.2, order=4, cutoff=5,
 
     Returns
     -------
-    heel_strikes : numpy array
+    heel_strikes : numpy array of floats
         heel strike timings
+    strike_indices : list of integers
+        heel strike timing indices
 
     Examples
     --------
     >>> from mhealthx.xio import read_accel_json, compute_sample_rate
     >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
     >>> device_motion = False
-    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-5981e0a8-6481-41c8-b589-fa207bfd2ab38771455825726024828.tmp'
-    >>> device_motion = True
+    >>> #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-5981e0a8-6481-41c8-b589-fa207bfd2ab38771455825726024828.tmp'
+    >>> #device_motion = True
     >>> start = 150
     >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file, start, device_motion)
     >>> from mhealthx.extractors.pyGait import extract_heel_strikes
@@ -299,8 +310,8 @@ def extract_heel_strikes(data, sample_rate, threshold=0.2, order=4, cutoff=5,
     >>> order = 4
     >>> cutoff = 5
     >>> plot_test = True
-    >>> data = y
-    >>> heel_strikes = extract_heel_strikes(data, sample_rate, threshold, order, cutoff, plot_test, t)
+    >>> data = x
+    >>> heel_strikes, strike_indices = extract_heel_strikes(data, sample_rate, threshold, order, cutoff, plot_test, t)
 
     """
     import numpy as np
@@ -322,13 +333,13 @@ def extract_heel_strikes(data, sample_rate, threshold=0.2, order=4, cutoff=5,
     # Find the peaks of AP acceleration preceding the transitional positions,
     # and greater than the product of a threshold and the maximum value of
     # the AP acceleration:
-    strikes = []
+    strike_indices = []
     filter_threshold = np.abs(threshold * np.max(filtered))
     for i in range(1, np.size(transitions)):
         segment = range(transitions[i-1], transitions[i])
         imax = np.argmax(filtered[segment])
         if filtered[segment[imax]] > filter_threshold:
-            strikes.append(segment[imax])
+            strike_indices.append(segment[imax])
 
     if plot_test:
         from pylab import plt
@@ -341,18 +352,142 @@ def extract_heel_strikes(data, sample_rate, threshold=0.2, order=4, cutoff=5,
         plt.plot(t, filtered, 'g-', linewidth=2, label='filtered data')
         plt.plot(t[transitions], filtered[transitions],
                  'ko', linewidth=2, label='transition points')
-        plt.plot(t[strikes], filtered[strikes],
+        plt.plot(t[strike_indices], filtered[strike_indices],
                  'rs', linewidth=2, label='heel strikes')
         plt.xlabel('Time (s)')
         plt.grid()
         plt.legend(loc='lower left', shadow=True)
         plt.show()
 
-    heel_strikes = np.asarray(strikes)
-    heel_strikes -= strikes[0]
-    heel_strikes = [hs/sample_rate for hs in heel_strikes]
+    heel_strikes = np.asarray(strike_indices)
+    heel_strikes -= heel_strikes[0]
+    heel_strikes = heel_strikes / sample_rate
 
-    return heel_strikes
+    return heel_strikes, strike_indices
+
+
+def select_heel_strikes(x, y, z, sample_rate, threshold=0.2,
+                        order=4, cutoff=5, plot_test=False, t=None):
+    """
+    Run extract_heel_strikes() for each accelerometer axis, and select the
+    axis with the greatest periodicity based on a normalized autocorrelation.
+
+    Parameters
+    ----------
+    x : numpy array
+        accelerometer data along x axis
+    y : numpy array
+        accelerometer data along y axis
+    z : numpy array
+        accelerometer data along z axis
+    sample_rate : float
+        sample rate of accelerometer reading (Hz)
+    threshold : float
+        ratio to the maximum value of the anterior-posterior acceleration
+    order : integer
+        order of the Butterworth filter
+    cutoff : integer
+        cutoff frequency of the Butterworth filter (Hz)
+    plot_test : Boolean
+        plot heel strikes?
+    t : list or numpy array
+        accelerometer time points
+
+    Returns
+    -------
+    heel_strikes : numpy array of floats
+        heel strike timings
+    strike_indices : list of integers
+        heel strike timing indices
+
+    Examples
+    --------
+    >>> from mhealthx.xio import read_accel_json, compute_sample_rate
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    >>> device_motion = False
+    >>> #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-5981e0a8-6481-41c8-b589-fa207bfd2ab38771455825726024828.tmp'
+    >>> #device_motion = True
+    >>> start = 150
+    >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file, start, device_motion)
+    >>> from mhealthx.extractors.pyGait import select_heel_strikes
+    >>> threshold = 0.2
+    >>> order = 1
+    >>> cutoff = 5
+    >>> plot_test = True
+    >>> heel_strikes, strike_indices = select_heel_strikes(x, y, z, sample_rate, threshold, order, cutoff, plot_test, t)
+
+    """
+    import numpy as np
+
+    from mhealthx.extractors.pyGait import extract_heel_strikes, autocorrelate
+
+    # De-mean data for each axis:
+    xm = x - np.mean(x)
+    ym = y - np.mean(y)
+    zm = z - np.mean(z)
+
+    # Autocorrelation of de-meaned data for each axis:
+    unbiased = True
+    normalize_1st = True
+    normalize_max = True
+    xc = autocorrelate(xm, unbiased, normalize_1st, normalize_max, False)
+    yc = autocorrelate(ym, unbiased, normalize_1st, normalize_max, False)
+    zc = autocorrelate(zm, unbiased, normalize_1st, normalize_max, False)
+
+    # Find axis with the largest second autocorrelation coefficient:
+    N2 = len(xc)/2
+    xyz2 = np.asarray((xc[N2+1], yc[N2+1], zc[N2+1]))
+    imax = xyz2.argmax()
+
+    # Extract heel strikes along this axis:
+    xyz = [x, y, z]
+    data = np.asarray(xyz[imax])
+    heel_strikes, strike_indices = extract_heel_strikes(data, sample_rate,
+                                                        threshold, order,
+                                                        cutoff, False, t)
+    # Plot results:
+    if plot_test:
+        from pylab import plt
+        if isinstance(t, list):
+            t = np.asarray(t)
+            t -= t[0]
+        else:
+            t = np.linspace(0, np.size(x), np.size(x))
+        xyz_strings = ['x', 'y', 'z']
+
+        # Plot autocorrelations for all three axes:
+        plt.subplot(2, 1, 1)
+        xyzc = [xc, yc, zc]
+        datac = xyzc[imax]
+        xyzc.pop(imax)
+        plt.plot(t, xyzc[0][N2:], 'k-',
+                 t, xyzc[1][N2:], 'b-',
+                 t, datac[N2:], 'r-')
+        plt.title('x,y,z autocorrelations (red: {0}-axis)'.
+                  format(xyz_strings[imax]))
+
+        # Plot estimated heel strikes on accelerometer data for selected axis:
+        plt.subplot(2, 1, 2)
+        plt.plot(t, data, 'k-',
+                 t[strike_indices], data[strike_indices], 'rs')
+        plt.title('estimated heel strikes')
+        plt.show()
+
+    # xdf = pd.DataFrame(xc)
+    # ydf = pd.DataFrame(yc)
+    # zdf = pd.DataFrame(zc)
+    # dx = xdf.diff() #compute the difference between each point
+    # dy = ydf.diff() #compute the difference between each point
+    # dz = zdf.diff() #compute the difference between each point
+    #
+    # xdf = pd.DataFrame(x - np.mean(x))
+    # ydf = pd.DataFrame(y - np.mean(y))
+    # zdf = pd.DataFrame(z - np.mean(z))
+    # dx = xdf.diff() #compute the difference between each point!
+    # dy = ydf.diff() #compute the difference between each point!
+    # dz = zdf.diff() #compute the difference between each point!
+
+    return heel_strikes, strike_indices
 
 
 def gait(heel_strikes, data, duration, distance=None):
