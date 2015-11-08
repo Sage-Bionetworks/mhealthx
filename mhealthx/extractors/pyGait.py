@@ -366,8 +366,8 @@ def extract_heel_strikes(data, sample_rate, threshold=0.2, order=4, cutoff=5,
     return heel_strikes, strike_indices
 
 
-def select_heel_strikes(x, y, z, sample_rate, threshold=0.2,
-                        order=4, cutoff=5, plot_test=False, t=None):
+def select_heel_strikes(x, y, z, t, sample_rate, threshold=0.2,
+                        order=4, cutoff=5, plot_test=False):
     """
     Run extract_heel_strikes() for each accelerometer axis, and select the
     axis with the greatest periodicity based on a normalized autocorrelation.
@@ -380,6 +380,8 @@ def select_heel_strikes(x, y, z, sample_rate, threshold=0.2,
         accelerometer data along y axis
     z : numpy array
         accelerometer data along z axis
+    t : list or numpy array
+        accelerometer time points
     sample_rate : float
         sample rate of accelerometer reading (Hz)
     threshold : float
@@ -390,8 +392,6 @@ def select_heel_strikes(x, y, z, sample_rate, threshold=0.2,
         cutoff frequency of the Butterworth filter (Hz)
     plot_test : Boolean
         plot heel strikes?
-    t : list or numpy array
-        accelerometer time points
 
     Returns
     -------
@@ -399,6 +399,8 @@ def select_heel_strikes(x, y, z, sample_rate, threshold=0.2,
         heel strike timings
     strike_indices : list of integers
         heel strike timing indices
+    data : numpy array
+        accelerometer data along selected axis
 
     Examples
     --------
@@ -414,7 +416,7 @@ def select_heel_strikes(x, y, z, sample_rate, threshold=0.2,
     >>> order = 1
     >>> cutoff = 5
     >>> plot_test = True
-    >>> heel_strikes, strike_indices = select_heel_strikes(x, y, z, sample_rate, threshold, order, cutoff, plot_test, t)
+    >>> heel_strikes, strike_indices, data = select_heel_strikes(x, y, z, t, sample_rate, threshold, order, cutoff, plot_test)
 
     """
     import numpy as np
@@ -487,7 +489,7 @@ def select_heel_strikes(x, y, z, sample_rate, threshold=0.2,
     # dy = ydf.diff() #compute the difference between each point!
     # dz = zdf.diff() #compute the difference between each point!
 
-    return heel_strikes, strike_indices
+    return heel_strikes, strike_indices, data
 
 
 def gait(heel_strikes, data, duration, distance=None):

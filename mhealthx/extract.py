@@ -153,7 +153,7 @@ def run_openSMILE(audio_file, command, flag1, flags, flagn, args, closing,
     return feature_row, feature_table
 
 
-def run_pyGait(data, sample_rate, duration, threshold, order, cutoff,
+def run_pyGait(x, y, z, t, sample_rate, duration, threshold, order, cutoff,
                distance, row, file_path, table_stem, save_rows=False):
     """
     Run pyGait (replication of iGAIT) accelerometer feature extraction code.
@@ -201,28 +201,29 @@ def run_pyGait(data, sample_rate, duration, threshold, order, cutoff,
     >>> from mhealthx.xio import read_accel_json
     >>> from mhealthx.extract import run_pyGait
     >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
-    >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file)
+    >>> start = 150
+    >>> device_motion = False
+    >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file, start, device_motion)
     >>> threshold = 0.2
     >>> order = 4
     >>> cutoff = 5
-    >>> data = y
     >>> distance = None
     >>> row = pd.Series({'a':[1], 'b':[2], 'c':[3]})
     >>> file_path = '/fake/path'
     >>> table_stem = './walking'
     >>> save_rows = True
-    >>> feature_row, feature_table = run_pyGait(data, sample_rate, duration, threshold, order, cutoff, distance, row, file_path, table_stem, save_rows)
+    >>> feature_row, feature_table = run_pyGait(x, y, z, t, sample_rate, duration, threshold, order, cutoff, distance, row, file_path, table_stem, save_rows)
 
     """
     import os
     import pandas as pd
 
     from mhealthx.xio import row_to_table
-    from mhealthx.extractors.pyGait import extract_heel_strikes, gait, \
+    from mhealthx.extractors.pyGait import select_heel_strikes, gait, \
         root_mean_square
 
-    heel_strikes = extract_heel_strikes(data, sample_rate, threshold, order,
-                                        cutoff, plot_test=False)
+    heel_strikes, strike_indices, data = select_heel_strikes(x, y, z, t,
+        sample_rate, threshold, order, cutoff, plot_test=False)
 
     number_of_steps, cadence, velocity, avg_step_length, avg_stride_length,\
     step_durations, avg_step_duration, sd_step_durations, strides, \
