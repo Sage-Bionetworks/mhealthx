@@ -245,7 +245,7 @@ elif synID_voice and not setup_rows:
     getPhonation.inputs.convert_command = 'ffmpeg'
     getPhonation.inputs.convert_input_args = '-y -i'
     getPhonation.inputs.convert_output_args = '-ac 2'
-    getPhonation.inputs.out_path = '.'
+    getPhonation.inputs.out_path = None
     getPhonation.inputs.username = ''
     getPhonation.inputs.password = ''
 
@@ -347,7 +347,7 @@ elif synID_walk and not setup_rows:
     getBalance.inputs.start = 150
     #getBalance.inputs.device_motion = False
     getBalance.inputs.device_motion = True
-    getBalance.inputs.out_path = '.'
+    getBalance.inputs.out_path = None
     getBalance.inputs.username = ''
     getBalance.inputs.password = ''
 
@@ -379,7 +379,7 @@ elif synID_walk and not setup_rows:
     getWalking.inputs.start = 150
     #getWalking.inputs.device_motion = False
     getWalking.inputs.device_motion = True
-    getWalking.inputs.out_path = '.'
+    getWalking.inputs.out_path = None
     getWalking.inputs.username = ''
     getWalking.inputs.password = ''
 
@@ -536,6 +536,7 @@ elif synID_walk and not setup_rows:
                                                  'sample_rate',
                                                  'amplitude'],
                                     output_names=['wav_file']))
+    WAVbalanceX.inputs.file_append = '.wav'
     WAVbalanceX.inputs.amplitude = 32700
     WAVbalanceY = WAVbalanceX.clone('convert_balance_y_to_wav')
     WAVbalanceZ = WAVbalanceX.clone('convert_balance_z_to_wav')
@@ -545,9 +546,6 @@ elif synID_walk and not setup_rows:
     Flow.connect(getBalance, 'file_path', WAVbalanceX, 'file_stem')
     Flow.connect(getBalance, 'file_path', WAVbalanceY, 'file_stem')
     Flow.connect(getBalance, 'file_path', WAVbalanceZ, 'file_stem')
-    WAVbalanceX.inputs.file_append = '_balance_x.wav'
-    WAVbalanceY.inputs.file_append = '_balance_y.wav'
-    WAVbalanceZ.inputs.file_append = '_balance_z.wav'
     Flow.connect(getBalance, 'sample_rate', WAVbalanceX, 'sample_rate')
     Flow.connect(getBalance, 'sample_rate', WAVbalanceY, 'sample_rate')
     Flow.connect(getBalance, 'sample_rate', WAVbalanceZ, 'sample_rate')
@@ -563,6 +561,7 @@ elif synID_walk and not setup_rows:
                                               'sample_rate',
                                               'amplitude'],
                                  output_names=['wav_file']))
+    WAVwalkX.inputs.file_append = '.wav'
     WAVwalkX.inputs.amplitude = 32700
     WAVwalkY = WAVwalkX.clone('convert_walk_y_to_wav')
     WAVwalkZ = WAVwalkX.clone('convert_walk_z_to_wav')
@@ -572,9 +571,6 @@ elif synID_walk and not setup_rows:
     Flow.connect(getBalance, 'file_path', WAVwalkX, 'file_stem')
     Flow.connect(getBalance, 'file_path', WAVwalkY, 'file_stem')
     Flow.connect(getBalance, 'file_path', WAVwalkZ, 'file_stem')
-    WAVwalkX.inputs.file_append = '_walk_x.wav'
-    WAVwalkY.inputs.file_append = '_walk_y.wav'
-    WAVwalkZ.inputs.file_append = '_walk_z.wav'
     Flow.connect(getBalance, 'sample_rate', WAVwalkX, 'sample_rate')
     Flow.connect(getBalance, 'sample_rate', WAVwalkY, 'sample_rate')
     Flow.connect(getBalance, 'sample_rate', WAVwalkZ, 'sample_rate')

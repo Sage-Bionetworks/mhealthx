@@ -85,7 +85,9 @@ def extract_synapse_rows(synapse_table, save_path=None, limit=None,
             values = [unicode(x) for x in row_map.values()]
             row_series = pd.Series(values, columns)
             if save_path:
-                csv_file = "row{0}.csv".format(irow)
+                csv_file = 'row{0}_v{1}_{2}'.format(row_map['ROW_ID'],
+                                                    row_map['ROW_VERSION'],
+                                                    row_map['recordId'])
                 csv_file = os.path.join(save_path, csv_file)
                 try:
                     row_series.to_csv(csv_file)
@@ -99,7 +101,7 @@ def extract_synapse_rows(synapse_table, save_path=None, limit=None,
 
 
 def read_file_from_synapse_table(synapse_table, row, column_name,
-                                 out_path='.', username='', password=''):
+                                 out_path=None, username='', password=''):
     """
     Read data from a row of a Synapse table.
 
@@ -138,7 +140,7 @@ def read_file_from_synapse_table(synapse_table, row, column_name,
     >>> password = ''
     >>> rows, row_files = extract_synapse_rows(synapse_table, save_path, limit, username='', password='')
     >>> column_name = 'audio_audio.m4a' #, 'audio_countdown.m4a']
-    >>> out_path = '.'
+    >>> out_path = None
     >>> for i in range(3):
     >>>     row = rows[i]
     >>>     row, filepath = read_file_from_synapse_table(synapse_table, row, column_name, out_path, username, password)
@@ -165,6 +167,10 @@ def read_file_from_synapse_table(synapse_table, row, column_name,
 
     # Try to download file with column_name in row:
     try:
+        if not out_path:
+            out_path='./row{0}_v{1}_{2}'.format(row['ROW_ID'],
+                                                row['ROW_VERSION'],
+                                                row['recordId'])
         fileinfo = syn.downloadTableFile(synapse_table,
                             rowId=row['ROW_ID'][0],
                             versionNumber=row['ROW_VERSION'][0],
@@ -504,7 +510,7 @@ def get_accel(synapse_table, row, column_name, start=0, device_motion=True,
     >>> column_name = 'deviceMotion_walking_outbound.json.items'
     >>> device_motion = True
     >>> start = 150
-    >>> out_path = '.'
+    >>> out_path = None
     >>> username = ''
     >>> password = ''
     >>> for i in range(1):

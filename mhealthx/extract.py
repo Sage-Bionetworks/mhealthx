@@ -51,15 +51,22 @@ def make_row_table(file_path, table_stem, save_rows, row, row_data,
 
     # Write feature row to a table or append to a feature table:
     if save_rows:
-        feature_table = '{0}_{1}.csv'.format(table_stem,
+        if file_path.endswith('.csv'):
+            feature_table = '{0}_{1}'.format(table_stem,
                                              os.path.basename(file_path))
+        else:
+            feature_table = '{0}_{1}.csv'.format(table_stem,
+                                                 os.path.basename(file_path))
         try:
             feature_row.to_csv(feature_table)
         except IOError as e:
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
             feature_table = None
     else:
-        feature_table = table_stem + '.csv'
+        if table_stem.endswith('.csv'):
+            feature_table = table_stem
+        else:
+            feature_table = table_stem + '.csv'
         try:
             row_to_table(feature_row, feature_table)
         except IOError as e:
@@ -169,7 +176,7 @@ def run_openSMILE(audio_file, command, flag1, flags, flagn, args, closing,
     feature_row = None
     feature_table = None
     if os.path.isfile(audio_file):
-        argn = ''.join([audio_file,'.csv'])
+        argn = ''.join([audio_file.strip('.wav'),'.csv'])
         cline, args, arg1, argn = run_command(command=command,
                                               flag1=flag1,
                                               arg1=audio_file,
