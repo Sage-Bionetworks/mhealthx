@@ -336,9 +336,9 @@ if synID_balance and not setup_rows:
                                                 'out_path',
                                                 'username',
                                                 'password'],
-                                   output_names=['x',
-                                                 'y',
-                                                 'z',
+                                   output_names=['ax',
+                                                 'ay',
+                                                 'az',
                                                  't',
                                                  'sample_rate',
                                                  'duration',
@@ -366,9 +366,9 @@ if synID_balance and not setup_rows:
                                                 'out_path',
                                                 'username',
                                                 'password'],
-                                   output_names=['x',
-                                                 'y',
-                                                 'z',
+                                   output_names=['ax',
+                                                 'ay',
+                                                 'az',
                                                  't',
                                                  'sample_rate',
                                                  'duration',
@@ -396,9 +396,9 @@ if synID_balance and not setup_rows:
                                                  'out_path',
                                                  'username',
                                                  'password'],
-                                    output_names=['x',
-                                                  'y',
-                                                  'z',
+                                    output_names=['ax',
+                                                  'ay',
+                                                  'az',
                                                   't',
                                                   'sample_rate',
                                                   'duration',
@@ -426,19 +426,19 @@ if synID_balance and not setup_rows:
                                                  'y',
                                                  'z',
                                                  'distance']))
-    Flow.connect(getWalking2, 'x', deadReckon, 'Ax')
-    Flow.connect(getWalking2, 'y', deadReckon, 'Ay')
-    Flow.connect(getWalking2, 'z', deadReckon, 'Az')
+    Flow.connect(getWalking2, 'ax', deadReckon, 'Ax')
+    Flow.connect(getWalking2, 'ay', deadReckon, 'Ay')
+    Flow.connect(getWalking2, 'az', deadReckon, 'Az')
     Flow.connect(getWalking2, 't', deadReckon, 'At')
 
     # ------------------------------------------------------------------------
     # pyGait on walking data:
     # ------------------------------------------------------------------------
-    pyGaitWalk = Node(name='pyGait_walking_x',
+    pyGaitWalk = Node(name='pyGait_walking',
                       interface=Fn(function=run_pyGait,
-                                   input_names=['x',
-                                                'y',
-                                                'z',
+                                   input_names=['ax',
+                                                'ay',
+                                                'az',
                                                 't',
                                                 'sample_rate',
                                                 'duration',
@@ -452,9 +452,10 @@ if synID_balance and not setup_rows:
                                                 'save_rows'],
                                    output_names=['feature_row',
                                                  'feature_table']))
-    Flow.connect(getWalking, 'x', pyGaitWalk, 'x')
-    Flow.connect(getWalking, 'y', pyGaitWalk, 'y')
-    Flow.connect(getWalking, 'z', pyGaitWalk, 'z')
+    Flow.connect(getWalking, 'ax', pyGaitWalk, 'ax')
+    Flow.connect(getWalking, 'ay', pyGaitWalk, 'ay')
+    Flow.connect(getWalking, 'az', pyGaitWalk, 'az')
+    Flow.connect(getWalking, 't', pyGaitWalk, 't')
     Flow.connect(getWalking, 'sample_rate', pyGaitWalk, 'sample_rate')
     Flow.connect(getWalking, 'duration', pyGaitWalk, 'duration')
     pyGaitWalk.inputs.threshold = 0.2
@@ -481,9 +482,9 @@ if synID_balance and not setup_rows:
     WAVbalanceX.inputs.amplitude = 32700
     WAVbalanceY = WAVbalanceX.clone('convert_balance_y_to_wav')
     WAVbalanceZ = WAVbalanceX.clone('convert_balance_z_to_wav')
-    Flow.connect(getBalance, 'x', WAVbalanceX, 'data')
-    Flow.connect(getBalance, 'y', WAVbalanceY, 'data')
-    Flow.connect(getBalance, 'z', WAVbalanceZ, 'data')
+    Flow.connect(getBalance, 'ax', WAVbalanceX, 'data')
+    Flow.connect(getBalance, 'ay', WAVbalanceY, 'data')
+    Flow.connect(getBalance, 'az', WAVbalanceZ, 'data')
     Flow.connect(getBalance, 'file_path', WAVbalanceX, 'file_stem')
     Flow.connect(getBalance, 'file_path', WAVbalanceY, 'file_stem')
     Flow.connect(getBalance, 'file_path', WAVbalanceZ, 'file_stem')
@@ -508,9 +509,9 @@ if synID_balance and not setup_rows:
     WAVwalkingX.inputs.amplitude = 32700
     WAVwalkingY = WAVwalkingX.clone('convert_walking_y_to_wav')
     WAVwalkingZ = WAVwalkingX.clone('convert_walking_z_to_wav')
-    Flow.connect(getWalking, 'x', WAVwalkingX, 'data')
-    Flow.connect(getWalking, 'y', WAVwalkingY, 'data')
-    Flow.connect(getWalking, 'z', WAVwalkingZ, 'data')
+    Flow.connect(getWalking, 'ax', WAVwalkingX, 'data')
+    Flow.connect(getWalking, 'ay', WAVwalkingY, 'data')
+    Flow.connect(getWalking, 'az', WAVwalkingZ, 'data')
     Flow.connect(getBalance, 'file_path', WAVwalkingX, 'file_stem')
     Flow.connect(getBalance, 'file_path', WAVwalkingY, 'file_stem')
     Flow.connect(getBalance, 'file_path', WAVwalkingZ, 'file_stem')

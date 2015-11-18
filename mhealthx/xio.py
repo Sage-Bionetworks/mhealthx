@@ -10,84 +10,6 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
-def run_command(command, flag1='', arg1='', flags='', args=[],
-                flagn='', argn='', closing=''):
-    """
-    Run a generic command.
-
-    Parameters
-    ----------
-    command : string
-        name of command: "SMILExtract"
-    flag1 : string
-        optional first command line flag
-    arg1 : string
-        optional first argument, handy for iterating over in the pipeline
-    flags : string or list of strings
-        command line flags precede their respective args: ["-C", "-I", "-O"]
-    args : string or list of strings
-        command line arguments: ["config.conf", "input.wav", "output.csv"]
-    flagn : string
-        optional last command line flag
-    argn : string
-        optional last argument, handy for iterating over in the pipeline
-    closing : string
-        closing string in command
-
-    Returns
-    -------
-    command_line : string
-        full command line
-    args : list of strings
-        command line arguments
-    arg1 : string
-        optional first argument, handy for iterating over in the pipeline
-    argn : string
-        optional last argument, handy for iterating over in the pipeline
-
-    Examples
-    --------
-    >>> from mhealthx.xio import run_command
-    >>> command = 'ls'
-    >>> flag1 = ''
-    >>> arg1 = ''
-    >>> flags = ['-l', '']
-    >>> args = ['/software', '/desk']
-    >>> flagn = ''
-    >>> argn = ''
-    >>> closing = '' #'> test.txt'
-    >>> command_line, args, arg1, argn = run_command(command, flag1, arg1, flags, args, flagn, argn, closing)
-
-    """
-    from nipype.interfaces.base import CommandLine
-
-    # Join flags with args:
-    if type(flags) == list and type(args) == list:
-        flag_arg_tuples = zip(flags, args)
-        flags_args = ''
-        for flag_arg_tuple in flag_arg_tuples:
-            flags_args = ' '.join([flags_args, ' '.join(flag_arg_tuple)])
-    elif type(flags) == str and type(args) == str:
-        flags_args = ' '.join([flags, args])
-    else:
-        raise IOError("-flags and -args should both be strings or lists")
-
-    options = ' '.join([' '.join([flag1, arg1]), flags_args,
-                        ' '.join([flagn, argn]), closing])
-    command_line = ' '.join([command, options])
-
-    # Nipype command line wrapper:
-    try:
-        cli = CommandLine(command=command)
-        cli.inputs.args = options
-        cli.cmdline
-        cli.run()
-    except:
-        print("'{0}' unsuccessful".format(command_line))
-
-    return command_line, args, arg1, argn
-
-
 def extract_synapse_rows(synapse_table, save_path=None, limit=None,
                          username='', password=''):
     """
@@ -256,6 +178,35 @@ def read_file_from_synapse_table(synapse_table, row, column_name,
     return row, filepath
 
 
+def row_to_table(row_data, output_table):
+    """
+    Add row to table using nipype (thread-safe in multi-processor execution).
+
+    (Requires Python module lockfile)
+
+    Parameters
+    ----------
+    row_data : pandas Series
+        row of data
+    output_table : string
+        add row to this table file
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from mhealthx.xio import row_to_table
+    >>> row_data = pd.Series({'A': ['A0'], 'B': ['B0'], 'C': ['C0']})
+    >>> output_table = 'test.csv'
+    >>> row_to_table(row_data, output_table)
+    """
+    from nipype.algorithms import misc
+
+    addrow = misc.AddCSVRow()
+    addrow.inputs.in_file = output_table
+    addrow.inputs.set(**row_data.to_dict())
+    addrow.run()
+
+
 def convert_audio_file(old_file, new_file, command='ffmpeg',
                        input_args='-i', output_args='-ac 2'):
     """
@@ -401,43 +352,6 @@ def get_convert_audio(synapse_table, row, column_name,
     return row, new_file
 
 
-def compute_sample_rate(t):
-    """
-    Compute sample rate.
-
-    Parameters
-    ----------
-    t : list
-        time points
-
-    Returns
-    -------
-    sample_rate : float
-        sample rate
-    duration : float
-        duration of time series
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from mhealthx.xio import read_accel_json, compute_sample_rate
-    >>> t = np.linspace(.1, 1000, 10000)
-    >>> sample_rate, duration = compute_sample_rate(t)
-    """
-    import numpy as np
-
-    deltas = []
-    tprev = t[0]
-    for tnext in t[1::]:
-        deltas.append(tnext - tprev)
-        tprev = tnext
-    sample_rate = 1 / np.mean(deltas)
-
-    duration = t[-1] - t[0]
-
-    return sample_rate, duration
-
-
 def read_accel_json(input_file, start=0, device_motion=True):
     """
     Read accelerometer or deviceMotion json file.
@@ -453,14 +367,16 @@ def read_accel_json(input_file, start=0, device_motion=True):
 
     Returns
     -------
-    x : list
-        x-axis accelerometer data
-    y : list
-        y-axis accelerometer data
-    z : list
-        z-axis accelerometer data
     t : list
         time points for accelerometer data
+    axyz : list of lists
+        x-, y-, and z-axis accelerometer data
+    gxyz : list of lists
+        x-, y-, and z-axis gravity (if deviceMotion)
+    uxyz : list of lists
+        x-, y-, and z-axis attitude (if deviceMotion)
+    rxyz : list of lists
+        x-, y-, and z-axis rotationRate (if deviceMotion)
     sample_rate : float
         sample rate
     duration : float
@@ -473,35 +389,60 @@ def read_accel_json(input_file, start=0, device_motion=True):
     >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-90f7096a-84ac-4f29-a4d1-236ef92c3d262549858224214804657.tmp'
     >>> start = 150
     >>> device_motion = True
-    >>> x, y, z, t, sample_rate, duration = read_accel_json(input_file, start, device_motion)
+    >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
     """
     import json
 
-    from mhealthx.xio import compute_sample_rate
+    from mhealthx.signals import compute_sample_rate
 
     f = open(input_file, 'r')
     json_strings = f.readlines()
     parsed_jsons = json.loads(json_strings[0])
 
-    x = []
-    y = []
-    z = []
     t = []
+    ax = []
+    ay = []
+    az = []
+    gx = []
+    gy = []
+    gz = []
+    uw = []
+    ux = []
+    uy = []
+    uz = []
+    rx = []
+    ry = []
+    rz = []
     for parsed_json in parsed_jsons[start::]:
         if device_motion:
-            x.append(parsed_json['userAcceleration']['x'])
-            y.append(parsed_json['userAcceleration']['y'])
-            z.append(parsed_json['userAcceleration']['z'])
+            ax.append(parsed_json['userAcceleration']['x'])
+            ay.append(parsed_json['userAcceleration']['y'])
+            az.append(parsed_json['userAcceleration']['z'])
             t.append(parsed_json['timestamp'])
+            gx.append(parsed_json['gravity']['x'])
+            gy.append(parsed_json['gravity']['y'])
+            gz.append(parsed_json['gravity']['z'])
+            uw.append(parsed_json['attitude']['w'])
+            ux.append(parsed_json['attitude']['x'])
+            uy.append(parsed_json['attitude']['y'])
+            uz.append(parsed_json['attitude']['z'])
+            rx.append(parsed_json['rotationRate']['x'])
+            ry.append(parsed_json['rotationRate']['y'])
+            rz.append(parsed_json['rotationRate']['z'])
         else:
-            x.append(parsed_json['x'])
-            y.append(parsed_json['y'])
-            z.append(parsed_json['z'])
+            ax.append(parsed_json['x'])
+            ay.append(parsed_json['y'])
+            az.append(parsed_json['z'])
             t.append(parsed_json['timestamp'])
+
+    axyz = [ax, ay, az]
+    gxyz = [gx, gy, gz]
+    uxyz = [uw, ux, uy, uz]
+    rxyz = [rx, ry, rz]
 
     sample_rate, duration = compute_sample_rate(t)
 
-    return x, y, z, t, sample_rate, duration
+    return t, axyz, gxyz, uxyz, rxyz, sample_rate, duration
 
 
 def get_accel(synapse_table, row, column_name, start=0, device_motion=True,
@@ -535,11 +476,11 @@ def get_accel(synapse_table, row, column_name, start=0, device_motion=True,
 
     Returns
     -------
-    x : list
+    ax : list
         x-axis accelerometer data
-    y : list
+    ay : list
         y-axis accelerometer data
-    z : list
+    az : list
         z-axis accelerometer data
     t : list
         time points for accelerometer data
@@ -560,9 +501,9 @@ def get_accel(synapse_table, row, column_name, start=0, device_motion=True,
     >>> syn.login()
     >>> synapse_table = 'syn4590866'
     >>> row_series, row_files = extract_synapse_rows(synapse_table, save_path='.', limit=3, username='', password='')
-    >>> column_name = 'accel_walking_rest.json.items'
-    >>> start = 150
+    >>> column_name = 'deviceMotion_walking_outbound.json.items'
     >>> device_motion = True
+    >>> start = 150
     >>> out_path = '.'
     >>> username = ''
     >>> password = ''
@@ -571,7 +512,7 @@ def get_accel(synapse_table, row, column_name, start=0, device_motion=True,
     >>>     row, filepath = read_file_from_synapse_table(synapse_table, row,
     >>>         column_name, out_path, username, password)
     >>>     print(row)
-    >>>     x, y, z, t, sample_rate, duration, row, file_path = get_accel(synapse_table,
+    >>>     ax, ay, az, t, sample_rate, duration, row, file_path = get_accel(synapse_table,
     >>>                                       row, column_name,
     >>>                                       start, device_motion,
     >>>                                       out_path, username, password)
@@ -584,10 +525,12 @@ def get_accel(synapse_table, row, column_name, start=0, device_motion=True,
                                                   column_name, out_path,
                                                   username, password)
     # Read accelerometer json file:
-    x, y, z, t, sample_rate, duration = read_accel_json(file_path, start,
-                                                        device_motion)
+    t, axyz, gxyz, uxyz, rxyz, sample_rate, \
+    duration = read_accel_json(file_path, start, device_motion)
 
-    return x, y, z, t, sample_rate, duration, row, file_path
+    ax, ay, az = axyz
+
+    return ax, ay, az, t, sample_rate, duration, row, file_path
 
 
 def write_wav(data, file_stem, file_append,
@@ -667,35 +610,6 @@ def write_wav(data, file_stem, file_append,
         raise IOError("{0} has not been written.".format(filename))
 
     return wav_file
-
-
-def row_to_table(row_data, output_table):
-    """
-    Add row to table using nipype (thread-safe in multi-processor execution).
-
-    (Requires Python module lockfile)
-
-    Parameters
-    ----------
-    row_data : pandas Series
-        row of data
-    output_table : string
-        add row to this table file
-
-    Examples
-    --------
-    >>> import pandas as pd
-    >>> from mhealthx.xio import row_to_table
-    >>> row_data = pd.Series({'A': ['A0'], 'B': ['B0'], 'C': ['C0']})
-    >>> output_table = 'test.csv'
-    >>> row_to_table(row_data, output_table)
-    """
-    from nipype.algorithms import misc
-
-    addrow = misc.AddCSVRow()
-    addrow.inputs.in_file = output_table
-    addrow.inputs.set(**row_data.to_dict())
-    addrow.run()
 
 
 # ============================================================================
