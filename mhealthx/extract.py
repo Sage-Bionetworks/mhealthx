@@ -225,6 +225,7 @@ def run_pyGait(data, t, sample_rate, duration, threshold, order, cutoff,
     """
     import os
     import pandas as pd
+    import scipy
 
     from mhealthx.xio import row_to_table
     from mhealthx.signals import root_mean_square
@@ -241,6 +242,8 @@ def run_pyGait(data, t, sample_rate, duration, threshold, order, cutoff,
 
     RMS = root_mean_square(data)
 
+    entropy = scipy.stats.entropy(data)
+
     row_data = pd.DataFrame({'number_of_steps': number_of_steps,
                              'cadence': cadence,
                              'velocity': velocity,
@@ -254,7 +257,8 @@ def run_pyGait(data, t, sample_rate, duration, threshold, order, cutoff,
                              'step_regularity': step_regularity,
                              'stride_regularity': stride_regularity,
                              'symmetry': symmetry,
-                             'RMS': RMS},
+                             'RMS': RMS,
+                             'entropy': entropy},
                             index=[0])
 
     if isinstance(row, pd.Series) and not row.empty:
