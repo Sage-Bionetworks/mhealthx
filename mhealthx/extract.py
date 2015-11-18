@@ -154,8 +154,7 @@ def run_openSMILE(audio_file, command, flag1, flags, flagn, args, closing,
     return feature_row, feature_table
 
 
-def run_pyGait(data, t, sample_rate, duration, stride_fraction,
-               threshold1, threshold2, order, cutoff,
+def run_pyGait(data, t, sample_rate, duration, threshold, order, cutoff,
                distance, row, file_path, table_stem, save_rows=False):
     """
     Run pyGait (replication of iGAIT) accelerometer feature extraction code.
@@ -175,11 +174,7 @@ def run_pyGait(data, t, sample_rate, duration, stride_fraction,
         sample rate of accelerometer reading (Hz)
     duration : float
         duration of accelerometer reading (s)
-    stride_fraction : float
-        fraction of stride assumed to be deceleration phase of primary leg
-    threshold1 : float
-        ratio to the maximum summed acceleration to extract peaks
-    threshold2 : float
+    threshold : float
         ratio to the maximum value of the anterior-posterior acceleration
     order : integer
         order of the Butterworth filter
@@ -215,8 +210,8 @@ def run_pyGait(data, t, sample_rate, duration, stride_fraction,
     >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
     >>> ax, ay, az = axyz
     >>> stride_fraction = 1.0/8.0
-    >>> threshold1 = 0.5
-    >>> threshold2 = 0.2
+    >>> threshold0 = 0.5
+    >>> threshold = 0.2
     >>> order = 4
     >>> cutoff = max([1, sample_rate/10])
     >>> distance = None
@@ -224,8 +219,8 @@ def run_pyGait(data, t, sample_rate, duration, stride_fraction,
     >>> file_path = '/fake/path'
     >>> table_stem = './walking'
     >>> save_rows = True
-    >>> px, py, pz = project_on_walking_direction(ax, ay, az, t, sample_rate, stride_fraction, threshold1, order, cutoff)
-    >>> feature_row, feature_table = run_pyGait(py, t, sample_rate, duration, stride_fraction, threshold1, threshold2, order, cutoff, distance, row, file_path, table_stem, save_rows)
+    >>> px, py, pz = project_on_walking_direction(ax, ay, az, t, sample_rate, stride_fraction, threshold0, order, cutoff)
+    >>> feature_row, feature_table = run_pyGait(py, t, sample_rate, duration, threshold, order, cutoff, distance, row, file_path, table_stem, save_rows)
 
     """
     import os
@@ -235,7 +230,7 @@ def run_pyGait(data, t, sample_rate, duration, stride_fraction,
     from mhealthx.signals import root_mean_square
     from mhealthx.extractors.pyGait import heel_strikes, gait
 
-    strikes, strike_indices = heel_strikes(data, sample_rate, threshold2,
+    strikes, strike_indices = heel_strikes(data, sample_rate, threshold,
                                            order, cutoff, False, t)
 
     number_of_steps, cadence, velocity, avg_step_length, avg_stride_length,\

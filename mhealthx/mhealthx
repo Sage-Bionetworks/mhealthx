@@ -441,9 +441,7 @@ if synID_balance and not setup_rows:
                                                 't',
                                                 'sample_rate',
                                                 'duration',
-                                                'stride_fraction',
-                                                'threshold1',
-                                                'threshold2',
+                                                'threshold',
                                                 'order',
                                                 'cutoff',
                                                 'distance',
@@ -457,9 +455,7 @@ if synID_balance and not setup_rows:
     Flow.connect(getWalking, 't', pyGaitWalk, 't')
     Flow.connect(getWalking, 'sample_rate', pyGaitWalk, 'sample_rate')
     Flow.connect(getWalking, 'duration', pyGaitWalk, 'duration')
-    pyGaitWalk.inputs.stride_fraction = 1.0/8.0
-    pyGaitWalk.inputs.threshold1 = 0.5
-    pyGaitWalk.inputs.threshold2 = 0.4
+    pyGaitWalk.inputs.threshold = 0.4
     pyGaitWalk.inputs.order = 4
     pyGaitWalk.inputs.cutoff = 10
     pyGaitWalk.inputs.distance = None
