@@ -211,6 +211,71 @@ def project_axes(vectors, unit_vector):
     return projection_vectors
 
 
+def project_on_walking_direction(ax, ay, az, t, sample_rate, stride_fraction,
+                                 threshold, order, cutoff):
+    """
+    Project accelerometer data on local walking (not cardinal) direction.
+
+    Parameters
+    ----------
+    ax : numpy array
+        accelerometer data along x axis
+    ay : numpy array
+        accelerometer data along y axis
+    az : numpy array
+        accelerometer data along z axis
+    t : list or numpy array
+        accelerometer time points
+    sample_rate : float
+        sample rate of accelerometer reading (Hz)
+    stride_fraction : float
+        fraction of stride assumed to be deceleration phase of primary leg
+    threshold : float
+        ratio to the maximum summed acceleration to extract peaks
+    order : integer
+        order of the Butterworth filter
+    cutoff : integer
+        cutoff frequency of the Butterworth filter (Hz)
+
+    Returns
+    -------
+    px : numpy array
+        accelerometer data along x axis projected on unit vector
+    py : numpy array
+        accelerometer data along y axis projected on unit vector
+    pz : numpy array
+        accelerometer data along z axis projected on unit vector
+
+    Examples
+    --------
+    >>> from mhealthx.xio import read_accel_json
+    >>> from mhealthx.extractors.pyGait import project_on_walking_direction
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    >>> start = 150
+    >>> device_motion = False
+    >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
+    >>> ax, ay, az = axyz
+    >>> stride_fraction = 1.0/8.0
+    >>> threshold = 0.5
+    >>> order = 4
+    >>> cutoff = max([1, sample_rate/10])
+    >>> px, py, pz = project_on_walking_direction(ax, ay, az, t, sample_rate, stride_fraction, threshold, order, cutoff)
+
+    """
+    from mhealthx.extractors.pyGait import walking_direction, project_axes
+
+    direction = walking_direction(ax, ay, az, t, sample_rate, stride_fraction,
+                                  threshold, order, cutoff, False)
+
+    projection_vectors = project_axes(zip(ax, ay, az), direction)
+
+    px = [x[0] for x in projection_vectors]
+    py = [x[1] for x in projection_vectors]
+    pz = [x[2] for x in projection_vectors]
+
+    return px, py, pz
+
+
 def heel_strikes(data, sample_rate, threshold=0.2, order=4, cutoff=5,
                  plot_test=False, t=None):
     """

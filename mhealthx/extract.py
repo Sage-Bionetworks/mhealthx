@@ -154,7 +154,7 @@ def run_openSMILE(audio_file, command, flag1, flags, flagn, args, closing,
     return feature_row, feature_table
 
 
-def run_pyGait(ax, ay, az, t, sample_rate, duration, stride_fraction,
+def run_pyGait(data, t, sample_rate, duration, stride_fraction,
                threshold1, threshold2, order, cutoff,
                distance, row, file_path, table_stem, save_rows=False):
     """
@@ -167,12 +167,8 @@ def run_pyGait(ax, ay, az, t, sample_rate, duration, stride_fraction,
 
     Parameters
     ----------
-    ax : numpy array
-        accelerometer data along x axis
-    ay : numpy array
-        accelerometer data along y axis
-    az : numpy array
-        accelerometer data along z axis
+    data : numpy array
+        accelerometer data along any (preferably forward walking) axis
     t : list or numpy array
         accelerometer time points
     sample_rate : float
@@ -212,6 +208,7 @@ def run_pyGait(ax, ay, az, t, sample_rate, duration, stride_fraction,
     >>> import pandas as pd
     >>> from mhealthx.xio import read_accel_json
     >>> from mhealthx.extract import run_pyGait
+    >>> from mhealthx.extractors.pyGait import project_on_walking_direction
     >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
     >>> start = 150
     >>> device_motion = False
@@ -227,7 +224,8 @@ def run_pyGait(ax, ay, az, t, sample_rate, duration, stride_fraction,
     >>> file_path = '/fake/path'
     >>> table_stem = './walking'
     >>> save_rows = True
-    >>> feature_row, feature_table = run_pyGait(ax, ay, az, t, sample_rate, duration, stride_fraction, threshold1, threshold2, order, cutoff, distance, row, file_path, table_stem, save_rows)
+    >>> px, py, pz = project_on_walking_direction(ax, ay, az, t, sample_rate, stride_fraction, threshold1, order, cutoff)
+    >>> feature_row, feature_table = run_pyGait(py, t, sample_rate, duration, stride_fraction, threshold1, threshold2, order, cutoff, distance, row, file_path, table_stem, save_rows)
 
     """
     import os
@@ -235,14 +233,7 @@ def run_pyGait(ax, ay, az, t, sample_rate, duration, stride_fraction,
 
     from mhealthx.xio import row_to_table
     from mhealthx.signals import root_mean_square
-    from mhealthx.extractors.pyGait import walking_direction, heel_strikes,\
-        gait
-    from mhealthx.extractors.pyGait import project_axes
-
-    direction = walking_direction(ax, ay, az, t, sample_rate, stride_fraction,
-                                  threshold1, order, cutoff, False)
-    projection_vectors = project_axes(zip(ax, ay, az), direction)
-    data = [x[1] for x in projection_vectors]
+    from mhealthx.extractors.pyGait import heel_strikes, gait
 
     strikes, strike_indices = heel_strikes(data, sample_rate, threshold2,
                                            order, cutoff, False, t)
