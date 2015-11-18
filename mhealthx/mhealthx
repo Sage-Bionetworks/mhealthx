@@ -416,20 +416,20 @@ if synID_balance and not setup_rows:
     # ------------------------------------------------------------------------
     # Estimate distance from walking accelerometer data:
     # ------------------------------------------------------------------------
-    deadReckon = Node(name='dead_reckon',
-                      interface=Fn(function=dead_reckon,
-                                   input_names=['Ax',
-                                                'Ay',
-                                                'Az',
-                                                'At'],
-                                   output_names=['x',
-                                                 'y',
-                                                 'z',
-                                                 'distance']))
-    Flow.connect(getWalking2, 'ax', deadReckon, 'Ax')
-    Flow.connect(getWalking2, 'ay', deadReckon, 'Ay')
-    Flow.connect(getWalking2, 'az', deadReckon, 'Az')
-    Flow.connect(getWalking2, 't', deadReckon, 'At')
+    # deadReckon = Node(name='dead_reckon',
+    #                   interface=Fn(function=dead_reckon,
+    #                                input_names=['ax',
+    #                                             'ay',
+    #                                             'az',
+    #                                             't'],
+    #                                output_names=['x',
+    #                                              'y',
+    #                                              'z',
+    #                                              'distance']))
+    # Flow.connect(getWalking2, 'ax', deadReckon, 'ax')
+    # Flow.connect(getWalking2, 'ay', deadReckon, 'ay')
+    # Flow.connect(getWalking2, 'az', deadReckon, 'az')
+    # Flow.connect(getWalking2, 't', deadReckon, 't')
 
     # ------------------------------------------------------------------------
     # pyGait on walking data:
@@ -442,7 +442,9 @@ if synID_balance and not setup_rows:
                                                 't',
                                                 'sample_rate',
                                                 'duration',
-                                                'threshold',
+                                                'stride_fraction',
+                                                'threshold1',
+                                                'threshold2',
                                                 'order',
                                                 'cutoff',
                                                 'distance',
@@ -458,10 +460,13 @@ if synID_balance and not setup_rows:
     Flow.connect(getWalking, 't', pyGaitWalk, 't')
     Flow.connect(getWalking, 'sample_rate', pyGaitWalk, 'sample_rate')
     Flow.connect(getWalking, 'duration', pyGaitWalk, 'duration')
-    pyGaitWalk.inputs.threshold = 0.2
+    pyGaitWalk.inputs.stride_fraction = 1.0/8.0
+    pyGaitWalk.inputs.threshold1 = 0.5
+    pyGaitWalk.inputs.threshold2 = 0.4
     pyGaitWalk.inputs.order = 4
-    pyGaitWalk.inputs.cutoff = 5
-    Flow.connect(deadReckon, 'distance', pyGaitWalk, 'distance')
+    pyGaitWalk.inputs.cutoff = 10
+    pyGaitWalk.inputs.distance = None
+    #Flow.connect(deadReckon, 'distance', pyGaitWalk, 'distance')
     Flow.connect(getWalking, 'row', pyGaitWalk, 'row')
     Flow.connect(getWalking, 'file_path', pyGaitWalk, 'file_path')
     pyGaitWalk.inputs.table_stem = os.path.join(feature_table_path,
