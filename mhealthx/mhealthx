@@ -4,17 +4,13 @@ This pipeline runs feature extraction on mHealth data stored on Synapse.org.
 
 Example to prepare the first three rows of mhealth data from Synapse:
 
-    mhealthx --setup --phonation syn4590865 \
-                     --balance syn4590866 \
-                     --tapping syn4590864 \
-                     --dependencies /software --rows 3
+    mhealthx --voice syn4590865 --walk syn4590866 --tap syn4590864 \
+             -d /software --rows 3 --setup
 
 Example to extract features from the above three rows:
 
-    mhealthx --phonation syn4590865 \
-             --balance syn4590866 \
-             --tapping syn4590864 \
-             --dependencies /software --rows 3
+    mhealthx --voice syn4590865 --walk syn4590866 --tap syn4590864 \
+             -d /software --rows 3
 
 - First-time use on a given machine: include -u and -p for Synapse login.
 - Replace -d argument with path to installed feature extraction software.
@@ -44,8 +40,8 @@ from nipype import config, logging
 from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node
-from mhealthx.extract import run_openSMILE, run_pyGait
-from mhealthx.extractors.pyGait import project_on_walking_direction
+from mhealthx.extract import run_openSMILE, run_pyGait, run_signal_features
+from mhealthx.extractors.pyGait import project_on_walk_direction
 from mhealthx.xio import extract_synapse_rows, get_convert_audio, get_accel, \
     write_wav
 
@@ -57,7 +53,7 @@ from mhealthx.xio import extract_synapse_rows, get_convert_audio, get_accel, \
 parser = argparse.ArgumentParser(description="""
                     Extract features from mHealth data
                     stored on Sage Bionetwork's Synapse.org.
-                    Example: mhealthx --phonation syn4590865 -d /software
+                    Example: mhealthx --voice syn4590865 -d /software
                     (-d: path to installed software dependencies; -u, -p:
                     Synapse login for first use on a given machine)
 """,
@@ -95,14 +91,15 @@ setup_group.add_argument("-u", "--username",
 setup_group.add_argument("-p", "--password",
                          help="Synapse password", metavar='STR')
 activities_group = parser.add_argument_group('activities')
-activities_group.add_argument("--phonation",
-                              help="Synapse table ID for phonation data",
+activities_group.add_argument("--voice",
+                              help="Synapse table ID for voice data",
                               metavar='STR')
-activities_group.add_argument("--balance",
-                              help="Synapse table ID for balance data",
+activities_group.add_argument("--walk",
+                              help="Synapse table ID for walk/balance data",
                               metavar='STR')
-activities_group.add_argument("--tapping",
-                              help="Synapse table ID for tapping data",
+activities_group.add_argument("--tap",
+                              help="Synapse table ID for tap touchscreen "
+                                   "data",
                               metavar='STR')
 outputs_group = parser.add_argument_group('outputs')
 outputs_group.add_argument("-o", "--outputs",
@@ -127,9 +124,9 @@ if args.temp:
     temporary_path = args.temp
 else:
     temporary_path = args.cache
-synID_phonation = args.phonation
-synID_balance = args.balance
-synID_tapping = args.tapping
+synID_voice = args.voice
+synID_walk = args.walk
+synID_tap = args.tap
 if args.numproc:
     nproc = args.numproc
 else:
@@ -181,24 +178,23 @@ feature_table_path = os.path.join(args.outputs, 'feature_tables')
 if not os.path.isdir(feature_table_path):
     os.makedirs(feature_table_path)
 row_path = os.path.join(args.cache, main_workflow_name)
-path_phonation = os.path.join(row_path, 'row_files_phonation')
-path_balance = os.path.join(row_path, 'row_files_balance')
-path_walking = os.path.join(row_path, 'row_files_walking')
-path_tapping = os.path.join(row_path, 'row_files_tapping')
+path_voice = os.path.join(row_path, 'row_files_voice')
+path_walk = os.path.join(row_path, 'row_files_walk')
+path_tap = os.path.join(row_path, 'row_files_tap')
 
 # ============================================================================
 #
 # Phonation (microphone)
 #
 # ============================================================================
-if synID_phonation and setup_rows:
-    if not os.path.isdir(path_phonation):
-        os.makedirs(path_phonation)
+if synID_voice and setup_rows:
+    if not os.path.isdir(path_voice):
+        os.makedirs(path_voice)
 
     # ------------------------------------------------------------------------
-    # Retrieve information about all phonation files in Synapse table:
+    # Retrieve information about all voice files in Synapse table:
     # ------------------------------------------------------------------------
-    GetPhonationRows = Node(name='retrieve_phonation_rows',
+    GetPhonationRows = Node(name='retrieve_voice_rows',
                             interface=Fn(function=extract_synapse_rows,
                                          input_names=['synapse_table',
                                                       'save_path',
@@ -208,8 +204,8 @@ if synID_phonation and setup_rows:
                                          output_names=['row_data',
                                                        'row_files']))
     Flow.add_nodes([GetPhonationRows])
-    GetPhonationRows.inputs.synapse_table = synID_phonation
-    GetPhonationRows.inputs.save_path = path_phonation
+    GetPhonationRows.inputs.synapse_table = synID_voice
+    GetPhonationRows.inputs.save_path = path_voice
     if args.rows:
         GetPhonationRows.inputs.limit = args.rows
     else:
@@ -217,18 +213,18 @@ if synID_phonation and setup_rows:
     GetPhonationRows.inputs.username = ''
     GetPhonationRows.inputs.password = ''
 
-elif synID_phonation and not setup_rows:
-    rows_phonate = [os.path.join(path_phonation, f)
-                    for i, f in enumerate(sorted(os.listdir(path_phonation)))
+elif synID_voice and not setup_rows:
+    rows_voice = [os.path.join(path_voice, f)
+                    for i, f in enumerate(sorted(os.listdir(path_voice)))
                     if i < args.rows
-                    and os.path.isfile(os.path.join(path_phonation, f))]
+                    and os.path.isfile(os.path.join(path_voice, f))]
 
     # ------------------------------------------------------------------------
     # Phonation data:
     # 1. Retrieve each row + audio file from a Synapse table.
     # 2. Convert voice file to .wav format.
     # ------------------------------------------------------------------------
-    getPhonation = Node(name='phonation_data',
+    getPhonation = Node(name='voice_data',
                         interface=Fn(function=get_convert_audio,
                                      input_names=['synapse_table',
                                                   'row',
@@ -242,8 +238,8 @@ elif synID_phonation and not setup_rows:
                                                   'password'],
                                      output_names=['row',
                                                    'new_file']))
-    getPhonation.inputs.synapse_table = synID_phonation
-    getPhonation.iterables = ("row", rows_phonate)
+    getPhonation.inputs.synapse_table = synID_voice
+    getPhonation.iterables = ("row", rows_voice)
     getPhonation.inputs.column_name = 'audio_audio.m4a'
     getPhonation.inputs.convert_file_append = '.wav'
     getPhonation.inputs.convert_command = 'ffmpeg'
@@ -254,74 +250,74 @@ elif synID_phonation and not setup_rows:
     getPhonation.inputs.password = ''
 
     # ------------------------------------------------------------------------
-    # Repeat for phonation countdown data:
+    # Repeat for voice countdown data:
     # ------------------------------------------------------------------------
-    getPhonation0 = getPhonation.clone('phonation_countdown_data')
+    getPhonation0 = getPhonation.clone('voice_countdown_data')
     getPhonation0.inputs.column_name = 'audio_countdown.m4a'
 
     # ------------------------------------------------------------------------
-    # openSMILE on phonation data:
+    # openSMILE on voice data:
     # 1. Run openSMILE's SMILExtract audio feature extraction command.
     # 2. Construct a feature row from the original and openSMILE rows.
     # 3. Write the feature row to a table or append to a feature table.
     # ------------------------------------------------------------------------
-    SMILEphonation = Node(name='openSMILE_phonation',
-                          interface=Fn(function=run_openSMILE,
-                                       input_names=['audio_file',
-                                                    'command',
-                                                    'flag1',
-                                                    'flags',
-                                                    'flagn',
-                                                    'args',
-                                                    'closing',
-                                                    'row',
-                                                    'table_stem',
-                                                    'save_rows'],
-                                       output_names=['feature_row',
-                                                     'feature_table']))
-    Flow.connect(getPhonation, 'new_file', SMILEphonation, 'audio_file')
-    Flow.connect(getPhonation, 'row', SMILEphonation, 'row')
-    SMILEphonation.inputs.command = 'SMILExtract'
-    SMILEphonation.inputs.flag1 = '-I'
-    SMILEphonation.inputs.flags = '-C'
-    SMILEphonation.inputs.flagn = '-csvoutput'
-    SMILEphonation.inputs.args = smile_config_file1
-    SMILEphonation.inputs.closing = '-nologfile 1'
-    SMILEphonation.inputs.table_stem = \
-        os.path.join(feature_table_path, 'phonation{0}'.format(smile_string1))
-    SMILEphonation.inputs.save_rows = True
+    SMILEvoice = Node(name='openSMILE_voice',
+                      interface=Fn(function=run_openSMILE,
+                                   input_names=['audio_file',
+                                                'command',
+                                                'flag1',
+                                                'flags',
+                                                'flagn',
+                                                'args',
+                                                'closing',
+                                                'row',
+                                                'table_stem',
+                                                'save_rows'],
+                                   output_names=['feature_row',
+                                                 'feature_table']))
+    Flow.connect(getPhonation, 'new_file', SMILEvoice, 'audio_file')
+    Flow.connect(getPhonation, 'row', SMILEvoice, 'row')
+    SMILEvoice.inputs.command = 'SMILExtract'
+    SMILEvoice.inputs.flag1 = '-I'
+    SMILEvoice.inputs.flags = '-C'
+    SMILEvoice.inputs.flagn = '-csvoutput'
+    SMILEvoice.inputs.args = smile_config_file1
+    SMILEvoice.inputs.closing = '-nologfile 1'
+    SMILEvoice.inputs.table_stem = \
+        os.path.join(feature_table_path, 'voice{0}'.format(smile_string1))
+    SMILEvoice.inputs.save_rows = True
 
     # ------------------------------------------------------------------------
-    # Repeat for phonation countdown data:
+    # Repeat for voice countdown data:
     # ------------------------------------------------------------------------
-    SMILEphonation0 = SMILEphonation.clone('openSMILE_phonation_countdown')
-    Flow.connect(getPhonation0, 'new_file', SMILEphonation0, 'audio_file')
-    Flow.connect(getPhonation0, 'row', SMILEphonation0, 'row')
-    SMILEphonation0.inputs.table_stem = os.path.join(feature_table_path,
-        'phonation_countdown{0}'.format(smile_string1))
+    SMILEvoice0 = SMILEvoice.clone('openSMILE_voice_countdown')
+    Flow.connect(getPhonation0, 'new_file', SMILEvoice0, 'audio_file')
+    Flow.connect(getPhonation0, 'row', SMILEvoice0, 'row')
+    SMILEvoice0.inputs.table_stem = os.path.join(feature_table_path,
+        'voice_countdown{0}'.format(smile_string1))
 
 # ============================================================================
 #
-# Balance (accelerometer)
+# Movement: balance and walk (accelerometer)
 #
 # ============================================================================
-if synID_balance and setup_rows:
-    if not os.path.isdir(path_balance):
-        os.makedirs(path_balance)
+if synID_walk and setup_rows:
+    if not os.path.isdir(path_walk):
+        os.makedirs(path_walk)
 
     # ------------------------------------------------------------------------
     # Retrieve information about all balance files in Synapse table:
     # ------------------------------------------------------------------------
     GetBalanceRows = GetPhonationRows.clone('retrieve_balance_rows')
-    GetBalanceRows.inputs.synapse_table = synID_balance
-    GetBalanceRows.inputs.save_path = path_balance
+    GetBalanceRows.inputs.synapse_table = synID_walk
+    GetBalanceRows.inputs.save_path = path_walk
     Flow.add_nodes([GetBalanceRows])
 
-if synID_balance and not setup_rows:
-    rows_balance = [os.path.join(path_balance, f)
-                    for i, f in enumerate(sorted(os.listdir(path_balance)))
+elif synID_walk and not setup_rows:
+    rows_walk = [os.path.join(path_walk, f)
+                    for i, f in enumerate(sorted(os.listdir(path_walk)))
                     if i < args.rows
-                    and os.path.isfile(os.path.join(path_balance, f))]
+                    and os.path.isfile(os.path.join(path_walk, f))]
 
     # ------------------------------------------------------------------------
     # Balance data: retrieve each row + json file from Synapse table:
@@ -344,8 +340,8 @@ if synID_balance and not setup_rows:
                                                  'duration',
                                                  'row',
                                                  'file_path']))
-    getBalance.inputs.synapse_table = synID_balance
-    getBalance.iterables = ("row", rows_balance)
+    getBalance.inputs.synapse_table = synID_walk
+    getBalance.iterables = ("row", rows_walk)
     #getBalance.inputs.column_name = 'accel_walking_rest.json.items'
     getBalance.inputs.column_name = 'deviceMotion_walking_rest.json.items'
     getBalance.inputs.start = 150
@@ -356,9 +352,9 @@ if synID_balance and not setup_rows:
     getBalance.inputs.password = ''
 
     # ------------------------------------------------------------------------
-    # Repeat for walking data (deviceMotion):
+    # Repeat for walk data (deviceMotion):
     # ------------------------------------------------------------------------
-    getWalking = Node(name='walking_data',
+    getWalking = Node(name='walk_data',
                       interface=Fn(function=get_accel,
                                    input_names=['synapse_table',
                                                 'row',
@@ -376,8 +372,8 @@ if synID_balance and not setup_rows:
                                                  'duration',
                                                  'row',
                                                  'file_path']))
-    getWalking.inputs.synapse_table = synID_balance
-    getWalking.iterables = ("row", rows_balance)
+    getWalking.inputs.synapse_table = synID_walk
+    getWalking.iterables = ("row", rows_walk)
     #getWalking.inputs.column_name = 'accel_walking_outbound.json.items'
     getWalking.inputs.column_name = 'deviceMotion_walking_outbound.json.items'
     getWalking.inputs.start = 150
@@ -388,10 +384,10 @@ if synID_balance and not setup_rows:
     getWalking.inputs.password = ''
 
     # ------------------------------------------------------------------------
-    # Estimate distance from walking accelerometer data:
+    # Project walk accelerometer data onto estimated walk direction:
     # ------------------------------------------------------------------------
     projectAccel = Node(name='project_accelerometer_data',
-                        interface=Fn(function=project_on_walking_direction,
+                        interface=Fn(function=project_on_walk_direction,
                                      input_names=['ax',
                                                   'ay',
                                                   'az',
@@ -415,7 +411,7 @@ if synID_balance and not setup_rows:
     projectAccel.inputs.cutoff = 10
 
     # ------------------------------------------------------------------------
-    # Estimate distance from walking accelerometer data:
+    # Estimate distance from walk accelerometer data:
     # ------------------------------------------------------------------------
     # deadReckon = Node(name='dead_reckon',
     #                   interface=Fn(function=dead_reckon,
@@ -433,9 +429,9 @@ if synID_balance and not setup_rows:
     # Flow.connect(getWalking, 't', deadReckon, 't')
 
     # ------------------------------------------------------------------------
-    # pyGait on walking data:
+    # pyGait on walk data (forward walk direction):
     # ------------------------------------------------------------------------
-    pyGaitWalk = Node(name='pyGait_walking',
+    pyGaitWalk = Node(name='pyGait_walk',
                       interface=Fn(function=run_pyGait,
                                    input_names=['data',
                                                 't',
@@ -463,8 +459,71 @@ if synID_balance and not setup_rows:
     Flow.connect(getWalking, 'row', pyGaitWalk, 'row')
     Flow.connect(getWalking, 'file_path', pyGaitWalk, 'file_path')
     pyGaitWalk.inputs.table_stem = os.path.join(feature_table_path,
-                                                'walking_pyGait')
+                                                'walk_pyGait')
     pyGaitWalk.inputs.save_rows = True
+
+
+    # ------------------------------------------------------------------------
+    # signal_features() on walk data (each axis):
+    # ------------------------------------------------------------------------
+    signalsWalkX = Node(name='signals_walk_x',
+                        interface=Fn(function=run_signal_features,
+                                     input_names=['data',
+                                                  'row',
+                                                  'file_path',
+                                                  'table_stem',
+                                                  'save_rows'],
+                                     output_names=['feature_row',
+                                                   'feature_table']))
+    signalsWalkX.inputs.save_rows = True
+    signalsWalkY = signalsWalkX.clone('signals_walk_y')
+    signalsWalkZ = signalsWalkX.clone('signals_walk_z')
+    Flow.connect(projectAccel, 'px', signalsWalkX, 'data')
+    Flow.connect(projectAccel, 'py', signalsWalkY, 'data')
+    Flow.connect(projectAccel, 'pz', signalsWalkZ, 'data')
+    Flow.connect(getWalking, 'row', signalsWalkX, 'row')
+    Flow.connect(getWalking, 'row', signalsWalkY, 'row')
+    Flow.connect(getWalking, 'row', signalsWalkZ, 'row')
+    Flow.connect(getWalking, 'file_path', signalsWalkX, 'file_path')
+    Flow.connect(getWalking, 'file_path', signalsWalkY, 'file_path')
+    Flow.connect(getWalking, 'file_path', signalsWalkZ, 'file_path')
+    signalsWalkX.inputs.table_stem = os.path.join(feature_table_path,
+                                                  'walk_x_signals')
+    signalsWalkY.inputs.table_stem = os.path.join(feature_table_path,
+                                                  'walk_y_signals')
+    signalsWalkZ.inputs.table_stem = os.path.join(feature_table_path,
+                                                  'walk_z_signals')
+
+    # ------------------------------------------------------------------------
+    # signal_features() on balance data (each axis):
+    # ------------------------------------------------------------------------
+    signalsBalanceX = Node(name='signals_balance_x',
+                           interface=Fn(function=run_signal_features,
+                                        input_names=['data',
+                                                     'row',
+                                                     'file_path',
+                                                     'table_stem',
+                                                     'save_rows'],
+                                        output_names=['feature_row',
+                                                      'feature_table']))
+    signalsBalanceX.inputs.save_rows = True
+    signalsBalanceY = signalsBalanceX.clone('signals_balance_y')
+    signalsBalanceZ = signalsBalanceX.clone('signals_balance_z')
+    Flow.connect(projectAccel, 'px', signalsBalanceX, 'data')
+    Flow.connect(projectAccel, 'py', signalsBalanceY, 'data')
+    Flow.connect(projectAccel, 'pz', signalsBalanceZ, 'data')
+    Flow.connect(getWalking, 'row', signalsBalanceX, 'row')
+    Flow.connect(getWalking, 'row', signalsBalanceY, 'row')
+    Flow.connect(getWalking, 'row', signalsBalanceZ, 'row')
+    Flow.connect(getWalking, 'file_path', signalsBalanceX, 'file_path')
+    Flow.connect(getWalking, 'file_path', signalsBalanceY, 'file_path')
+    Flow.connect(getWalking, 'file_path', signalsBalanceZ, 'file_path')
+    signalsBalanceX.inputs.table_stem = os.path.join(feature_table_path,
+                                                     'balance_x_signals')
+    signalsBalanceY.inputs.table_stem = os.path.join(feature_table_path,
+                                                     'balance_y_signals')
+    signalsBalanceZ.inputs.table_stem = os.path.join(feature_table_path,
+                                                     'balance_z_signals')
 
     # ------------------------------------------------------------------------
     # Convert balance data from json to wav format for each axis:
@@ -494,31 +553,31 @@ if synID_balance and not setup_rows:
     Flow.connect(getBalance, 'sample_rate', WAVbalanceZ, 'sample_rate')
 
     # ------------------------------------------------------------------------
-    # Repeat for walking data:
+    # Repeat for walk data:
     # ------------------------------------------------------------------------
-    WAVwalkingX = Node(name='convert_walking_x_to_wav',
-                       interface=Fn(function=write_wav,
-                                    input_names=['data',
-                                                 'file_stem',
-                                                 'file_append',
-                                                 'sample_rate',
-                                                 'amplitude'],
-                                    output_names=['wav_file']))
-    WAVwalkingX.inputs.amplitude = 32700
-    WAVwalkingY = WAVwalkingX.clone('convert_walking_y_to_wav')
-    WAVwalkingZ = WAVwalkingX.clone('convert_walking_z_to_wav')
-    Flow.connect(projectAccel, 'px', WAVwalkingX, 'data')
-    Flow.connect(projectAccel, 'py', WAVwalkingY, 'data')
-    Flow.connect(projectAccel, 'pz', WAVwalkingZ, 'data')
-    Flow.connect(getBalance, 'file_path', WAVwalkingX, 'file_stem')
-    Flow.connect(getBalance, 'file_path', WAVwalkingY, 'file_stem')
-    Flow.connect(getBalance, 'file_path', WAVwalkingZ, 'file_stem')
-    WAVwalkingX.inputs.file_append = '_walking_x.wav'
-    WAVwalkingY.inputs.file_append = '_walking_y.wav'
-    WAVwalkingZ.inputs.file_append = '_walking_z.wav'
-    Flow.connect(getBalance, 'sample_rate', WAVwalkingX, 'sample_rate')
-    Flow.connect(getBalance, 'sample_rate', WAVwalkingY, 'sample_rate')
-    Flow.connect(getBalance, 'sample_rate', WAVwalkingZ, 'sample_rate')
+    WAVwalkX = Node(name='convert_walk_x_to_wav',
+                    interface=Fn(function=write_wav,
+                                 input_names=['data',
+                                              'file_stem',
+                                              'file_append',
+                                              'sample_rate',
+                                              'amplitude'],
+                                 output_names=['wav_file']))
+    WAVwalkX.inputs.amplitude = 32700
+    WAVwalkY = WAVwalkX.clone('convert_walk_y_to_wav')
+    WAVwalkZ = WAVwalkX.clone('convert_walk_z_to_wav')
+    Flow.connect(projectAccel, 'px', WAVwalkX, 'data')
+    Flow.connect(projectAccel, 'py', WAVwalkY, 'data')
+    Flow.connect(projectAccel, 'pz', WAVwalkZ, 'data')
+    Flow.connect(getBalance, 'file_path', WAVwalkX, 'file_stem')
+    Flow.connect(getBalance, 'file_path', WAVwalkY, 'file_stem')
+    Flow.connect(getBalance, 'file_path', WAVwalkZ, 'file_stem')
+    WAVwalkX.inputs.file_append = '_walk_x.wav'
+    WAVwalkY.inputs.file_append = '_walk_y.wav'
+    WAVwalkZ.inputs.file_append = '_walk_z.wav'
+    Flow.connect(getBalance, 'sample_rate', WAVwalkX, 'sample_rate')
+    Flow.connect(getBalance, 'sample_rate', WAVwalkY, 'sample_rate')
+    Flow.connect(getBalance, 'sample_rate', WAVwalkZ, 'sample_rate')
 
     # ------------------------------------------------------------------------
     # openSMILE on each axis of balance data:
@@ -564,64 +623,64 @@ if synID_balance and not setup_rows:
         os.path.join(feature_table_path, 'balance_z{0}'.format(smile_string1))
 
     # ------------------------------------------------------------------------
-    # Repeat for walking data:
+    # Repeat for walk data:
     # ------------------------------------------------------------------------
-    SMILEwalkingX = Node(name='openSMILE_walking_x',
-                         interface=Fn(function=run_openSMILE,
-                                      input_names=['audio_file',
-                                                   'command',
-                                                   'flag1',
-                                                   'flags',
-                                                   'flagn',
-                                                   'args',
-                                                   'closing',
-                                                   'row',
-                                                   'table_stem',
-                                                   'save_rows'],
-                                      output_names=['feature_row',
-                                                    'feature_table']))
-    SMILEwalkingX.inputs.command = 'SMILExtract'
-    SMILEwalkingX.inputs.flag1 = '-I'
-    SMILEwalkingX.inputs.flags = '-C'
-    SMILEwalkingX.inputs.flagn = '-csvoutput'
-    SMILEwalkingX.inputs.args = smile_config_file1
-    SMILEwalkingX.inputs.closing = '-nologfile 1'
-    SMILEwalkingX.inputs.save_rows = True
+    SMILEwalkX = Node(name='openSMILE_walk_x',
+                      interface=Fn(function=run_openSMILE,
+                                   input_names=['audio_file',
+                                                'command',
+                                                'flag1',
+                                                'flags',
+                                                'flagn',
+                                                'args',
+                                                'closing',
+                                                'row',
+                                                'table_stem',
+                                                'save_rows'],
+                                   output_names=['feature_row',
+                                                 'feature_table']))
+    SMILEwalkX.inputs.command = 'SMILExtract'
+    SMILEwalkX.inputs.flag1 = '-I'
+    SMILEwalkX.inputs.flags = '-C'
+    SMILEwalkX.inputs.flagn = '-csvoutput'
+    SMILEwalkX.inputs.args = smile_config_file1
+    SMILEwalkX.inputs.closing = '-nologfile 1'
+    SMILEwalkX.inputs.save_rows = True
 
-    #SMILEwalkingX = SMILEbalanceX.clone('openSMILE_walking_x')
-    SMILEwalkingY = SMILEwalkingX.clone('openSMILE_walking_y')
-    SMILEwalkingZ = SMILEwalkingX.clone('openSMILE_walking_z')
-    Flow.connect(WAVwalkingX, 'wav_file', SMILEwalkingX, 'audio_file')
-    Flow.connect(WAVwalkingY, 'wav_file', SMILEwalkingY, 'audio_file')
-    Flow.connect(WAVwalkingZ, 'wav_file', SMILEwalkingZ, 'audio_file')
-    Flow.connect(getWalking, 'row', SMILEwalkingX, 'row')
-    Flow.connect(getWalking, 'row', SMILEwalkingY, 'row')
-    Flow.connect(getWalking, 'row', SMILEwalkingZ, 'row')
-    SMILEwalkingX.inputs.table_stem = \
-        os.path.join(feature_table_path, 'walking_x{0}'.format(smile_string1))
-    SMILEwalkingY.inputs.table_stem = \
-        os.path.join(feature_table_path, 'walking_y{0}'.format(smile_string1))
-    SMILEwalkingZ.inputs.table_stem = \
-        os.path.join(feature_table_path, 'walking_z{0}'.format(smile_string1))
+    #SMILEwalkX = SMILEbalanceX.clone('openSMILE_walk_x')
+    SMILEwalkY = SMILEwalkX.clone('openSMILE_walk_y')
+    SMILEwalkZ = SMILEwalkX.clone('openSMILE_walk_z')
+    Flow.connect(WAVwalkX, 'wav_file', SMILEwalkX, 'audio_file')
+    Flow.connect(WAVwalkY, 'wav_file', SMILEwalkY, 'audio_file')
+    Flow.connect(WAVwalkZ, 'wav_file', SMILEwalkZ, 'audio_file')
+    Flow.connect(getWalking, 'row', SMILEwalkX, 'row')
+    Flow.connect(getWalking, 'row', SMILEwalkY, 'row')
+    Flow.connect(getWalking, 'row', SMILEwalkZ, 'row')
+    SMILEwalkX.inputs.table_stem = \
+        os.path.join(feature_table_path, 'walk_x{0}'.format(smile_string1))
+    SMILEwalkY.inputs.table_stem = \
+        os.path.join(feature_table_path, 'walk_y{0}'.format(smile_string1))
+    SMILEwalkZ.inputs.table_stem = \
+        os.path.join(feature_table_path, 'walk_z{0}'.format(smile_string1))
 
 # ============================================================================
 #
 # Tapping (touchscreen)
 #
 # ============================================================================
-if synID_tapping and setup_rows:
-    if not os.path.isdir(path_tapping):
-        os.makedirs(path_tapping)
+if synID_tap and setup_rows:
+    if not os.path.isdir(path_tap):
+        os.makedirs(path_tap)
 
     # ------------------------------------------------------------------------
-    # Retrieve information about all tapping files in Synapse table:
+    # Retrieve information about all tap files in Synapse table:
     # ------------------------------------------------------------------------
-    GetTappingRows = GetPhonationRows.clone('retrieve_tapping_rows')
-    GetTappingRows.inputs.synapse_table = synID_tapping
-    GetTappingRows.inputs.save_path = path_tapping
+    GetTappingRows = GetPhonationRows.clone('retrieve_tap_rows')
+    GetTappingRows.inputs.synapse_table = synID_tap
+    GetTappingRows.inputs.save_path = path_tap
     Flow.add_nodes([GetTappingRows])
 
-elif synID_tapping and not setup_rows:
+elif synID_tap and not setup_rows:
 
     pass
 
@@ -701,7 +760,7 @@ if __name__ == '__main__':
 # Flow.connect(FormatOpenSMILE, 'feature_table',
 #              SaveOpenSMILE, 'dataframes')
 # SaveOpenSMILE.inputs.csv_file = 'openSMILE_IS13_ComParE.csv'
-# Flow.connect(SaveOpenSMILE, 'csv_file', Sink, 'phonation.@features')
+# Flow.connect(SaveOpenSMILE, 'csv_file', Sink, 'voice.@features')
 
 # ------------------------------------------------------------------------
 # Store openSMILE features to its own Synapse table:
@@ -725,7 +784,7 @@ if __name__ == '__main__':
 # SaveOpenSMILE.inputs.password = ''
 
 # ------------------------------------------------------------------------
-# Store openSMILE output file handle to the mPower phonation file table:
+# Store openSMILE output file handle to the mPower voice file table:
 # ------------------------------------------------------------------------
 # StoreOpenSMILE = Node(name='store_openSMILE',
 #                       interface=Fn(function=file_to_synapse_table,

@@ -45,14 +45,14 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
-def walking_direction(ax, ay, az, t, sample_rate, stride_fraction=1.0/8.0,
-                      threshold=0.5, order=4, cutoff=5, plot_test=False):
+def walk_direction(ax, ay, az, t, sample_rate, stride_fraction=1.0/8.0,
+                   threshold=0.5, order=4, cutoff=5, plot_test=False):
     """
-    Estimate local walking (not cardinal) direction.
+    Estimate local walk (not cardinal) direction.
 
     Inspired by Nirupam Roy's B.E. thesis: "WalkCompass:
     Finding Walking Direction Leveraging Smartphone's Inertial Sensors,"
-    this program derives the local walking direction vector from the end
+    this program derives the local walk direction vector from the end
     of the primary leg's stride, when it is decelerating in its swing.
     While the WalkCompass relies on clear heel strike signals across the
     accelerometer axes, this program just uses the most prominent strikes,
@@ -80,7 +80,7 @@ def walking_direction(ax, ay, az, t, sample_rate, stride_fraction=1.0/8.0,
     Returns
     -------
     direction : numpy array of three floats
-        unit vector of local walking (not cardinal) direction
+        unit vector of local walk (not cardinal) direction
 
     Examples
     --------
@@ -95,13 +95,13 @@ def walking_direction(ax, ay, az, t, sample_rate, stride_fraction=1.0/8.0,
     >>> start = 150
     >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
     >>> ax, ay, az = axyz
-    >>> from mhealthx.extractors.pyGait import walking_direction
+    >>> from mhealthx.extractors.pyGait import walk_direction
     >>> threshold = 0.5
     >>> stride_fraction = 1.0/8.0
     >>> order = 4
     >>> cutoff = max([1, sample_rate/10])
     >>> plot_test = True
-    >>> direction = walking_direction(ax, ay, az, t, sample_rate, stride_fraction, threshold, order, cutoff, plot_test)
+    >>> direction = walk_direction(ax, ay, az, t, sample_rate, stride_fraction, threshold, order, cutoff, plot_test)
 
     """
     import numpy as np
@@ -162,7 +162,7 @@ def walking_direction(ax, ay, az, t, sample_rate, stride_fraction=1.0/8.0,
         dy = [x[1] for x in vectors]
         dz = [x[2] for x in vectors]
         hx, hy, hz = direction
-        title = 'Average deceleration vectors + estimated walking direction'
+        title = 'Average deceleration vectors + estimated walk direction'
         plot_vectors(dx, dy, dz, [hx], [hy], [hz], title)
 
     return direction
@@ -211,10 +211,10 @@ def project_axes(vectors, unit_vector):
     return projection_vectors
 
 
-def project_on_walking_direction(ax, ay, az, t, sample_rate, stride_fraction,
-                                 threshold, order, cutoff):
+def project_on_walk_direction(ax, ay, az, t, sample_rate, stride_fraction,
+                              threshold, order, cutoff):
     """
-    Project accelerometer data on local walking (not cardinal) direction.
+    Project accelerometer data on local walk (not cardinal) direction.
 
     Parameters
     ----------
@@ -249,7 +249,7 @@ def project_on_walking_direction(ax, ay, az, t, sample_rate, stride_fraction,
     Examples
     --------
     >>> from mhealthx.xio import read_accel_json
-    >>> from mhealthx.extractors.pyGait import project_on_walking_direction
+    >>> from mhealthx.extractors.pyGait import project_on_walk_direction
     >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
     >>> start = 150
     >>> device_motion = False
@@ -259,13 +259,13 @@ def project_on_walking_direction(ax, ay, az, t, sample_rate, stride_fraction,
     >>> threshold = 0.5
     >>> order = 4
     >>> cutoff = max([1, sample_rate/10])
-    >>> px, py, pz = project_on_walking_direction(ax, ay, az, t, sample_rate, stride_fraction, threshold, order, cutoff)
+    >>> px, py, pz = project_on_walk_direction(ax, ay, az, t, sample_rate, stride_fraction, threshold, order, cutoff)
 
     """
-    from mhealthx.extractors.pyGait import walking_direction, project_axes
+    from mhealthx.extractors.pyGait import walk_direction, project_axes
 
-    direction = walking_direction(ax, ay, az, t, sample_rate, stride_fraction,
-                                  threshold, order, cutoff, False)
+    direction = walk_direction(ax, ay, az, t, sample_rate, stride_fraction,
+                               threshold, order, cutoff, False)
 
     projection_vectors = project_axes(zip(ax, ay, az), direction)
 
@@ -497,7 +497,7 @@ def gait(strikes, data, duration, distance=None):
     This function extracts all of iGAIT's features
     that depend on the estimate of heel strikes::
 
-        - cadence = number of steps divided by walking time
+        - cadence = number of steps divided by walk time
         - step/stride regularity
         - step/stride symmetry
         - mean step/stride length and velocity (if distance supplied)

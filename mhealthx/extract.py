@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Functions that run feature extraction programs.
+Functions that run feature extraction programs and save feature tables.
 
 Authors:
     - Arno Klein, 2015  (arno@sagebase.org)  http://binarybottle.com
@@ -8,6 +8,65 @@ Authors:
 Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 
 """
+
+
+def make_row_table(file_path, table_stem, save_rows, row, row_data,
+                   feature_row=None):
+    """
+    Function to store feature row to a table.
+
+    Parameters
+    ----------
+    file_path : string
+        path to accelerometer file (from row)
+    table_stem : string
+        prepend to output table file
+    save_rows : Boolean
+        save individual rows rather than write to a single feature table?
+    row : pandas Series
+        row to prepend, unaltered, to feature row (if feature_row is None)
+    row_data : pandas Series (if feature_row is None)
+        feature row
+    feature_row : pandas Series
+        feature row (skip feature row construction)
+
+    Returns
+    -------
+    feature_row : pandas Series
+        row combining the original row with a row of openSMILE feature values
+    feature_table : string
+        output table file (full path)
+    """
+    import os
+    import pandas as pd
+
+    from mhealthx.xio import row_to_table
+
+    if not feature_row:
+        if isinstance(row, pd.Series) and not row.empty:
+            feature_row = pd.concat([row, row_data.transpose()], axis=0)
+            feature_row = feature_row.transpose()
+        else:
+            feature_row = row_data
+
+    # Write feature row to a table or append to a feature table:
+    if save_rows:
+        feature_table = '{0}_{1}.csv'.format(table_stem,
+                                             os.path.basename(file_path))
+        try:
+            feature_row.to_csv(feature_table)
+        except IOError as e:
+            print("I/O error({0}): {1}".format(e.errno, e.strerror))
+            feature_table = None
+    else:
+        feature_table = table_stem + '.csv'
+        try:
+            row_to_table(feature_row, feature_table)
+        except IOError as e:
+            print("I/O error({0}): {1}".format(e.errno, e.strerror))
+            feature_table = None
+
+    return feature_row, feature_table
 
 
 def run_openSMILE(audio_file, command, flag1, flags, flagn, args, closing,
@@ -103,8 +162,8 @@ def run_openSMILE(audio_file, command, flag1, flags, flagn, args, closing,
     import os
     import pandas as pd
 
-    from mhealthx.xio import row_to_table
     from mhealthx.utilities import run_command
+    from mhealthx.extract import make_row_table
 
     # Run openSMILE's SMILExtract audio feature extraction command.
     feature_row = None
@@ -120,37 +179,16 @@ def run_openSMILE(audio_file, command, flag1, flags, flagn, args, closing,
                                               argn=argn,
                                               closing=closing)
 
-        # 4. Construct a feature row from the original and openSMILE rows.
+        # Extract row data from openSMILE:
         try:
             row_data = pd.read_csv(argn, sep=";")
         except IOError as e:
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
+        # Write feature row to a table or append to a feature table:
         else:
-            if isinstance(row, pd.Series) and not row.empty:
-                #row_data = row_data.ix[0, :]
-                #feature_row = row.append(row_data.transpose())
-                feature_row = pd.concat([row, row_data.transpose()], axis=0)
-                feature_row = feature_row.transpose()
-            else:
-                feature_row = row_data
-
-            # 5. Write feature row to a table or append to a feature table.
-            if save_rows:
-                feature_table = '{0}_{1}'.format(table_stem,
-                                                 os.path.basename(argn))
-                try:
-                    feature_row.to_csv(feature_table)
-                except IOError as e:
-                    print("I/O error({0}): {1}".format(e.errno, e.strerror))
-                    feature_table = None
-            else:
-                feature_table = table_stem + '.csv'
-                try:
-                    row_to_table(feature_row, feature_table)
-                except IOError as e:
-                    print("I/O error({0}): {1}".format(e.errno, e.strerror))
-                    feature_table = None
-
+            feature_row, feature_table = make_row_table(argn, table_stem,
+                                                        save_rows, row,
+                                                        row_data, feature_row)
     return feature_row, feature_table
 
 
@@ -223,14 +261,12 @@ def run_pyGait(data, t, sample_rate, duration, threshold, order, cutoff,
     >>> feature_row, feature_table = run_pyGait(py, t, sample_rate, duration, threshold, order, cutoff, distance, row, file_path, table_stem, save_rows)
 
     """
-    import os
     import pandas as pd
-    import scipy
 
-    from mhealthx.xio import row_to_table
-    from mhealthx.signals import root_mean_square
     from mhealthx.extractors.pyGait import heel_strikes, gait
+    from mhealthx.extract import make_row_table
 
+    # Extract features from data:
     strikes, strike_indices = heel_strikes(data, sample_rate, threshold,
                                            order, cutoff, False, t)
 
@@ -240,10 +276,7 @@ def run_pyGait(data, t, sample_rate, duration, threshold, order, cutoff,
     sd_stride_durations, step_regularity, stride_regularity, \
     symmetry = gait(strikes, data, duration, distance)
 
-    RMS = root_mean_square(data)
-
-    entropy = scipy.stats.entropy(data)
-
+    # Create row of data:
     row_data = pd.DataFrame({'number_of_steps': number_of_steps,
                              'cadence': cadence,
                              'velocity': velocity,
@@ -256,34 +289,74 @@ def run_pyGait(data, t, sample_rate, duration, threshold, order, cutoff,
                              'sd_stride_durations': sd_stride_durations,
                              'step_regularity': step_regularity,
                              'stride_regularity': stride_regularity,
-                             'symmetry': symmetry,
-                             'RMS': RMS,
+                             'symmetry': symmetry},
+                            index=[0])
+
+    # Write feature row to a table or append to a feature table:
+    feature_row, feature_table = make_row_table(file_path, table_stem,
+                                                save_rows, row, row_data,
+                                                feature_row=None)
+    return feature_row, feature_table
+
+
+def run_signal_features(data, row, file_path, table_stem, save_rows=False):
+    """
+    Extract various features from time series data.
+
+    Parameters
+    ----------
+    data : numpy array of floats
+        time series data
+    row : pandas Series
+        row to prepend, unaltered, to feature row
+    file_path : string
+        path to accelerometer file (from row)
+    table_stem : string
+        prepend to output table file
+    save_rows : Boolean
+        save individual rows rather than write to a single feature table?
+
+    Returns
+    -------
+    feature_row : pandas Series
+        row combining the original row with a row of openSMILE feature values
+    feature_table : string
+        output table file (full path)
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from mhealthx.xio import read_accel_json
+    >>> from mhealthx.extract import run_signal_features
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    >>> start = 150
+    >>> device_motion = False
+    >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
+    >>> ax, data, az = axyz
+    >>> row = pd.Series({'a':[1], 'b':[2], 'c':[3]})
+    >>> file_path = '/fake/path'
+    >>> table_stem = './walking'
+    >>> save_rows = True
+    >>> feature_row, feature_table = run_signal_features(data, row, file_path, table_stem, save_rows)
+
+    """
+    import pandas as pd
+
+    from mhealthx.signals import signal_features
+    from mhealthx.extract import make_row_table
+
+    # Extract different features from the data:
+    rms, entropy = signal_features(data)
+
+    # Create row of data:
+    row_data = pd.DataFrame({'rms': rms,
                              'entropy': entropy},
                             index=[0])
 
-    if isinstance(row, pd.Series) and not row.empty:
-        feature_row = pd.concat([row, row_data.transpose()], axis=0)
-        feature_row = feature_row.transpose()
-    else:
-        feature_row = row_data
-
-    # 5. Write feature row to a table or append to a feature table.
-    if save_rows:
-        feature_table = '{0}_{1}.csv'.format(table_stem,
-                                             os.path.basename(file_path))
-        try:
-            feature_row.to_csv(feature_table)
-        except IOError as e:
-            print("I/O error({0}): {1}".format(e.errno, e.strerror))
-            feature_table = None
-    else:
-        feature_table = table_stem + '.csv'
-        try:
-            row_to_table(feature_row, feature_table)
-        except IOError as e:
-            print("I/O error({0}): {1}".format(e.errno, e.strerror))
-            feature_table = None
-
+    # Write feature row to a table or append to a feature table:
+    feature_row, feature_table = make_row_table(file_path, table_stem,
+                                                save_rows, row, row_data,
+                                                feature_row=None)
     return feature_row, feature_table
 
 

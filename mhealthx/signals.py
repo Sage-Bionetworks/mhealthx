@@ -345,3 +345,37 @@ def parabolic(f, x):
 
     return xv, yv
 
+
+def signal_features(data):
+    """
+    Extract various features from time series data.
+
+    Parameters
+    ----------
+    data : numpy array of floats
+        time series data
+
+    Returns
+    -------
+    rms : float
+        root mean squared error
+    entropy : float
+        entropy measure
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from mhealthx.signals import signal_features
+    >>> data = np.random.random(100)
+    >>> rms, entropy = signal_features(data)
+
+    """
+    from scipy.stats import entropy as scipy_entropy
+
+    from mhealthx.signals import root_mean_square
+
+    rms = root_mean_square(data)
+
+    entropy = scipy_entropy(data)
+
+    return rms, entropy
