@@ -234,8 +234,8 @@ def read_accel_json(input_file, start=0, device_motion=True):
         x-, y-, and z-axis accelerometer data
     gxyz : list of lists
         x-, y-, and z-axis gravity (if deviceMotion)
-    uxyz : list of lists
-        x-, y-, and z-axis attitude (if deviceMotion)
+    wxyz : list of lists
+        w, x, y, z attitude quaternion (if deviceMotion)
     rxyz : list of lists
         x-, y-, and z-axis rotationRate (if deviceMotion)
     sample_rate : float
@@ -250,7 +250,7 @@ def read_accel_json(input_file, start=0, device_motion=True):
     >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-90f7096a-84ac-4f29-a4d1-236ef92c3d262549858224214804657.tmp'
     >>> start = 150
     >>> device_motion = True
-    >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
+    >>> t, axyz, gxyz, wxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
     """
     import json
 
@@ -298,12 +298,12 @@ def read_accel_json(input_file, start=0, device_motion=True):
 
     axyz = [ax, ay, az]
     gxyz = [gx, gy, gz]
-    uxyz = [uw, ux, uy, uz]
+    wxyz = [uw, ux, uy, uz]
     rxyz = [rx, ry, rz]
 
     sample_rate, duration = compute_sample_rate(t)
 
-    return t, axyz, gxyz, uxyz, rxyz, sample_rate, duration
+    return t, axyz, gxyz, wxyz, rxyz, sample_rate, duration
 
 
 def read_tap_json(input_file, start=0):
@@ -395,14 +395,22 @@ def get_accel(synapse_table, row, column_name, start=0, device_motion=True,
 
     Returns
     -------
+    t : list
+        time points for accelerometer data
     ax : list
         x-axis accelerometer data
     ay : list
         y-axis accelerometer data
     az : list
         z-axis accelerometer data
-    t : list
-        time points for accelerometer data
+    uw : list
+        w of attitude quaternion
+    ux : list
+        x of attitude quaternion
+    uy : list
+        y of attitude quaternion
+    uz : list
+        z of attitude quaternion
     sample_rate : float
         sample rate
     duration : float
@@ -431,7 +439,7 @@ def get_accel(synapse_table, row, column_name, start=0, device_motion=True,
     >>>     row, filepath = read_file_from_synapse_table(synapse_table, row,
     >>>         column_name, out_path, username, password)
     >>>     print(row)
-    >>>     ax, ay, az, t, sample_rate, duration, row, file_path = get_accel(synapse_table,
+    >>>     t, ax, ay, az, uw, ux, uy, uz, sample_rate, duration, row, file_path = get_accel(synapse_table,
     >>>                                       row, column_name,
     >>>                                       start, device_motion,
     >>>                                       out_path, username, password)
@@ -444,12 +452,14 @@ def get_accel(synapse_table, row, column_name, start=0, device_motion=True,
                                                   column_name, out_path,
                                                   username, password)
     # Read accelerometer json file:
-    t, axyz, gxyz, uxyz, rxyz, sample_rate, \
+    t, axyz, gxyz, wxyz, rxyz, sample_rate, \
     duration = read_accel_json(file_path, start, device_motion)
 
     ax, ay, az = axyz
+    uw, ux, uy, uz = wxyz
 
-    return ax, ay, az, t, sample_rate, duration, row, file_path
+    return t, ax, ay, az, uw, ux, uy, uz, sample_rate, duration, \
+           row, file_path
 
 
 def get_tap(synapse_table, row, column_name, start=0,

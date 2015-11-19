@@ -41,7 +41,8 @@ from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node
 from mhealthx.extract import run_openSMILE, run_pyGait, run_signal_features
-from mhealthx.extractors.pyGait import project_on_walk_direction
+from mhealthx.extractors.pyGait import project_walk_direction_preheel, \
+    project_walk_direction_attitude
 from mhealthx.xio import extract_synapse_rows, get_convert_audio, get_accel, \
     get_tap, write_wav
 
@@ -351,10 +352,14 @@ elif synID_walk and not setup_rows:
                                                 'out_path',
                                                 'username',
                                                 'password'],
-                                   output_names=['ax',
+                                   output_names=['t',
+                                                 'ax',
                                                  'ay',
                                                  'az',
-                                                 't',
+                                                 'uw',
+                                                 'ux',
+                                                 'uy',
+                                                 'uz',
                                                  'sample_rate',
                                                  'duration',
                                                  'row',
@@ -383,51 +388,76 @@ elif synID_walk and not setup_rows:
                                                 'out_path',
                                                 'username',
                                                 'password'],
-                                   output_names=['ax',
+                                   output_names=['t',
+                                                 'ax',
                                                  'ay',
                                                  'az',
-                                                 't',
+                                                 'uw',
+                                                 'ux',
+                                                 'uy',
+                                                 'uz',
                                                  'sample_rate',
                                                  'duration',
                                                  'row',
                                                  'file_path']))
     getWalking.inputs.synapse_table = synID_walk
     getWalking.iterables = ("row", rows_walk)
-    #getWalking.inputs.column_name = 'accel_walking_outbound.json.items'
     getWalking.inputs.column_name = 'deviceMotion_walking_outbound.json.items'
     getWalking.inputs.start = 150
-    #getWalking.inputs.device_motion = False
     getWalking.inputs.device_motion = True
     getWalking.inputs.out_path = None
     getWalking.inputs.username = ''
     getWalking.inputs.password = ''
 
     # ------------------------------------------------------------------------
-    # Project walk accelerometer data onto estimated walk direction:
+    # Project walk accelerometer axes on walk direction (attitude rotation):
     # ------------------------------------------------------------------------
-    projectAccel = Node(name='project_accelerometer_axes',
-                        interface=Fn(function=project_on_walk_direction,
+    projectAccel = Node(name='project_walk_direction_attitude',
+                        interface=Fn(function=project_walk_direction_attitude,
                                      input_names=['ax',
                                                   'ay',
                                                   'az',
-                                                  't',
-                                                  'sample_rate',
-                                                  'stride_fraction',
-                                                  'threshold',
-                                                  'order',
-                                                  'cutoff'],
+                                                  'uw',
+                                                  'ux',
+                                                  'uy',
+                                                  'uz'],
                                      output_names=['px',
                                                    'py',
                                                    'pz']))
     Flow.connect(getWalking, 'ax', projectAccel, 'ax')
     Flow.connect(getWalking, 'ay', projectAccel, 'ay')
     Flow.connect(getWalking, 'az', projectAccel, 'az')
-    Flow.connect(getWalking, 't', projectAccel, 't')
-    Flow.connect(getWalking, 'sample_rate', projectAccel, 'sample_rate')
-    projectAccel.inputs.stride_fraction = 1.0/8.0
-    projectAccel.inputs.threshold = 0.5
-    projectAccel.inputs.order = 4
-    projectAccel.inputs.cutoff = 10
+    Flow.connect(getWalking, 'uw', projectAccel, 'uw')
+    Flow.connect(getWalking, 'ux', projectAccel, 'ux')
+    Flow.connect(getWalking, 'uy', projectAccel, 'uy')
+    Flow.connect(getWalking, 'uz', projectAccel, 'uz')
+
+    # ------------------------------------------------------------------------
+    # Project walk accelerometer axes on walk direction (pre-heel strike):
+    # ------------------------------------------------------------------------
+    # projectAccelHeel = Node(name='project_walk_direction_preheel',
+    #                     interface=Fn(function=project_walk_direction_preheel,
+    #                                  input_names=['ax',
+    #                                               'ay',
+    #                                               'az',
+    #                                               't',
+    #                                               'sample_rate',
+    #                                               'stride_fraction',
+    #                                               'threshold',
+    #                                               'order',
+    #                                               'cutoff'],
+    #                                  output_names=['px',
+    #                                                'py',
+    #                                                'pz']))
+    # Flow.connect(getWalking, 'ax', projectAccelHeel, 'ax')
+    # Flow.connect(getWalking, 'ay', projectAccelHeel, 'ay')
+    # Flow.connect(getWalking, 'az', projectAccelHeel, 'az')
+    # Flow.connect(getWalking, 't', projectAccelHeel, 't')
+    # Flow.connect(getWalking, 'sample_rate', projectAccelHeel, 'sample_rate')
+    # projectAccelHeel.inputs.stride_fraction = 1.0/8.0
+    # projectAccelHeel.inputs.threshold = 0.5
+    # projectAccelHeel.inputs.order = 4
+    # projectAccelHeel.inputs.cutoff = 10
 
     # ------------------------------------------------------------------------
     # Estimate distance from walk accelerometer data:
@@ -466,6 +496,7 @@ elif synID_walk and not setup_rows:
                                                 'save_rows'],
                                    output_names=['feature_row',
                                                  'feature_table']))
+    #Flow.connect(projectAccelHeel, 'py', pyGaitWalk, 'data')
     Flow.connect(projectAccel, 'py', pyGaitWalk, 'data')
     Flow.connect(getWalking, 't', pyGaitWalk, 't')
     Flow.connect(getWalking, 'sample_rate', pyGaitWalk, 'sample_rate')

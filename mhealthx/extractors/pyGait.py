@@ -45,10 +45,98 @@ Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
 
 
-def walk_direction(ax, ay, az, t, sample_rate, stride_fraction=1.0/8.0,
-                   threshold=0.5, order=4, cutoff=5, plot_test=False):
+def walk_direction_attitude(ax, ay, az, uw, ux, uy, uz, plot_test=False):
     """
-    Estimate local walk (not cardinal) direction.
+    Estimate local walk (not cardinal) directions by rotation with attitudes.
+
+    Translated by Arno Klein from Elias Chaibub-Neto's R code.
+
+    Parameters
+    ----------
+    ax : list or numpy array
+        x-axis accelerometer data
+    ay : list or numpy array
+        y-axis accelerometer data
+    az : list or numpy array
+        z-axis accelerometer data
+    uw : list or numpy array
+        w of attitude quaternion
+    ux : list or numpy array
+        x of attitude quaternion
+    uy : list or numpy array
+        y of attitude quaternion
+    uz : list or numpy array
+        z of attitude quaternion
+    plot_test : Boolean
+        plot rotated vectors?
+
+    Returns
+    -------
+    directions : list of lists of three floats
+        unit vector of local walk (not cardinal) direction at each time point
+
+    Examples
+    --------
+    >>> from mhealthx.xio import read_accel_json
+    >>> from mhealthx.signals import compute_sample_rate
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-a2ab9333-6d63-4676-977a-08591a5d837f5221783798792869048.tmp'
+    >>> device_motion = True
+    >>> start = 0
+    >>> t, axyz, gxyz, wxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
+    >>> ax, ay, az = axyz
+    >>> uw, ux, uy, uz = wxyz
+    >>> from mhealthx.extractors.pyGait import walk_direction_attitude
+    >>> plot_test = True
+    >>> directions = walk_direction_attitude(ax, ay, az, uw, ux, uy, uz, plot_test)
+    """
+    import numpy as np
+
+    def quaternion_rotation_matrix(q):
+        """Rotation matrix from a quaternion"""
+        r11 = q[0]**2 + q[1]**2 - q[2]**2 - q[3]**2
+        r12 = 2 * q[1] * q[2] + 2 * q[0] * q[3]
+        r13 = 2 * q[1] * q[3] - 2 * q[0] * q[2]
+        r21 = 2 * q[1] * q[2] - 2 * q[0] * q[3]
+        r22 = q[0]**2 - q[1]**2 + q[2]**2 - q[3]**2
+        r23 = 2 * q[2] * q[3] + 2 * q[0] * q[1]
+        r31 = 2 * q[1] * q[3] + 2 * q[0] * q[2]
+        r32 = 2 * q[2] * q[3] - 2 * q[0] * q[1]
+        r33 = q[0]**2 - q[1]**2 - q[2]**2 + q[3]**2
+
+        rot = np.array(((r11, r12, r13), (r21, r22, r23), (r31, r32, r33)))
+
+        return rot
+
+    def rotate_with_attitude(attitude, acceleration):
+        """Rotate acceleration with attitude quaternion"""
+        rot = quaternion_rotation_matrix(attitude)
+        rotated = np.dot(rot, acceleration)
+
+        return rotated
+
+    directions = []
+    for i, x in enumerate(ax):
+        attitude = [uw[i], ux[i], uy[i], uz[i]]
+        acceleration = [x, ay[i], az[i]]
+        directions.append(rotate_with_attitude(attitude, acceleration))
+
+    # Plot vectors:
+    if plot_test:
+        from mhealthx.utilities import plot_vectors
+        dx = [x[0] for x in directions]
+        dy = [x[1] for x in directions]
+        dz = [x[2] for x in directions]
+        title = 'Acceleration vectors + attitude-rotated vectors'
+        plot_vectors(ax, ay, az, dx, dy, dz, title)
+
+    return directions
+
+
+def walk_direction_preheel(ax, ay, az, t, sample_rate, 
+                           stride_fraction=1.0/8.0, threshold=0.5,
+                           order=4, cutoff=5, plot_test=False):
+    """
+    Estimate local walk (not cardinal) direction with pre-heel strike phase.
 
     Inspired by Nirupam Roy's B.E. thesis: "WalkCompass:
     Finding Walking Direction Leveraging Smartphone's Inertial Sensors,"
@@ -60,12 +148,12 @@ def walk_direction(ax, ay, az, t, sample_rate, stride_fraction=1.0/8.0,
 
     Parameters
     ----------
-    ax : numpy array
-        accelerometer data along x axis
-    ay : numpy array
-        accelerometer data along y axis
-    az : numpy array
-        accelerometer data along z axis
+    ax : list or numpy array
+        x-axis accelerometer data
+    ay : list or numpy array
+        y-axis accelerometer data
+    az : list or numpy array
+        z-axis accelerometer data
     t : list or numpy array
         accelerometer time points
     sample_rate : float
@@ -95,13 +183,13 @@ def walk_direction(ax, ay, az, t, sample_rate, stride_fraction=1.0/8.0,
     >>> start = 150
     >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
     >>> ax, ay, az = axyz
-    >>> from mhealthx.extractors.pyGait import walk_direction
+    >>> from mhealthx.extractors.pyGait import walk_direction_preheel
     >>> threshold = 0.5
     >>> stride_fraction = 1.0/8.0
     >>> order = 4
     >>> cutoff = max([1, sample_rate/10])
     >>> plot_test = True
-    >>> direction = walk_direction(ax, ay, az, t, sample_rate, stride_fraction, threshold, order, cutoff, plot_test)
+    >>> direction = walk_direction_preheel(ax, ay, az, t, sample_rate, stride_fraction, threshold, order, cutoff, plot_test)
 
     """
     import numpy as np
@@ -168,51 +256,108 @@ def walk_direction(ax, ay, az, t, sample_rate, stride_fraction=1.0/8.0,
     return direction
 
 
-def project_axes(vectors, unit_vector):
+def project_axes(vectors, unit_vectors):
     """
-    Project vectors on a unit vector.
+    Project vectors on unit vectors.
 
     Parameters
     ----------
     vectors : list of lists of x, y, z coordinates or numpy array equivalent
-    unit_vector : numpy array or list of x, y, z coordinates
-        unit vector to project vectors onto
+    unit_vectors : list of lists of x, y, z coordinates (or numpy arrays)
+        unit vectors to project vectors onto
 
     Returns
     -------
     projection_vectors : list of lists of x, y, z coordinates
-        vectors projected onto unit vector
+        vectors projected onto unit vectors
 
     Examples
     --------
     >>> from mhealthx.xio import read_accel_json
     >>> from mhealthx.signals import compute_sample_rate
-    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
-    >>> #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-d02455b6-2db5-4dd5-ab92-2ea8d959f2f46545544245760775418.tmp'
-    >>> #device_motion = False
-    >>> #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-5981e0a8-6481-41c8-b589-fa207bfd2ab38771455825726024828.tmp'
     >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-a2ab9333-6d63-4676-977a-08591a5d837f5221783798792869048.tmp'
     >>> device_motion = True
     >>> start = 150
     >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
     >>> vectors = zip(axyz[0], axyz[1], axyz[2])
+    >>> vectors = [vectors[0], vectors[1], vectors[2]]
     >>> from mhealthx.extractors.pyGait import project_axes
-    >>> unit_vector = [1, 1, 1]
-    >>> projection_vectors = project_axes(vectors, unit_vector)
+    >>> unit_vectors = [1, 1, 1]
+    >>> projection_vectors = project_axes(vectors, unit_vectors)
 
     """
     import numpy as np
 
     projection_vectors = []
-    for v in vectors:
-        magnitude = np.asarray(v).dot(np.asarray(unit_vector))
-        projection_vectors.append(magnitude * np.asarray(unit_vector))
+    for i, v in enumerate(vectors):
+        unit_vector = np.asarray(unit_vectors[i])
+        magnitude = np.asarray(v).dot(unit_vector)
+        projection_vector = magnitude * unit_vector
+        projection_vectors.append(projection_vector.tolist())
 
     return projection_vectors
 
 
-def project_on_walk_direction(ax, ay, az, t, sample_rate, stride_fraction,
-                              threshold, order, cutoff):
+def project_walk_direction_attitude(ax, ay, az, uw, ux, uy, uz):
+    """
+    Project accelerometer data on local walk direction by attitude rotation.
+
+    Parameters
+    ----------
+    ax : list or numpy array
+        x-axis accelerometer data
+    ay : list or numpy array
+        y-axis accelerometer data
+    az : list or numpy array
+        z-axis accelerometer data
+    uw : list or numpy array
+        w of attitude quaternion
+    ux : list or numpy array
+        x of attitude quaternion
+    uy : list or numpy array
+        y of attitude quaternion
+    uz : list or numpy array
+        z of attitude quaternion
+
+    Returns
+    -------
+    px : numpy array
+        accelerometer data along x axis projected on unit vector
+    py : numpy array
+        accelerometer data along y axis projected on unit vector
+    pz : numpy array
+        accelerometer data along z axis projected on unit vector
+
+    Examples
+    --------
+    >>> from mhealthx.xio import read_accel_json
+    >>> from mhealthx.signals import compute_sample_rate
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-a2ab9333-6d63-4676-977a-08591a5d837f5221783798792869048.tmp'
+    >>> device_motion = True
+    >>> start = 0
+    >>> t, axyz, gxyz, wxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
+    >>> ax, ay, az = axyz
+    >>> uw, ux, uy, uz = wxyz
+    >>> from mhealthx.extractors.pyGait import project_walk_direction_attitude
+    >>> px, py, pz = project_walk_direction_attitude(ax, ay, az, uw, ux, uy, uz)
+
+    """
+    from mhealthx.extractors.pyGait import walk_direction_attitude, \
+        project_axes
+
+    directions = walk_direction_attitude(ax, ay, az, uw, ux, uy, uz)
+
+    vectors = project_axes(zip(ax, ay, az), directions)
+
+    px = [x[0] for x in vectors]
+    py = [x[1] for x in vectors]
+    pz = [x[2] for x in vectors]
+
+    return px, py, pz
+
+
+def project_walk_direction_preheel(ax, ay, az, t, sample_rate,
+                                   stride_fraction, threshold, order, cutoff):
     """
     Project accelerometer data on local walk (not cardinal) direction.
 
@@ -249,7 +394,7 @@ def project_on_walk_direction(ax, ay, az, t, sample_rate, stride_fraction,
     Examples
     --------
     >>> from mhealthx.xio import read_accel_json
-    >>> from mhealthx.extractors.pyGait import project_on_walk_direction
+    >>> from mhealthx.extractors.pyGait import project_walk_direction_preheel
     >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
     >>> start = 150
     >>> device_motion = False
@@ -259,19 +404,21 @@ def project_on_walk_direction(ax, ay, az, t, sample_rate, stride_fraction,
     >>> threshold = 0.5
     >>> order = 4
     >>> cutoff = max([1, sample_rate/10])
-    >>> px, py, pz = project_on_walk_direction(ax, ay, az, t, sample_rate, stride_fraction, threshold, order, cutoff)
+    >>> px, py, pz = project_walk_direction_preheel(ax, ay, az, t, sample_rate, stride_fraction, threshold, order, cutoff)
 
     """
-    from mhealthx.extractors.pyGait import walk_direction, project_axes
+    from mhealthx.extractors.pyGait import walk_direction_preheel, \
+        project_axes
 
-    direction = walk_direction(ax, ay, az, t, sample_rate, stride_fraction,
-                               threshold, order, cutoff, False)
+    directions = walk_direction_preheel(ax, ay, az, t, sample_rate,
+                                       stride_fraction, threshold, order,
+                                       cutoff, False)
 
-    projection_vectors = project_axes(zip(ax, ay, az), direction)
+    vectors = project_axes(zip(ax, ay, az), directions)
 
-    px = [x[0] for x in projection_vectors]
-    py = [x[1] for x in projection_vectors]
-    pz = [x[2] for x in projection_vectors]
+    px = [x[0] for x in vectors]
+    py = [x[1] for x in vectors]
+    pz = [x[2] for x in vectors]
 
     return px, py, pz
 
