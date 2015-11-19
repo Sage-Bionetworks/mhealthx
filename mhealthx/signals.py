@@ -403,27 +403,12 @@ def gravity_min_mse(gx, gy, gz):
 
     Examples
     --------
-    >>> from mhealthx.xio import extract_synapse_rows, read_file_from_synapse_table, get_accel
-    >>> import synapseclient
-    >>> syn = synapseclient.Synapse()
-    >>> syn.login()
-    >>> synapse_table = 'syn4590866'
-    >>> row_series, row_files = extract_synapse_rows(synapse_table, save_path='.', limit=3, username='', password='')
-    >>> column_name = 'deviceMotion_walking_outbound.json.items'
+    >>> from mhealthx.xio import read_accel_json
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-a2ab9333-6d63-4676-977a-08591a5d837f5221783798792869048.tmp'
     >>> device_motion = True
     >>> start = 150
-    >>> out_path = None
-    >>> username = ''
-    >>> password = ''
-    >>> for i in range(1):
-    >>>     row = row_series[i]
-    >>>     row, filepath = read_file_from_synapse_table(synapse_table, row,
-    >>>         column_name, out_path, username, password)
-    >>>     print(row)
-    >>>     t, ax, ay, az, gx, gy, gz, rx, ry, rz, uw, ux, uy, uz, sample_rate, duration, row, file_path = get_accel(synapse_table,
-    >>>                                       row, column_name,
-    >>>                                       start, device_motion,
-    >>>                                       out_path, username, password)
+    >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
+    >>> gx, gy, gz = gxyz
     >>> from mhealthx.signals import gravity_min_mse
     >>> min_mse, vertical = gravity_min_mse(gx, gy, gz)
 
@@ -448,3 +433,43 @@ def gravity_min_mse(gx, gy, gz):
         vertical = "z"
 
     return min_mse, vertical
+
+
+def accelerometer_signal_quality(gx, gy, gz):
+    """
+    Compute accelerometer signal quality.
+
+    Parameters
+    ----------
+    gx : list
+        x-axis gravity acceleration
+    gy : list
+        y-axis gravity acceleration
+    gz : list
+        z-axis gravity acceleration
+
+    Returns
+    -------
+    min_mse : float
+        minimum mean squared error
+    vertical : string
+        primary direction of vertical ('x', 'y', or 'z')
+
+    Examples
+    --------
+    >>> from mhealthx.xio import read_accel_json
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-a2ab9333-6d63-4676-977a-08591a5d837f5221783798792869048.tmp'
+    >>> device_motion = True
+    >>> start = 150
+    >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
+    >>> gx, gy, gz = gxyz
+    >>> from mhealthx.signals import accelerometer_signal_quality
+    >>> min_mse, vertical = accelerometer_signal_quality(gx, gy, gz)
+
+    """
+    from mhealthx.signals import gravity_min_mse
+
+    min_mse, vertical = gravity_min_mse(gx, gy, gz)
+
+    return min_mse, vertical
+

@@ -302,9 +302,7 @@ def read_accel_json(input_file, start=0, device_motion=True):
 
     sample_rate, duration = compute_sample_rate(t)
 
-    min_mse, vertical = gravity_min_mse(gx, gy, gz)
-
-    return t, axyz, gxyz, wxyz, rxyz, sample_rate, duration, min_mse, vertical
+    return t, axyz, gxyz, wxyz, rxyz, sample_rate, duration
 
 
 def read_tap_json(input_file, start=0):
@@ -428,10 +426,6 @@ def get_accel(synapse_table, row, column_name, start=0, device_motion=True,
         sample rate
     duration : float
         duration of time series
-    min_mse : float
-        minimum mean squared error
-    vertical : string
-        primary direction of vertical ('x', 'y', or 'z')
     row : pandas Series
         same as passed in: row of a Synapse table as a file or Series
     file_path : string
@@ -470,8 +464,7 @@ def get_accel(synapse_table, row, column_name, start=0, device_motion=True,
                                                   username, password)
     # Read accelerometer json file:
     t, axyz, gxyz, wxyz, rxyz, sample_rate, \
-    duration, min_mse, vertical = read_accel_json(file_path, start,
-                                                  device_motion)
+    duration, = read_accel_json(file_path, start, device_motion)
 
     ax, ay, az = axyz
     gx, gy, gz = gxyz
@@ -479,7 +472,7 @@ def get_accel(synapse_table, row, column_name, start=0, device_motion=True,
     uw, ux, uy, uz = wxyz
 
     return t, ax, ay, az, gx, gy, gz, rx, ry, rz, uw, ux, uy, uz, \
-           sample_rate, duration, min_mse, vertical, row, file_path
+           sample_rate, duration, row, file_path
 
 
 def get_tap(synapse_table, row, column_name, start=0,

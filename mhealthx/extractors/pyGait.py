@@ -82,7 +82,7 @@ def walk_direction_attitude(ax, ay, az, uw, ux, uy, uz, plot_test=False):
     >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-a2ab9333-6d63-4676-977a-08591a5d837f5221783798792869048.tmp'
     >>> device_motion = True
     >>> start = 0
-    >>> t, axyz, gxyz, wxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
+    >>> t, axyz, gxyz, wxyz, rxyz, sample_rate, duration = read_accel_json(input_file, device_motion, start)
     >>> ax, ay, az = axyz
     >>> uw, ux, uy, uz = wxyz
     >>> from mhealthx.extractors.pyGait import walk_direction_attitude
@@ -174,10 +174,6 @@ def walk_direction_preheel(ax, ay, az, t, sample_rate,
     --------
     >>> from mhealthx.xio import read_accel_json
     >>> from mhealthx.signals import compute_sample_rate
-    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
-    >>> #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-d02455b6-2db5-4dd5-ab92-2ea8d959f2f46545544245760775418.tmp'
-    >>> #device_motion = False
-    >>> #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-5981e0a8-6481-41c8-b589-fa207bfd2ab38771455825726024828.tmp'
     >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-a2ab9333-6d63-4676-977a-08591a5d837f5221783798792869048.tmp'
     >>> device_motion = True
     >>> start = 150
@@ -395,9 +391,9 @@ def project_walk_direction_preheel(ax, ay, az, t, sample_rate,
     --------
     >>> from mhealthx.xio import read_accel_json
     >>> from mhealthx.extractors.pyGait import project_walk_direction_preheel
-    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-a2ab9333-6d63-4676-977a-08591a5d837f5221783798792869048.tmp'
+    >>> device_motion = True
     >>> start = 150
-    >>> device_motion = False
     >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
     >>> ax, ay, az = axyz
     >>> stride_fraction = 1.0/8.0
@@ -479,11 +475,8 @@ def heel_strikes(data, sample_rate, threshold=0.2, order=4, cutoff=5,
     --------
     >>> from mhealthx.xio import read_accel_json
     >>> from mhealthx.signals import compute_sample_rate
-    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
-    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-d02455b6-2db5-4dd5-ab92-2ea8d959f2f46545544245760775418.tmp'
-    >>> device_motion = False
-    >>> #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-5981e0a8-6481-41c8-b589-fa207bfd2ab38771455825726024828.tmp'
-    >>> #device_motion = True
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-a2ab9333-6d63-4676-977a-08591a5d837f5221783798792869048.tmp'
+    >>> device_motion = True
     >>> start = 150
     >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
     >>> ax, ay, az = axyz
@@ -610,10 +603,8 @@ def gait_regularity_symmetry(data, step_period, stride_period):
     --------
     >>> from mhealthx.xio import read_accel_json
     >>> from mhealthx.extractors.pyGait import gait_regularity_symmetry
-    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
-    >>> device_motion = False
-    >>> #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-5981e0a8-6481-41c8-b589-fa207bfd2ab38771455825726024828.tmp'
-    >>> #device_motion = True
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-a2ab9333-6d63-4676-977a-08591a5d837f5221783798792869048.tmp'
+    >>> device_motion = True
     >>> start = 150
     >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
     >>> ax, ay, az = axyz
@@ -698,10 +689,8 @@ def gait(strikes, data, duration, distance=None):
     Examples
     --------
     >>> from mhealthx.xio import read_accel_json, compute_sample_rate
-    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
-    >>> device_motion = False
-    >>> #input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-5981e0a8-6481-41c8-b589-fa207bfd2ab38771455825726024828.tmp'
-    >>> #device_motion = True
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-a2ab9333-6d63-4676-977a-08591a5d837f5221783798792869048.tmp'
+    >>> device_motion = True
     >>> start = 150
     >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
     >>> ax, ay, az = axyz

@@ -40,10 +40,11 @@ from nipype import config, logging
 from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node
-from mhealthx.extract import run_openSMILE, run_pyGait, run_signal_features
+from mhealthx.extract import run_openSMILE, run_pyGait, run_signal_features, \
+    run_quality
 from mhealthx.extractors.pyGait import project_walk_direction_attitude
-from mhealthx.xio import extract_synapse_rows, get_convert_audio, get_accel, \
-    get_tap, write_wav
+from mhealthx.xio import extract_synapse_rows, write_wav, \
+    get_convert_audio, get_accel, get_tap
 
 # ============================================================================
 #
@@ -110,8 +111,10 @@ outputs_group.add_argument("-o", "--outputs",
                                                 'mhealthx_output'),
                            metavar='STR')
 outputs_group.add_argument("-c", "--cache",
-                           help="cache folder (if not $HOME/mhealthx_cache)",
+                           help="cache folder (if not "
+                                "$HOME/mhealthx_output/mhealthx_cache)",
                            default=os.path.join(os.environ['HOME'],
+                                                'mhealthx_output',
                                                 'mhealthx_cache'),
                            metavar='STR')
 outputs_group.add_argument("-t", "--temp",
@@ -367,8 +370,6 @@ elif synID_walk and not setup_rows:
                                                  'uz',
                                                  'sample_rate',
                                                  'duration',
-                                                 'min_mse',
-                                                 'vertical',
                                                  'row',
                                                  'file_path']))
     getBalance.inputs.synapse_table = synID_walk
@@ -411,8 +412,6 @@ elif synID_walk and not setup_rows:
                                                  'uz',
                                                  'sample_rate',
                                                  'duration',
-                                                 'min_mse',
-                                                 'vertical',
                                                  'row',
                                                  'file_path']))
     getWalking.inputs.synapse_table = synID_walk
@@ -423,6 +422,28 @@ elif synID_walk and not setup_rows:
     getWalking.inputs.out_path = None
     getWalking.inputs.username = ''
     getWalking.inputs.password = ''
+
+    # ------------------------------------------------------------------------
+    # Compute QC score based on gravity acceleration only:
+    # ------------------------------------------------------------------------
+    accelQC = Node(name='walk_QC',
+                   interface=Fn(function=run_quality,
+                                input_names=['gx',
+                                             'gy',
+                                             'gz',
+                                             'row',
+                                             'file_path',
+                                             'table_stem',
+                                             'save_rows'],
+                                output_names=['min_mse',
+                                              'vertical']))
+    Flow.connect(getWalking, 'gx', accelQC, 'gx')
+    Flow.connect(getWalking, 'gy', accelQC, 'gy')
+    Flow.connect(getWalking, 'gz', accelQC, 'gz')
+    Flow.connect(getWalking, 'row', accelQC, 'row')
+    Flow.connect(getWalking, 'file_path', accelQC, 'file_path')
+    accelQC.inputs.table_stem = os.path.join(feature_table_path, 'walk_qc')
+    accelQC.inputs.save_rows = True
 
     # ------------------------------------------------------------------------
     # Project walk accelerometer axes on walk direction (attitude rotation):

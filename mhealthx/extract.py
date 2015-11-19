@@ -341,7 +341,7 @@ def run_signal_features(data, row, file_path, table_stem, save_rows=False):
     >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
     >>> ax, data, az = axyz
     >>> row = pd.Series({'a':[1], 'b':[2], 'c':[3]})
-    >>> file_path = '/fake/path'
+    >>> file_path = '.'
     >>> table_stem = './walking'
     >>> save_rows = True
     >>> feature_row, feature_table = run_signal_features(data, row, file_path, table_stem, save_rows)
@@ -359,6 +359,74 @@ def run_signal_features(data, row, file_path, table_stem, save_rows=False):
     row_data = pd.DataFrame({'rms': rms,
                              'entropy': entropy},
                             index=[0])
+
+    # Write feature row to a table or append to a feature table:
+    feature_row, feature_table = make_row_table(file_path, table_stem,
+                                                save_rows, row, row_data,
+                                                feature_row=None)
+    return feature_row, feature_table
+
+
+def run_quality(gx, gy, gz, row, file_path, table_stem, save_rows=False):
+    """
+    Extract various features from time series data.
+
+    Parameters
+    ----------
+    gx : list
+        x-axis gravity acceleration
+    gy : list
+        y-axis gravity acceleration
+    gz : list
+        z-axis gravity acceleration
+    row : pandas Series
+        row to prepend, unaltered, to feature row
+    file_path : string
+        path to accelerometer file (from row)
+    table_stem : string
+        prepend to output table file
+    save_rows : Boolean
+        save individual rows rather than write to a single feature table?
+
+    Returns
+    -------
+    feature_row : pandas Series
+        row combining the original row with a row of openSMILE feature values
+    feature_table : string
+        output table file (full path)
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from mhealthx.xio import read_accel_json
+    >>> from mhealthx.extract import run_quality
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/deviceMotion_walking_outbound.json.items-a2ab9333-6d63-4676-977a-08591a5d837f5221783798792869048.tmp'
+    >>> device_motion = True
+    >>> start = 150
+    >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
+    >>> #ax, ay, az = axyz
+    >>> gx, gy, gz = gxyz
+    >>> #rx, ry, rz = rxyz
+    >>> #uw, ux, uy, uz = wxyz
+    >>> row = pd.Series({'a':[1], 'b':[2], 'c':[3]})
+    >>> file_path = '.'
+    >>> table_stem = './walking'
+    >>> save_rows = True
+    >>> feature_row, feature_table = run_quality(gx, gy, gz, row, file_path, table_stem, save_rows)
+
+    """
+    import pandas as pd
+
+    from mhealthx.signals import accelerometer_signal_quality
+    from mhealthx.extract import make_row_table
+
+    # Compute different quality measures from the data:
+    min_mse, vertical = accelerometer_signal_quality(gx, gy, gz)
+
+    # Create row of data:
+    row_data = pd.DataFrame({'min_mse': min_mse,
+                             'vertical': vertical},
+                             index=[0])
 
     # Write feature row to a table or append to a feature table:
     feature_row, feature_table = make_row_table(file_path, table_stem,
