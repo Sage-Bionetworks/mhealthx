@@ -41,8 +41,7 @@ from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node
 from mhealthx.extract import run_openSMILE, run_pyGait, run_signal_features
-from mhealthx.extractors.pyGait import project_walk_direction_preheel, \
-    project_walk_direction_attitude
+from mhealthx.extractors.pyGait import project_walk_direction_attitude
 from mhealthx.xio import extract_synapse_rows, get_convert_audio, get_accel, \
     get_tap, write_wav
 
@@ -356,12 +355,20 @@ elif synID_walk and not setup_rows:
                                                  'ax',
                                                  'ay',
                                                  'az',
+                                                 'gx',
+                                                 'gy',
+                                                 'gz',
+                                                 'rx',
+                                                 'ry',
+                                                 'rz',
                                                  'uw',
                                                  'ux',
                                                  'uy',
                                                  'uz',
                                                  'sample_rate',
                                                  'duration',
+                                                 'min_mse',
+                                                 'vertical',
                                                  'row',
                                                  'file_path']))
     getBalance.inputs.synapse_table = synID_walk
@@ -392,12 +399,20 @@ elif synID_walk and not setup_rows:
                                                  'ax',
                                                  'ay',
                                                  'az',
+                                                 'gx',
+                                                 'gy',
+                                                 'gz',
+                                                 'rx',
+                                                 'ry',
+                                                 'rz',
                                                  'uw',
                                                  'ux',
                                                  'uy',
                                                  'uz',
                                                  'sample_rate',
                                                  'duration',
+                                                 'min_mse',
+                                                 'vertical',
                                                  'row',
                                                  'file_path']))
     getWalking.inputs.synapse_table = synID_walk

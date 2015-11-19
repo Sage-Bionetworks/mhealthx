@@ -379,3 +379,72 @@ def signal_features(data):
     entropy = scipy_entropy(data)
 
     return rms, entropy
+
+
+def gravity_min_mse(gx, gy, gz):
+    """
+    Compute QC score based on gravity acceleration only.
+
+    Parameters
+    ----------
+    gx : list or numpy array
+        x-axis gravity accelerometer data
+    gy : list or numpy array
+        y-axis gravity accelerometer data
+    gz : list or numpy array
+        z-axis gravity accelerometer data
+
+    Returns
+    -------
+    min_mse : float
+        minimum mean squared error
+    vertical : string
+        primary direction of vertical ('x', 'y', or 'z')
+
+    Examples
+    --------
+    >>> from mhealthx.xio import extract_synapse_rows, read_file_from_synapse_table, get_accel
+    >>> import synapseclient
+    >>> syn = synapseclient.Synapse()
+    >>> syn.login()
+    >>> synapse_table = 'syn4590866'
+    >>> row_series, row_files = extract_synapse_rows(synapse_table, save_path='.', limit=3, username='', password='')
+    >>> column_name = 'deviceMotion_walking_outbound.json.items'
+    >>> device_motion = True
+    >>> start = 150
+    >>> out_path = None
+    >>> username = ''
+    >>> password = ''
+    >>> for i in range(1):
+    >>>     row = row_series[i]
+    >>>     row, filepath = read_file_from_synapse_table(synapse_table, row,
+    >>>         column_name, out_path, username, password)
+    >>>     print(row)
+    >>>     t, ax, ay, az, gx, gy, gz, rx, ry, rz, uw, ux, uy, uz, sample_rate, duration, row, file_path = get_accel(synapse_table,
+    >>>                                       row, column_name,
+    >>>                                       start, device_motion,
+    >>>                                       out_path, username, password)
+    >>> from mhealthx.signals import gravity_min_mse
+    >>> min_mse, vertical = gravity_min_mse(gx, gy, gz)
+
+    """
+    import numpy as np
+
+    mse1 = np.mean((np.asarray(gx) - 1)**2)
+    mse2 = np.mean((np.asarray(gx) + 1)**2)
+    mse3 = np.mean((np.asarray(gy) - 1)**2)
+    mse4 = np.mean((np.asarray(gy) + 1)**2)
+    mse5 = np.mean((np.asarray(gz) - 1)**2)
+    mse6 = np.mean((np.asarray(gz) + 1)**2)
+
+    min_mse = np.min([mse1, mse2, mse3, mse4, mse5, mse6])
+    imin = np.argmin([mse1, mse2, mse3, mse4, mse5, mse6])
+
+    if imin == 0 or imin == 1:
+        vertical = "x"
+    elif imin == 2 or imin == 3:
+        vertical = "y"
+    else:
+        vertical = "z"
+
+    return min_mse, vertical
