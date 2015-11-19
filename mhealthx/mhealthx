@@ -43,7 +43,7 @@ from nipype.pipeline.engine import Workflow, Node
 from mhealthx.extract import run_openSMILE, run_pyGait, run_signal_features
 from mhealthx.extractors.pyGait import project_on_walk_direction
 from mhealthx.xio import extract_synapse_rows, get_convert_audio, get_accel, \
-    write_wav
+    get_tap, write_wav
 
 # ============================================================================
 #
@@ -68,11 +68,13 @@ parser.add_argument("-n", "--numproc",
 parser.add_argument("-r", "--rows",
                     help='download this number of rows of the Synapse tables',
                     type=int, metavar='INT', default=sys.maxint)
-parser.add_argument("-g", "--graph",
-                    help='plot workflow graph: "hier", "flat", "exec"',
-                    choices=['hier', 'flat', 'exec'], metavar='STR')
+parser.add_argument('--records', dest='records',
+                    help='create tables from these recordIds', metavar='STR')
 parser.add_argument('--reports', dest='reports', action='store_true',
                     help='generate nipype reports')
+parser.add_argument("--graph",
+                    help='plot workflow graph: "hier", "flat", "exec"',
+                    choices=['hier', 'flat', 'exec'], metavar='STR')
 parser.add_argument("--plugin", dest="plugin",
                     default='Linear',
                     help="optional plugin: --plugin PBS")
@@ -120,6 +122,7 @@ username = args.username
 password = args.password
 dependencies = args.dependencies
 setup_rows = args.setup
+records = args.records
 if args.temp:
     temporary_path = args.temp
 else:
@@ -184,7 +187,7 @@ path_tap = os.path.join(row_path, 'row_files_tap')
 
 # ============================================================================
 #
-# Phonation (microphone)
+# Voice: phonation (microphone)
 #
 # ============================================================================
 if synID_voice and setup_rows:
@@ -214,13 +217,21 @@ if synID_voice and setup_rows:
     GetPhonationRows.inputs.password = ''
 
 elif synID_voice and not setup_rows:
-    rows_voice = [os.path.join(path_voice, f)
-                    for i, f in enumerate(sorted(os.listdir(path_voice)))
-                    if i < args.rows
-                    and os.path.isfile(os.path.join(path_voice, f))]
+    if records:
+        fid = open(records)
+        lines = fid.readlines()
+        rows_voice = []
+        for recordId in lines:
+            [rows_voice.append(os.path.join(path_voice, f))
+             for f in os.listdir(path_voice) if recordId.strip() in f]
+    else:
+        rows_voice = [os.path.join(path_voice, f)
+                      for i, f in enumerate(sorted(os.listdir(path_voice)))
+                      if i < args.rows
+                      and os.path.isfile(os.path.join(path_voice, f))]
 
     # ------------------------------------------------------------------------
-    # Phonation data:
+    # Voice data:
     # 1. Retrieve each row + audio file from a Synapse table.
     # 2. Convert voice file to .wav format.
     # ------------------------------------------------------------------------
@@ -252,7 +263,7 @@ elif synID_voice and not setup_rows:
     # ------------------------------------------------------------------------
     # Repeat for voice countdown data:
     # ------------------------------------------------------------------------
-    getPhonation0 = getPhonation.clone('voice_countdown_data')
+    getPhonation0 = getPhonation.clone('voice_count_data')
     getPhonation0.inputs.column_name = 'audio_countdown.m4a'
 
     # ------------------------------------------------------------------------
@@ -290,15 +301,15 @@ elif synID_voice and not setup_rows:
     # ------------------------------------------------------------------------
     # Repeat for voice countdown data:
     # ------------------------------------------------------------------------
-    SMILEvoice0 = SMILEvoice.clone('openSMILE_voice_countdown')
+    SMILEvoice0 = SMILEvoice.clone('openSMILE_voice_count')
     Flow.connect(getPhonation0, 'new_file', SMILEvoice0, 'audio_file')
     Flow.connect(getPhonation0, 'row', SMILEvoice0, 'row')
     SMILEvoice0.inputs.table_stem = os.path.join(feature_table_path,
-        'voice_countdown{0}'.format(smile_string1))
+        'voice_count{0}'.format(smile_string1))
 
 # ============================================================================
 #
-# Movement: balance and walk (accelerometer)
+# Walk and balance (accelerometer)
 #
 # ============================================================================
 if synID_walk and setup_rows:
@@ -314,10 +325,18 @@ if synID_walk and setup_rows:
     Flow.add_nodes([GetBalanceRows])
 
 elif synID_walk and not setup_rows:
-    rows_walk = [os.path.join(path_walk, f)
-                    for i, f in enumerate(sorted(os.listdir(path_walk)))
-                    if i < args.rows
-                    and os.path.isfile(os.path.join(path_walk, f))]
+    if records:
+        fid = open(records)
+        lines = fid.readlines()
+        rows_walk = []
+        for recordId in lines:
+            [rows_walk.append(os.path.join(path_walk, f))
+             for f in os.listdir(path_walk) if recordId.strip() in f]
+    else:
+        rows_walk = [os.path.join(path_walk, f)
+                     for i, f in enumerate(sorted(os.listdir(path_walk)))
+                     if i < args.rows
+                     and os.path.isfile(os.path.join(path_walk, f))]
 
     # ------------------------------------------------------------------------
     # Balance data: retrieve each row + json file from Synapse table:
@@ -386,7 +405,7 @@ elif synID_walk and not setup_rows:
     # ------------------------------------------------------------------------
     # Project walk accelerometer data onto estimated walk direction:
     # ------------------------------------------------------------------------
-    projectAccel = Node(name='project_accelerometer_data',
+    projectAccel = Node(name='project_accelerometer_axes',
                         interface=Fn(function=project_on_walk_direction,
                                      input_names=['ax',
                                                   'ay',
@@ -677,8 +696,46 @@ if synID_tap and setup_rows:
     Flow.add_nodes([GetTappingRows])
 
 elif synID_tap and not setup_rows:
+    if records:
+        fid = open(records)
+        lines = fid.readlines()
+        rows_tap = []
+        for recordId in lines:
+            [rows_tap.append(os.path.join(path_tap, f))
+             for f in os.listdir(path_tap) if recordId.strip() in f]
+    else:
+        rows_tap = [os.path.join(path_tap, f)
+                    for i, f in enumerate(sorted(os.listdir(path_tap)))
+                    if i < args.rows
+                    and os.path.isfile(os.path.join(path_tap, f))]
 
-    pass
+    # ------------------------------------------------------------------------
+    # Balance data: retrieve each row + json file from Synapse table:
+    # ------------------------------------------------------------------------
+    getTap = Node(name='tap_data',
+                  interface=Fn(function=get_tap,
+                               input_names=['synapse_table',
+                                            'row',
+                                            'column_name',
+                                            'start',
+                                            'out_path',
+                                            'username',
+                                            'password'],
+                               output_names=['tx',
+                                             'ty',
+                                             'tz',
+                                             't',
+                                             'sample_rate',
+                                             'duration',
+                                             'row',
+                                             'file_path']))
+    getTap.inputs.synapse_table = synID_tap
+    getTap.iterables = ("row", rows_tap)
+    getTap.inputs.column_name = 'deviceMotion_walking_rest.json.items'
+    getTap.inputs.start = 0
+    getTap.inputs.out_path = None
+    getTap.inputs.username = ''
+    getTap.inputs.password = ''
 
 
 # ============================================================================

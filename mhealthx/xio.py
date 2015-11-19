@@ -213,151 +213,6 @@ def row_to_table(row_data, output_table):
     addrow.run()
 
 
-def convert_audio_file(old_file, new_file, command='ffmpeg',
-                       input_args='-i', output_args='-ac 2'):
-    """
-    Convert audio file to new format.
-
-    Parameters
-    ----------
-    old_file : string
-        full path to the input file
-    new_file : string
-        full path to the output file
-    command : string
-        executable command without arguments
-    input_args : string
-        arguments preceding input file name in command
-    output_args : string
-        arguments preceding output file name in command
-
-    Returns
-    -------
-    new_file : string
-        full path to the output file
-
-    Examples
-    --------
-    >>> from mhealthx.xio import convert_audio_file
-    >>> old_file = '/Users/arno/mhealthx_cache/mhealthx/feature_files/test.m4a'
-    >>> new_file = 'test.wav'
-    >>> command = 'ffmpeg'
-    >>> input_args = '-y -i'
-    >>> output_args = '-ac 2'
-    >>> new_file = convert_audio_file(old_file, new_file, command, input_args, output_args)
-
-    """
-    import os
-    from nipype.interfaces.base import CommandLine
-
-    if not os.path.isfile(old_file):
-        raise IOError("{0} does not exist.".format(old_file))
-        new_file = None
-    else:
-        input_args = ' '.join([input_args, old_file, output_args, new_file])
-        try:
-            # Nipype command line wrapper:
-            cli = CommandLine(command = command)
-            cli.inputs.args = input_args
-            cli.cmdline
-            cli.run()
-        except:
-            print("'{0} {1}' unsuccessful".format(command, input_args))
-            new_file = None
-
-    return new_file
-
-
-def get_convert_audio(synapse_table, row, column_name,
-                      convert_file_append='', convert_command='ffmpeg',
-                      convert_input_args='-y -i', convert_output_args='-ac 2',
-                      out_path='.', username='', password=''):
-    """
-    Read data from a row of a Synapse table and convert audio file.
-
-    Calls ::
-        from mhealthx.xio import read_file_from_synapse_table
-        from mhealthx.xio import convert_audio_file
-
-    Parameters
-    ----------
-    synapse_table : string or Schema
-        a synapse ID or synapse table Schema object
-    row : pandas Series or string
-        row of a Synapse table converted to a Series or csv file
-    column_name : string
-        name of file handle column
-    convert_file_append : string
-        append to file name to indicate converted file format (e.g., '.wav')
-    convert_command : string
-        executable command without arguments
-    convert_input_args : string
-        arguments preceding input file name for convert_command
-    convert_output_args : string
-        arguments preceding output file name for convert_command
-    out_path : string or None
-        a local path in which to store downloaded files.
-    username : string
-        Synapse username (only needed once on a given machine)
-    password : string
-        Synapse password (only needed once on a given machine)
-
-    Returns
-    -------
-    row : pandas Series
-        same as passed in: row of a Synapse table as a file or Series
-    new_file : string
-        full path to the converted file
-
-    Examples
-    --------
-    >>> from mhealthx.xio import get_convert_audio
-    >>> from mhealthx.xio import extract_synapse_rows, read_file_from_synapse_table
-    >>> import synapseclient
-    >>> syn = synapseclient.Synapse()
-    >>> syn.login()
-    >>> synapse_table = 'syn4590865'
-    >>> row_series, row_files = extract_synapse_rows(synapse_table, save_path='.', limit=3, username='', password='')
-    >>> column_name = 'audio_audio.m4a' #, 'audio_countdown.m4a']
-    >>> convert_file_append = '.wav'
-    >>> convert_command = 'ffmpeg'
-    >>> convert_input_args = '-y -i'
-    >>> convert_output_args = '-ac 2'
-    >>> out_path = '.'
-    >>> username = ''
-    >>> password = ''
-    >>> for i in range(1):
-    >>>     row = row_series[i]
-    >>>     row, filepath = read_file_from_synapse_table(synapse_table, row,
-    >>>         column_name, out_path, username, password)
-    >>>     print(row)
-    >>>     row, new_file = get_convert_audio(synapse_table,
-    >>>                                       row, column_name,
-    >>>                                       convert_file_append,
-    >>>                                       convert_command,
-    >>>                                       convert_input_args,
-    >>>                                       convert_output_args,
-    >>>                                       out_path, username, password)
-
-    """
-    from mhealthx.xio import read_file_from_synapse_table, convert_audio_file
-
-    row, file_path = read_file_from_synapse_table(synapse_table, row,
-                                                  column_name, out_path,
-                                                  username, password)
-    if convert_file_append:
-        renamed_file = file_path + convert_file_append
-        new_file = convert_audio_file(old_file=file_path,
-                                      new_file=renamed_file,
-                                      command=convert_command,
-                                      input_args=convert_input_args,
-                                      output_args=convert_output_args)
-    else:
-        new_file = None
-
-    return row, new_file
-
-
 def read_accel_json(input_file, start=0, device_motion=True):
     """
     Read accelerometer or deviceMotion json file.
@@ -451,6 +306,64 @@ def read_accel_json(input_file, start=0, device_motion=True):
     return t, axyz, gxyz, uxyz, rxyz, sample_rate, duration
 
 
+def read_tap_json(input_file, start=0):
+    """
+    Read screen tap json file.
+
+    Parameters
+    ----------
+    input_file : string
+        name of input screen tap json file
+    start : integer
+        starting index (remove beginning)
+
+    Returns
+    -------
+    t : list
+        time points for tap data
+    tx : list
+        x coordinates of touch screen
+    ty : list
+        y coordinates of touch screen
+    button : list
+        buttons tapped
+    sample_rate : float
+        sample rate
+    duration : float
+        duration of time series
+
+    Examples
+    --------
+    >>> from mhealthx.xio import read_tap_json
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/tapping_results.json.TappingSamples-49d2531d-dbda-4b6d-b403-f8763b8e05841011283015383434299.tmp'
+    >>> start = 0
+    >>> t, tx, ty, button, sample_rate, duration = read_tap_json(input_file, start)
+    """
+    import json
+    import re
+
+    from mhealthx.signals import compute_sample_rate
+
+    f = open(input_file, 'r')
+    json_strings = f.readlines()
+    parsed_jsons = json.loads(json_strings[0])
+
+    t = []
+    tx = []
+    ty = []
+    button = []
+    for parsed_json in parsed_jsons[start::]:
+        txy = re.findall(r'\d+', parsed_json['TapCoordinate'])
+        tx.append(int(txy[0]))
+        ty.append(int(txy[1]))
+        t.append(parsed_json['TapTimeStamp'])
+        button.append(parsed_json['TappedButtonId'])
+
+    sample_rate, duration = compute_sample_rate(t)
+
+    return t, tx, ty, button, sample_rate, duration
+
+
 def get_accel(synapse_table, row, column_name, start=0, device_motion=True,
               out_path='.', username='', password=''):
     """
@@ -537,6 +450,230 @@ def get_accel(synapse_table, row, column_name, start=0, device_motion=True,
     ax, ay, az = axyz
 
     return ax, ay, az, t, sample_rate, duration, row, file_path
+
+
+def get_tap(synapse_table, row, column_name, start=0,
+            out_path='.', username='', password=''):
+    """
+    Read screen tapping json data from Synapse table row.
+
+    Calls ::
+        from mhealthx.xio import read_file_from_synapse_table
+        from mhealthx.xio import read_accel_json
+
+    Parameters
+    ----------
+    synapse_table : string or Schema
+        a synapse ID or synapse table Schema object
+    row : pandas Series or string
+        row of a Synapse table converted to a Series or csv file
+    column_name : string
+        name of file handle column
+    start : integer
+        starting index (remove beginning)
+    out_path : string or None
+        a local path in which to store downloaded files.
+        If None, stores them in (~/.synapseCache)
+    username : string
+        Synapse username (only needed once on a given machine)
+    password : string
+        Synapse password (only needed once on a given machine)
+
+    Returns
+    -------
+    tx : list
+        x-axis screen tap data
+    ty : list
+        y-axis screen tap data
+    t : list
+        time points for accelerometer data
+    sample_rate : float
+        sample rate
+    duration : float
+        duration of time series
+    row : pandas Series
+        same as passed in: row of a Synapse table as a file or Series
+    file_path : string
+        path to accelerometer file
+
+    Examples
+    --------
+    >>> from mhealthx.xio import extract_synapse_rows, read_file_from_synapse_table, get_tap
+    >>> import synapseclient
+    >>> syn = synapseclient.Synapse()
+    >>> syn.login()
+    >>> synapse_table = 'syn4590866'
+    >>> row_series, row_files = extract_synapse_rows(synapse_table, save_path='.', limit=3, username='', password='')
+    >>> column_name = 'deviceMotion_walking_outbound.json.items'
+    >>> start = 150
+    >>> out_path = None
+    >>> username = ''
+    >>> password = ''
+    >>> for i in range(1):
+    >>>     row = row_series[i]
+    >>>     row, filepath = read_file_from_synapse_table(synapse_table, row,
+    >>>         column_name, out_path, username, password)
+    >>>     print(row)
+    >>>     tx, ty, t, sample_rate, duration, row, file_path = get_tap(synapse_table,
+    >>>                                       row, column_name,
+    >>>                                       start, out_path, username, password)
+
+    """
+    from mhealthx.xio import read_file_from_synapse_table, read_tap_json
+
+    # Load row data and accelerometer json file (full path):
+    row, file_path = read_file_from_synapse_table(synapse_table, row,
+                                                  column_name, out_path,
+                                                  username, password)
+    # Read accelerometer json file:
+    t, tx, ty, button, sample_rate, duration = read_tap_json(file_path, start)
+
+    return tx, ty, t, sample_rate, duration, row, file_path
+
+
+def get_convert_audio(synapse_table, row, column_name,
+                      convert_file_append='', convert_command='ffmpeg',
+                      convert_input_args='-y -i', convert_output_args='-ac 2',
+                      out_path='.', username='', password=''):
+    """
+    Read data from a row of a Synapse table and convert audio file.
+
+    Calls ::
+        from mhealthx.xio import read_file_from_synapse_table
+        from mhealthx.xio import convert_audio_file
+
+    Parameters
+    ----------
+    synapse_table : string or Schema
+        a synapse ID or synapse table Schema object
+    row : pandas Series or string
+        row of a Synapse table converted to a Series or csv file
+    column_name : string
+        name of file handle column
+    convert_file_append : string
+        append to file name to indicate converted file format (e.g., '.wav')
+    convert_command : string
+        executable command without arguments
+    convert_input_args : string
+        arguments preceding input file name for convert_command
+    convert_output_args : string
+        arguments preceding output file name for convert_command
+    out_path : string or None
+        a local path in which to store downloaded files.
+    username : string
+        Synapse username (only needed once on a given machine)
+    password : string
+        Synapse password (only needed once on a given machine)
+
+    Returns
+    -------
+    row : pandas Series
+        same as passed in: row of a Synapse table as a file or Series
+    new_file : string
+        full path to the converted file
+
+    Examples
+    --------
+    >>> from mhealthx.xio import get_convert_audio
+    >>> from mhealthx.xio import extract_synapse_rows, read_file_from_synapse_table
+    >>> import synapseclient
+    >>> syn = synapseclient.Synapse()
+    >>> syn.login()
+    >>> synapse_table = 'syn4590865'
+    >>> row_series, row_files = extract_synapse_rows(synapse_table, save_path='.', limit=3, username='', password='')
+    >>> column_name = 'audio_audio.m4a' #, 'audio_countdown.m4a']
+    >>> convert_file_append = '.wav'
+    >>> convert_command = 'ffmpeg'
+    >>> convert_input_args = '-y -i'
+    >>> convert_output_args = '-ac 2'
+    >>> out_path = '.'
+    >>> username = ''
+    >>> password = ''
+    >>> for i in range(1):
+    >>>     row = row_series[i]
+    >>>     row, filepath = read_file_from_synapse_table(synapse_table, row,
+    >>>         column_name, out_path, username, password)
+    >>>     print(row)
+    >>>     row, new_file = get_convert_audio(synapse_table,
+    >>>                                       row, column_name,
+    >>>                                       convert_file_append,
+    >>>                                       convert_command,
+    >>>                                       convert_input_args,
+    >>>                                       convert_output_args,
+    >>>                                       out_path, username, password)
+
+    """
+    from mhealthx.xio import read_file_from_synapse_table, convert_audio_file
+
+    row, file_path = read_file_from_synapse_table(synapse_table, row,
+                                                  column_name, out_path,
+                                                  username, password)
+    if convert_file_append:
+        renamed_file = file_path + convert_file_append
+        new_file = convert_audio_file(old_file=file_path,
+                                      new_file=renamed_file,
+                                      command=convert_command,
+                                      input_args=convert_input_args,
+                                      output_args=convert_output_args)
+    else:
+        new_file = None
+
+    return row, new_file
+
+
+def convert_audio_file(old_file, new_file, command='ffmpeg',
+                       input_args='-i', output_args='-ac 2'):
+    """
+    Convert audio file to new format.
+
+    Parameters
+    ----------
+    old_file : string
+        full path to the input file
+    new_file : string
+        full path to the output file
+    command : string
+        executable command without arguments
+    input_args : string
+        arguments preceding input file name in command
+    output_args : string
+        arguments preceding output file name in command
+
+    Returns
+    -------
+    new_file : string
+        full path to the output file
+
+    Examples
+    --------
+    >>> from mhealthx.xio import convert_audio_file
+    >>> old_file = '/Users/arno/mhealthx_cache/mhealthx/feature_files/test.m4a'
+    >>> new_file = 'test.wav'
+    >>> command = 'ffmpeg'
+    >>> input_args = '-y -i'
+    >>> output_args = '-ac 2'
+    >>> new_file = convert_audio_file(old_file, new_file, command, input_args, output_args)
+
+    """
+    import os
+    from nipype.interfaces.base import CommandLine
+
+    if not os.path.isfile(old_file):
+        raise IOError("{0} does not exist.".format(old_file))
+        new_file = None
+    else:
+        input_args = ' '.join([input_args, old_file, output_args, new_file])
+        try:
+            # Nipype command line wrapper:
+            cli = CommandLine(command = command)
+            cli.inputs.args = input_args
+            cli.cmdline
+            cli.run()
+        except:
+            print("'{0} {1}' unsuccessful".format(command, input_args))
+            new_file = None
+
+    return new_file
 
 
 def write_wav(data, file_stem, file_append,
