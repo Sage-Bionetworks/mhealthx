@@ -8,11 +8,13 @@ symptom tracking app built on top of Apple's ResearchKit.
 
 See our software `documentation`_ and Github `repository`_ maintained by `Arno`_.
 
-In particular, see our::
+In particular, please see:
 
-   - `gait feature extraction`_ from accelerometer data
-   - `tapping feature extraction`_ from a touch screen tapping task
-   - `main extract function`_ that calls the feature extraction methods
+`gait feature extraction`_ from accelerometer data
+
+`tapping feature extraction`_ from a touch screen tapping task
+
+`main extract function`_ that calls the feature extraction methods
 
 ..
   .. raw:: html
