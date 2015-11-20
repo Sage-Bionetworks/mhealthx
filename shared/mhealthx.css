@@ -2,18 +2,6 @@
  * Alternate Sphinx design
  * Originally created by Armin Ronacher for Werkzeug, adapted by Georg Brandl,
  * and later modified by Arno Klein.
- *
- * Colors:
- * mhealthx logo foreground and background: #FFBE22; #FCFCC8;
- * color: #e0a91b;  # strong mustard
- * color: #e0bb58;  # dull mustard 
- * color: #a06005;  #8f6f17;   #a67f15;  #c89718;  # hyperlinks
- * background-color: #e0bb58;  # box background
- * color: #836e35;  # footer text
- * 
- * Misc. colors:
- * color: #b07613;  # brown
- * color: #91590e;  # dark brown
  */
 
 body {
@@ -25,8 +13,6 @@ body {
     text-decoration: none;
     color: black;
     padding: 0;
-#    background-color: #e0bb58;  # dull mustard
-#    border: 1px solid #aaa;
     margin: 0px 80px 0px 80px;
     min-width: 740px;
 }
@@ -109,12 +95,12 @@ a tt {
     background-color: transparent;
     font-weight: bold;
     border: 0;
-    color: #a06005;  # hyperlinks
+    color: #007700;  # hyperlinks
     text-decoration: none;
 }
 
 a tt:hover {
-    color: #e0a91b;  # strong mustard
+    color: #00AA00;  #
 }
 
 dl {
@@ -221,11 +207,11 @@ div.related ul li a {
     margin: 0;
     padding: 0 5px 0 5px;
     line-height: 1.75em;
-    color: #a06005;  # hyperlinks
+    color: #007700;  # hyperlinks
 }
 
 div.related ul li a:hover {
-    color: #e0a91b;  # strong mustard
+    color: #00AA00;  #
 }
 
 div.body {
@@ -258,8 +244,7 @@ div.sphinxsidebar h4, div.sphinxsidebar h3 {
     padding: 0.1em 0 0.1em 0.5em;
     color: white;
     border: 1px solid #86989B;
-    background-color: #e0a91b;  # strong mustard
-#    background-color: #e0bb58;  # box background
+    background-color: #007700;  #
 }
 
 div.sphinxsidebar ul {
@@ -345,7 +330,7 @@ div.footer {
 }
 
 div.footer a {
-    color: #a06005;  # Sphinx hyperlink
+    color: #007700;  # Sphinx hyperlink
     text-decoration: none; #underline;
 }
 
@@ -427,7 +412,6 @@ div.warning ul, div.warning ol {
 div.versioninfo {
     margin: 1em 0 0 0;
     border: 1px solid #ccc;
-#    background-color: #fcfcc8;  # snake background
     background-color: #e0bb58;  # box background
     padding: 8px;
     line-height: 1.3em;
@@ -436,7 +420,7 @@ div.versioninfo {
 
 
 a.headerlink {
-    color: #c60f0f!important;
+    color: #007700!important;
     font-size: 1em;
     margin-left: 6px;
     padding: 0 4px 0 4px;
