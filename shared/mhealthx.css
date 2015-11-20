@@ -18,12 +18,12 @@ body {
 }
 
 a {
-    color: #007700;  # hyperlinks
+    color: #00AA00;  # hyperlinks
     text-decoration: none;
 }
 
 a:hover {
-    color: #00AA00;
+    color: #00DD00;
 }
 
 pre {
@@ -95,12 +95,12 @@ a tt {
     background-color: transparent;
     font-weight: bold;
     border: 0;
-    color: #007700;  # hyperlinks
+    color: #00AA00;  # hyperlinks
     text-decoration: none;
 }
 
 a tt:hover {
-    color: #00AA00;  #
+    color: #00DD00;  #
 }
 
 dl {
@@ -207,11 +207,11 @@ div.related ul li a {
     margin: 0;
     padding: 0 5px 0 5px;
     line-height: 1.75em;
-    color: #007700;  # hyperlinks
+    color: #00AA00;  # hyperlinks
 }
 
 div.related ul li a:hover {
-    color: #00AA00;  #
+    color: #00DD00;  #
 }
 
 div.body {
@@ -244,7 +244,7 @@ div.sphinxsidebar h4, div.sphinxsidebar h3 {
     padding: 0.1em 0 0.1em 0.5em;
     color: white;
     border: 1px solid #86989B;
-    background-color: #007700;  #
+    background-color: #00AA00;  #
 }
 
 div.sphinxsidebar ul {
@@ -330,7 +330,7 @@ div.footer {
 }
 
 div.footer a {
-    color: #007700;  # Sphinx hyperlink
+    color: #00AA00;  # Sphinx hyperlink
     text-decoration: none; #underline;
 }
 
@@ -420,7 +420,7 @@ div.versioninfo {
 
 
 a.headerlink {
-    color: #007700!important;
+    color: #00AA00!important;
     font-size: 1em;
     margin-left: 6px;
     padding: 0 4px 0 4px;
