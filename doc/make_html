@@ -30,7 +30,7 @@ rm api/*.bk
 rm api/generated/*.bk
 
 # Push changes:
-git add api genindex.html
+git add api index.html genindex.html
 git commit -m "Update documentation for website."
 git push origin gh-pages
 
