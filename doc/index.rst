@@ -10,11 +10,11 @@ See our software `documentation`_ and Github `repository`_ maintained by `Arno`_
 
 In particular, please see:
 
-`gait feature extraction`_ from accelerometer data
+gait_ feature extraction from accelerometer data
 
-`tapping feature extraction`_ from a touch screen tapping task
+tapping_ feature extraction from a touch screen tapping task
 
-`main extract function`_ that calls the feature extraction methods
+`main function`_ that calls all the feature extraction methods
 
 ..
   .. raw:: html
@@ -22,9 +22,9 @@ In particular, please see:
 
 .. _`Sage Bionetworks`: http://sagebase.org
 .. _mPower: http://parkinsonmpower.org
-.. _`documentation`: http://binarybottle.github.io/mhealthx/api/index.html
-.. _`repository`: https://github.com/binarybottle/mhealthx
+.. _documentation: http://binarybottle.github.io/mhealthx/api/index.html
+.. _repository: https://github.com/binarybottle/mhealthx
 .. _Arno: http://binarybottle.com
-.. _`gait feature extraction`: http://binarybottle.github.io/mhealthx/api/generated/mhealthx.extractors.pyGait.html
-.. _`tapping feature extraction`: http://binarybottle.github.io/mhealthx/api/generated/mhealthx.extractors.tapping.html
-.. _`main extract function`: http://binarybottle.github.io/mhealthx/api/generated/mhealthx.extract.html
+.. _gait: http://binarybottle.github.io/mhealthx/api/generated/mhealthx.extractors.pyGait.html
+.. _tapping: http://binarybottle.github.io/mhealthx/api/generated/mhealthx.extractors.tapping.html
+.. _`main function`: http://binarybottle.github.io/mhealthx/api/generated/mhealthx.extract.html
