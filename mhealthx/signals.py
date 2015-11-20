@@ -47,85 +47,6 @@ def compute_sample_rate(t):
     return sample_rate, duration
 
 
-def compute_interpeak(data, sample_rate):
-    """
-    Compute number of samples between signal peaks using the real part of FFT.
-
-    Parameters
-    ----------
-    data : list or numpy array
-        time series data
-    sample_rate : float
-        sample rate of accelerometer reading (Hz)
-
-    Returns
-    -------
-    interpeak : integer
-        number of samples between peaks
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from mhealthx.signals import compute_interpeak
-    >>> data = np.random.random(10000)
-    >>> sample_rate = 100
-    >>> interpeak = compute_interpeak(data, sample_rate)
-    """
-    import numpy as np
-    from scipy.fftpack import rfft, fftfreq
-
-    # Real part of FFT:
-    freqs = fftfreq(data.size, d=1.0/sample_rate)
-    f_signal = rfft(data)
-
-    # Maximum non-zero frequency:
-    imax_freq = np.argsort(f_signal)[-2]
-    freq = np.abs(freqs[imax_freq])
-
-    # Inter-peak samples:
-    interpeak = np.int(np.round(sample_rate / freq))
-
-    return interpeak
-
-
-def root_mean_square(data):
-    """
-    Compute root mean square of data.
-
-    from Yang, et al., 2012:
-    "The root mean square of acceleration indicates the intensity of motion.
-    The RMS values of the three acceleration directions (VT, AP and ML)
-    are calculated as: RMS_d = sqrt( (sum[i=1:N](xdi - [xd])^2 / N) )
-    where xdi (i = 1,2,...,N; d = VT,AP,ML) is the acceleration in either
-    the VT, AP or ML axis, N is the length of the acceleration signal,
-    [xd] is the mean value of acceleration in any axis."
-
-    Parameters
-    ----------
-    data : numpy array of floats
-
-    Returns
-    -------
-    rms : float
-        root mean square
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from mhealthx.signals import root_mean_square
-    >>> data = np.random.random(100)
-    >>> rms = root_mean_square(data)
-
-    """
-    import numpy as np
-
-    N = np.size(data)
-    demeaned_data = data - np.mean(data)
-    rms = np.sqrt(np.sum(demeaned_data**2 / N))
-
-    return rms
-
-
 def butter_lowpass_filter(data, sample_rate, cutoff=10, order=4):
     """
     Low-pass filter data by the [order]th order zero lag Butterworth filter
@@ -346,6 +267,345 @@ def parabolic(f, x):
     return xv, yv
 
 
+def compute_interpeak(data, sample_rate):
+    """
+    Compute number of samples between signal peaks using the real part of FFT.
+
+    Parameters
+    ----------
+    data : list or numpy array
+        time series data
+    sample_rate : float
+        sample rate of accelerometer reading (Hz)
+
+    Returns
+    -------
+    interpeak : integer
+        number of samples between peaks
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from mhealthx.signals import compute_interpeak
+    >>> data = np.random.random(10000)
+    >>> sample_rate = 100
+    >>> interpeak = compute_interpeak(data, sample_rate)
+    """
+    import numpy as np
+    from scipy.fftpack import rfft, fftfreq
+
+    # Real part of FFT:
+    freqs = fftfreq(data.size, d=1.0/sample_rate)
+    f_signal = rfft(data)
+
+    # Maximum non-zero frequency:
+    imax_freq = np.argsort(f_signal)[-2]
+    freq = np.abs(freqs[imax_freq])
+
+    # Inter-peak samples:
+    interpeak = np.int(np.round(sample_rate / freq))
+
+    return interpeak
+
+
+def compute_mean_teagerkaiser_energy(x):
+    """
+    Mean Teager-Kaiser energy operator
+
+    (from TKEO function in R library(seewave) using f = 1, m = 1, M = 1)
+
+    Parameters
+    ----------
+    x : numpy array of floats
+
+    Return
+    ------
+    tk_energy : float
+
+    Examples
+    --------
+    >>> from mhealthx.signals import compute_mean_teagerkaiser_energy
+    >>> x = np.array([1,  3, 12, 25, 10])
+    >>> tk_energy = compute_mean_teagerkaiser_energy(x)
+
+    """
+    import numpy as np
+
+    if isinstance(x, list):
+        x = np.asarray(x)
+
+    tk_energy = np.mean((x**2)[1:-1] - x[2:] * x[:-2])
+
+    return tk_energy
+
+
+def root_mean_square(data):
+    """
+    Compute root mean square of data.
+
+    from Yang, et al., 2012:
+    "The root mean square of acceleration indicates the intensity of motion.
+    The RMS values of the three acceleration directions (VT, AP and ML)
+    are calculated as: RMS_d = sqrt( (sum[i=1:N](xdi - [xd])^2 / N) )
+    where xdi (i = 1,2,...,N; d = VT,AP,ML) is the acceleration in either
+    the VT, AP or ML axis, N is the length of the acceleration signal,
+    [xd] is the mean value of acceleration in any axis."
+
+    Parameters
+    ----------
+    data : numpy array of floats
+
+    Returns
+    -------
+    rms : float
+        root mean square
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from mhealthx.signals import root_mean_square
+    >>> data = np.random.random(100)
+    >>> rms = root_mean_square(data)
+
+    """
+    import numpy as np
+
+    N = np.size(data)
+    demeaned_data = data - np.mean(data)
+    rms = np.sqrt(np.sum(demeaned_data**2 / N))
+
+    return rms
+
+
+def weighted_to_repeated_values(X, W=[], precision=1):
+    """
+    Create a list of repeated values from weighted values.
+
+    This is useful for computing weighted statistics (ex: weighted median).
+
+    Adapted to allow for fractional weights from
+        http://stackoverflow.com/questions/966896/
+               code-golf-shortest-code-to-find-a-weighted-median
+
+    Parameters
+    ----------
+    X : numpy array of floats or integers
+        values
+    W : numpy array of floats or integers
+        weights
+    precision : integer
+        number of decimal places to consider weights
+
+    Returns
+    -------
+    repeat_values : numpy array of floats or integers
+        repeated values according to their weight
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from mhealthx.signals import weighted_to_repeated_values
+    >>> X = np.array([1,2,4,7,8])
+    >>> W = np.array([.1,.1,.3,.2,.3])
+    >>> precision = 1
+    >>> weighted_to_repeated_values(X, W, precision)
+        [1, 2, 4, 4, 4, 7, 7, 8, 8, 8]
+
+    """
+    import numpy as np
+
+    # Make sure arguments have the correct type:
+    if not isinstance(X, np.ndarray):
+        X = np.array(X)
+    if not isinstance(W, np.ndarray):
+        W = np.array(W)
+    if not isinstance(precision, int):
+        precision = int(precision)
+
+    if np.size(W):
+        # If weights are decimals, multiply by 10 until they are whole.
+        # If after multiplying precision times they are not whole, round them:
+        whole = True
+        if any(np.mod(W,1)):
+            whole = False
+            for i in range(precision):
+                if any(np.mod(W,1)):
+                    W *= 10
+                else:
+                    whole = True
+                    break
+
+        if not whole:
+             W = [int(np.round(x)) for x in W]
+
+        repeat_values = sum([[x]*w for x,w in zip(X,W)],[])
+
+    else:
+        repeat_values = X
+
+    return repeat_values
+
+
+def compute_median_abs_dev(X, W=[], precision=1, c=1.0):
+    """
+    Compute the (weighted) median absolute deviation.
+
+    mad = median(abs(x - median(x))) / c
+
+    Parameters
+    ----------
+    X : numpy array of floats or integers
+        values
+    W : numpy array of floats or integers
+        weights
+    precision : integer
+        number of decimal places to consider weights
+    c : float
+        constant used as divisor for mad computation;
+        c = 0.6745 is used to convert from mad to standard deviation
+
+    Returns
+    -------
+    mad : float
+        (weighted) median absolute deviation
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from mhealthx.signals import compute_median_abs_dev
+    >>> X = np.array([1,2,4,7,8])
+    >>> W = np.array([.1,.1,.3,.2,.3])
+    >>> precision = 1
+    >>> # [1, 2, 4, 4, 4, 7, 7, 8, 8, 8]
+    >>> compute_median_abs_dev(X, W, precision)
+        2.0
+
+    """
+    import numpy as np
+
+    from mhealthx.signals import weighted_to_repeated_values
+
+    # Make sure arguments have the correct type:
+    if not isinstance(X, np.ndarray):
+        X = np.array(X)
+    if not isinstance(W, np.ndarray):
+        W = np.array(W)
+    if not isinstance(precision, int):
+        precision = int(precision)
+
+    if np.size(W):
+        X = weighted_to_repeated_values(X, W, precision)
+
+    mad = np.median(np.abs(X - np.median(X))) / c
+
+    return mad
+
+
+def compute_cv(x):
+    """
+    cv = 100 * np.std(x) / np.mean(x)
+
+    Parameters
+    ----------
+    x : list or array of floats
+
+    Return
+    ------
+    cv : float
+
+    Examples
+    --------
+    >>> from mhealthx.signals import compute_cv
+    >>> x = [1,  3, 10]
+    >>> cv = compute_cv(x)
+
+    """
+    import numpy as np
+
+    cv = 100 * np.std(x) / np.mean(x)
+
+    return cv
+
+
+def compute_stats(x):
+    """
+    Compute statistical summaries of data.
+
+    Parameters
+    ----------
+    x : list or array of floats
+
+    Return
+    ------
+    num : integer
+        number of elements
+    min : integer
+        minimum
+    max : integer
+        maximum
+    rng : integer
+        range
+    avg : float
+        mean
+    std : float
+        standard deviation
+    med : float
+        median
+    mad : float
+        median absolute deviation
+    kurt : float
+        kurtosis
+    skew : float
+        skewness
+    cvar : float
+        coefficient of variation
+    lower25 : float
+        lower quartile
+    upper25 : float
+        upper quartile
+    inter50 : float
+        interquartile range
+
+    Examples
+    --------
+    >>> from mhealthx.signals import compute_stats
+    >>> x = [1,  3, 10]
+    >>> num, min, max, rng, avg, std, med, mad, kurt, skew, cvar, lower25, upper25, inter50 = compute_stats(x)
+
+    """
+    import numpy as np
+    from scipy import stats
+
+    from mhealthx.signals import compute_median_abs_dev, compute_cv
+
+    num = np.size(x)
+    min = np.min(x)
+    max = np.max(x)
+    rng = max - min
+    avg = np.mean(x)
+    std = np.std(x)
+    med = np.median(x)
+    mad = compute_median_abs_dev(x, W=[], precision=1, c=1.0)
+
+    # Kurtosis and skew:
+    #xdiff = x - np.mean(x)
+    #kurtosis = np.mean(xdiff**4)/(np.mean(xdiff**2))**2
+    kurt = stats.kurtosis(x)
+    #skew = np.mean(xdiff**3) / (np.mean(xdiff**2)**(3./2.))
+    skew = stats.skew(x)
+
+    # Coefficient of variation:
+    cvar = compute_cv(x)
+
+    # Quartiles:
+    upper25 = stats.scoreatpercentile(x, 75)
+    lower25 = stats.scoreatpercentile(x, 25)
+    inter50 = upper25 - lower25
+
+    return num, min, max, rng, avg, std, med, mad, kurt, skew, cvar, \
+        lower25, upper25, inter50
+
+
 def signal_features(data):
     """
     Extract various features from time series data.
@@ -357,28 +617,65 @@ def signal_features(data):
 
     Returns
     -------
+    num : integer
+        number of elements
+    min : integer
+        minimum
+    max : integer
+        maximum
+    rng : integer
+        range
+    avg : float
+        mean
+    std : float
+        standard deviation
+    med : float
+        median
+    mad : float
+        median absolute deviation
+    kurt : float
+        kurtosis
+    skew : float
+        skewness
+    cvar : float
+        coefficient of variation
+    lower25 : float
+        lower quartile
+    upper25 : float
+        upper quartile
+    inter50 : float
+        interquartile range
     rms : float
         root mean squared error
     entropy : float
         entropy measure
+    tk_energy : float
+        mean Teager-Kaiser energy
 
     Examples
     --------
     >>> import numpy as np
     >>> from mhealthx.signals import signal_features
     >>> data = np.random.random(100)
-    >>> rms, entropy = signal_features(data)
+    >>> num, min, max, rng, avg, std, med, mad, kurt, skew, cvar, lower25, upper25, inter50, rms, entropy, tk_energy = signal_features(data)
 
     """
     from scipy.stats import entropy as scipy_entropy
 
-    from mhealthx.signals import root_mean_square
+    from mhealthx.signals import compute_stats, root_mean_square, \
+        compute_mean_teagerkaiser_energy
+
+    num, min, max, rng, avg, std, med, mad, kurt, skew, cvar, lower25, \
+    upper25, inter50 = compute_stats(data)
 
     rms = root_mean_square(data)
 
     entropy = scipy_entropy(data)
 
-    return rms, entropy
+    tk_energy = compute_mean_teagerkaiser_energy(data)
+
+    return num, min, max, rng, avg, std, med, mad, kurt, skew, cvar, \
+           lower25, upper25, inter50, rms, entropy, tk_energy
 
 
 def gravity_min_mse(gx, gy, gz):

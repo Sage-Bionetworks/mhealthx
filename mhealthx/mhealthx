@@ -41,7 +41,7 @@ from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node
 from mhealthx.extract import run_openSMILE, run_pyGait, run_signal_features, \
-    run_quality
+    run_tap_features, run_quality
 from mhealthx.extractors.pyGait import project_walk_direction_attitude
 from mhealthx.xio import extract_synapse_rows, write_wav, \
     get_convert_audio, get_accel, get_tap
@@ -777,7 +777,7 @@ elif synID_tap and not setup_rows:
                     and os.path.isfile(os.path.join(path_tap, f))]
 
     # ------------------------------------------------------------------------
-    # Balance data: retrieve each row + json file from Synapse table:
+    # Tap data: retrieve each row + json file from Synapse table:
     # ------------------------------------------------------------------------
     getTap = Node(name='tap_data',
                   interface=Fn(function=get_tap,
@@ -790,7 +790,6 @@ elif synID_tap and not setup_rows:
                                             'password'],
                                output_names=['tx',
                                              'ty',
-                                             'tz',
                                              't',
                                              'sample_rate',
                                              'duration',
@@ -798,11 +797,35 @@ elif synID_tap and not setup_rows:
                                              'file_path']))
     getTap.inputs.synapse_table = synID_tap
     getTap.iterables = ("row", rows_tap)
-    getTap.inputs.column_name = 'deviceMotion_walking_rest.json.items'
+    getTap.inputs.column_name = 'tapping_results.json.TappingSamples'
     getTap.inputs.start = 0
     getTap.inputs.out_path = None
     getTap.inputs.username = ''
     getTap.inputs.password = ''
+
+    # ------------------------------------------------------------------------
+    # tap_features() on balance data (each axis):
+    # ------------------------------------------------------------------------
+    Tap = Node(name='tap_features',
+               interface=Fn(function=run_tap_features,
+                            input_names=['xtaps',
+                                         'ytaps',
+                                         't',
+                                         'threshold',
+                                         'row',
+                                         'file_path',
+                                         'table_stem',
+                                         'save_rows'],
+                            output_names=['feature_row',
+                                          'feature_table']))
+    Flow.connect(getTap, 'tx', Tap, 'xtaps')
+    Flow.connect(getTap, 'ty', Tap, 'ytaps')
+    Flow.connect(getTap, 't', Tap, 't')
+    Tap.inputs.threshold = 20
+    Flow.connect(getTap, 'row', Tap, 'row')
+    Flow.connect(getTap, 'file_path', Tap, 'file_path')
+    Tap.inputs.table_stem = os.path.join(feature_table_path, 'tap')
+    Tap.inputs.save_rows = True
 
 
 # ============================================================================
