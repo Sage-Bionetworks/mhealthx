@@ -1,5 +1,5 @@
 ==============================================================================
-README for Sage Bionetwork's mHealth feature extraction software pipeline
+README for Sage Bionetwork's mhealthx feature extraction software pipeline
 ==============================================================================
 | 1. `Introduction`_
 | 2. `Inputs`_
@@ -35,4 +35,4 @@ _`Processing`
 ------------------------------------------------------------------------------
 _`Outputs`
 ------------------------------------------------------------------------------
-  - Synapse tables
+  - Tables

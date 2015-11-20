@@ -21,18 +21,9 @@ if len(set(('develop', 'bdist_egg', 'bdist_rpm', 'bdist', 'bdist_dumb',
 
 from distutils.core import setup
 
-# Python 2 to 3 build
-#from nisext.py3builder import build_py
-## Commit hash writing, and dependency checking
-#from nisext.sexts import get_comrec_build, package_check
-#cmdclass = {'build_py': get_comrec_build('mhealthx', build_py)}
-
 # Get version and release info, which is all stored in info.py
 ver_file = os.path.join('mhealthx', 'info.py')
 exec(open(ver_file).read())
-
-# Do dependency checking
-#package_check('numpy', NUMPY_MIN_VERSION)
 
 extra_setuptools_args = {}
 if 'setuptools' in sys.modules:
@@ -63,7 +54,6 @@ def main(**extra_args):
           provides=PROVIDES,
           packages = ['mhealthx',
                       'mhealthx.extractors'],
-                      #'mhealthx.thirdparty.autotranscode'],
           scripts = [pjoin('mhealthx', 'mhealthx')],
           **extra_args
          )
