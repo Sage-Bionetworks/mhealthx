@@ -1,0 +1,37 @@
+# Commands for building the api docs for the mhealthx website.
+
+# MASTER BRANCH:
+
+git checkout master
+cd doc
+make html
+cd ..
+git add -f doc/build/html/api
+git add -f doc/build/html/genindex.html
+git commit -m "Update documentation for website."
+git push origin master
+
+# GH-PAGES BRANCH:
+
+git checkout gh-pages
+git checkout master -- doc/build/html/api
+git checkout master -- doc/build/html/genindex.html
+
+# Replace existing html pages:
+rm -r api
+mv doc/build/html/* .
+
+# Replace '_static' with 'shared' in files:
+sed -i .bk 's/_static/shared/g' *.html
+sed -i .bk 's/_static/shared/g' api/*.html
+sed -i .bk 's/_static/shared/g' api/generated/*.html
+rm *.bk
+rm api/*.bk
+rm api/generated/*.bk
+
+# Push changes:
+git add api genindex.html
+git commit -m "Update documentation for website."
+git push origin gh-pages
+
+git checkout master
