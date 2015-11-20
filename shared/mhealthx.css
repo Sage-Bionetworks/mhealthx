@@ -32,12 +32,12 @@ body {
 }
 
 a {
-    color: #a06005;  # hyperlinks
+    color: #007700;  # hyperlinks
     text-decoration: none;
 }
 
 a:hover {
-    color: #e0a91b;  # strong mustard
+    color: #00AA00;
 }
 
 pre {
