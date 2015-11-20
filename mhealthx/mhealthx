@@ -24,7 +24,7 @@ For help in using mhealthx ::
 
 This file uses Nipype (http://www.nipy.org/nipype/) to create a workflow
 environment that enables mhealthx to run in a flexible, modular manner
-while storing provenance information.
+while storing provenance information. Authors are listed per file.
 
 Authors:
     - Arno Klein, 2015  (arno@sagebase.org)  http://binarybottle.com

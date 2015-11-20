@@ -40,6 +40,7 @@ pyGait functions compute all of iGAIT's features except spectral features::
 
 Authors:
     - Arno Klein, 2015  (arno@sagebase.org)  http://binarybottle.com
+    - Elias Chaibub-Neto, 2015 (neto@sagebase.org)
 
 Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 """
@@ -145,6 +146,12 @@ def walk_direction_preheel(ax, ay, az, t, sample_rate,
     While the WalkCompass relies on clear heel strike signals across the
     accelerometer axes, this program just uses the most prominent strikes,
     and estimates period from the real part of the FFT of the data.
+
+    NOTE::
+        This algorithm computes a single walk direction, and could compute
+        multiple walk directions prior to detected heel strikes, but does
+        NOT estimate walking direction for every time point, like
+        walk_direction_attitude().
 
     Parameters
     ----------
@@ -357,6 +364,11 @@ def project_walk_direction_preheel(ax, ay, az, t, sample_rate,
     """
     Project accelerometer data on local walk (not cardinal) direction.
 
+    NOTE::
+        This calls walk_direction_preheel(), which computes a single walk
+        direction. It does NOT estimate walking direction for every time
+        point, like walk_direction_attitude().
+
     Parameters
     ----------
     ax : numpy array
@@ -422,7 +434,7 @@ def project_walk_direction_preheel(ax, ay, az, t, sample_rate,
 def heel_strikes(data, sample_rate, threshold=0.2, order=4, cutoff=5,
                  plot_test=False, t=None):
     """
-    Estimate heel strike times from sign changes in accelerometer data.
+    Estimate heel strike times between sign changes in accelerometer data.
 
     The iGAIT software assumes that the y-axis is anterior-posterior,
     and restricts some feature extraction to this orientation.

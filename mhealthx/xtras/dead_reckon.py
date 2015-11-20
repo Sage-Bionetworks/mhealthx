@@ -2,6 +2,8 @@
 """
 Attempt dead reckoning (estimating position) from accelerometer data.
 
+The accelerometer data are too noisy!
+
 Authors:
     - Arno Klein, 2015  (arno@sagebase.org)  http://binarybottle.com
 
@@ -121,7 +123,9 @@ def position_from_velocity(vx, vy, vz, t):
 
 def dead_reckon(ax, ay, az, t):
     """
-    ttempt dead reckoning (estimating position) from accelerometer data.
+    Attempt dead reckoning (estimating position) from accelerometer data.
+
+    The accelerometer data are too noisy!
 
     Parameters
     ----------

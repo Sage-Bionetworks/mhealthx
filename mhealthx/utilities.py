@@ -150,6 +150,8 @@ def plotxyz3d(x, y, z, title=''):
     """
     Plot accelerometer readings in 3-D.
 
+    (If trouble with "projection='3d'", try: ipython --pylab)
+
     Parameters
     ----------
     x : list or numpy array of floats
@@ -196,6 +198,8 @@ def plotxyz3d(x, y, z, title=''):
 def plot_vectors(x, y, z, hx=[], hy=[], hz=[], title=''):
     """
     Plot vectors in 3-D from the origin [0,0,0].
+
+    (If trouble with "projection='3d'", try: ipython --pylab)
 
     From: http://stackoverflow.com/questions/22867620/
                  putting-arrowheads-on-vectors-in-matplotlibs-3d-plot

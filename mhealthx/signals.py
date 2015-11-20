@@ -4,6 +4,7 @@ Signal processing functions from different sources.
 
 Authors:
     - Arno Klein, 2015  (arno@sagebase.org)  http://binarybottle.com
+    - Elias Chaibub-Neto, 2015 (neto@sagebase.org)
 
 Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 
@@ -681,6 +682,8 @@ def signal_features(data):
 def gravity_min_mse(gx, gy, gz):
     """
     Compute QC score based on gravity acceleration only.
+
+    Elias Chaibub-Neto used this to find gross rotations of the phone.
 
     Parameters
     ----------
