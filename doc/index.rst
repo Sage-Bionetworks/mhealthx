@@ -2,11 +2,11 @@
 Welcome to mhealthx
 ===================
 
-| `Sage Bionetworks`_ is developing mhealthx as a mobile health research
-| feature extraction pipeline for apps such as mPower_, the Parkinson disease 
-| symptom tracking app built on top of ResearchKit.
-| 
-| See our `Software documentation`_ and `Github repository`_ maintained by Arno_.
+`Sage Bionetworks`_ is developing mhealthx as a mobile health research
+feature extraction pipeline for apps such as mPower_, the Parkinson disease 
+symptom tracking app built on top of ResearchKit.
+
+See our `Software documentation`_ and `Github repository`_ maintained by `Arno`_.
 
 ..
   .. raw:: html
