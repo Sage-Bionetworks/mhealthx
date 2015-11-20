@@ -2,11 +2,17 @@
 Welcome to mhealthx
 ===================
 
-`Sage Bionetworks`_ is developing mhealthx as a mobile health research
-feature extraction pipeline for apps such as mPower_, the Parkinson disease 
-symptom tracking app built on top of ResearchKit.
+`Sage Bionetworks`_ is developing mhealthx as an open source feature extraction pipeline
+for mobile health research apps such as mPower_, the Parkinson disease 
+symptom tracking app built on top of Apple's ResearchKit.
 
-See our `Software documentation`_ and `Github repository`_ maintained by `Arno`_.
+See our software `documentation`_ and Github `repository`_ maintained by `Arno`_.
+
+In particular, see our::
+
+   - `gait feature extraction`_ from accelerometer data
+   - `tapping feature extraction`_ from a touch screen tapping task
+   - `main extract function`_ that calls the feature extraction methods
 
 ..
   .. raw:: html
@@ -14,6 +20,9 @@ See our `Software documentation`_ and `Github repository`_ maintained by `Arno`_
 
 .. _`Sage Bionetworks`: http://sagebase.org
 .. _mPower: http://parkinsonmpower.org
-.. _`Software documentation`: http://binarybottle.github.io/mhealthx/api/index.html
-.. _`Github repository`: https://github.com/binarybottle/mhealthx
+.. _`documentation`: http://binarybottle.github.io/mhealthx/api/index.html
+.. _`repository`: https://github.com/binarybottle/mhealthx
 .. _Arno: http://binarybottle.com
+.. _`gait feature extraction`: http://binarybottle.github.io/mhealthx/api/generated/mhealthx.extractors.pyGait.html
+.. _`tapping feature extraction`: http://binarybottle.github.io/mhealthx/api/generated/mhealthx.extractors.tapping.html
+.. _`main extract function`: http://binarybottle.github.io/mhealthx/api/generated/mhealthx.extract.html
