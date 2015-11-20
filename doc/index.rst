@@ -5,6 +5,8 @@ Welcome to mhealthx
 | We are developing mhealthx as a mobile health feature extraction pipeline,
 | and to promote open science by making all data, software,
 | and documentation freely and openly available.
+|
+| See our <a href="http://binarybottle.github.io/mhealthx/api/index.html">API</a>
 
 ..
   .. raw:: html
