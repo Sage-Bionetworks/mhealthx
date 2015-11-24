@@ -145,6 +145,7 @@ from an assumed anterior-posterior orientation along the y-axis.</p>
 <dt>Authors:</dt>
 <dd><ul class="first last simple">
 <li>Arno Klein, 2015  (<a class="reference external" href="mailto:arno&#37;&#52;&#48;sagebase&#46;org">arno<span>&#64;</span>sagebase<span>&#46;</span>org</a>)  <a class="reference external" href="http://binarybottle.com">http://binarybottle.com</a></li>
+<li>Elias Chaibub-Neto, 2015 (<a class="reference external" href="mailto:neto&#37;&#52;&#48;sagebase&#46;org">neto<span>&#64;</span>sagebase<span>&#46;</span>org</a>)</li>
 </ul>
 </dd>
 </dl>
@@ -285,7 +286,7 @@ from the acceleration data, namely</p>
 <dl class="function">
 <dt id="mhealthx.extractors.pyGait.heel_strikes">
 <code class="descclassname">mhealthx.extractors.pyGait.</code><code class="descname">heel_strikes</code><span class="sig-paren">(</span><em>data</em>, <em>sample_rate</em>, <em>threshold=0.2</em>, <em>order=4</em>, <em>cutoff=5</em>, <em>plot_test=False</em>, <em>t=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mhealthx.extractors.pyGait.heel_strikes" title="Permalink to this definition">¶</a></dt>
-<dd><p>Estimate heel strike times from sign changes in accelerometer data.</p>
+<dd><p>Estimate heel strike times between sign changes in accelerometer data.</p>
 <p>The iGAIT software assumes that the y-axis is anterior-posterior,
 and restricts some feature extraction to this orientation.
 In this program, we compute heel strikes for an arbitrary axis.</p>
@@ -421,6 +422,12 @@ unit_vectors : list of lists of x, y, z coordinates (or numpy arrays)</p>
 <code class="descclassname">mhealthx.extractors.pyGait.</code><code class="descname">project_walk_direction_preheel</code><span class="sig-paren">(</span><em>ax</em>, <em>ay</em>, <em>az</em>, <em>t</em>, <em>sample_rate</em>, <em>stride_fraction</em>, <em>threshold</em>, <em>order</em>, <em>cutoff</em><span class="sig-paren">)</span><a class="headerlink" href="#mhealthx.extractors.pyGait.project_walk_direction_preheel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Project accelerometer data on local walk (not cardinal) direction.</p>
 <dl class="docutils">
+<dt>NOTE::</dt>
+<dd>This calls walk_direction_preheel(), which computes a single walk
+direction. It does NOT estimate walking direction for every time
+point, like walk_direction_attitude().</dd>
+</dl>
+<dl class="docutils">
 <dt>ax <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
 <dd>accelerometer data along x axis</dd>
 <dt>ay <span class="classifier-delimiter">:</span> <span class="classifier">numpy array</span></dt>
@@ -517,6 +524,13 @@ of the primary leg&#8217;s stride, when it is decelerating in its swing.
 While the WalkCompass relies on clear heel strike signals across the
 accelerometer axes, this program just uses the most prominent strikes,
 and estimates period from the real part of the FFT of the data.</p>
+<dl class="docutils">
+<dt>NOTE::</dt>
+<dd>This algorithm computes a single walk direction, and could compute
+multiple walk directions prior to detected heel strikes, but does
+NOT estimate walking direction for every time point, like
+walk_direction_attitude().</dd>
+</dl>
 <dl class="docutils">
 <dt>ax <span class="classifier-delimiter">:</span> <span class="classifier">list or numpy array</span></dt>
 <dd>x-axis accelerometer data</dd>
