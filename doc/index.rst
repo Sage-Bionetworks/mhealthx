@@ -3,11 +3,7 @@ Welcome to mhealthx
 ===================
 
 `Sage Bionetworks`_ is developing mhealthx as an open source feature extraction pipeline
-for mobile health research apps such as mPower_,
-| the Parkinson disease symptom tracking app built on top of Apple's ResearchKit.
-|
-
-See our software `documentation`_ and Github `repository`_ maintained by `Arno`_.
+for mobile health research apps such as mPower_, the Parkinson disease symptom tracking app built on top of Apple's ResearchKit. See our software `documentation`_ and Github `repository`_ maintained by `Arno`_.
 
 |
 
@@ -20,8 +16,8 @@ tapping_ feature extraction from a touch screen tapping task
 `main function`_ that calls all the feature extraction methods
 
 |
+
 ----------
-|
 
 **References**
 
