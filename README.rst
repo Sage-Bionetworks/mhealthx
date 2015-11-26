@@ -3,9 +3,8 @@ README for Sage Bionetwork's mhealthx feature extraction software pipeline
 ==============================================================================
 | 1. `Introduction`_
 | 2. `Inputs`_
-| 3. `Preprocessing`_
-| 4. `Processing`_
-| 5. `Outputs`_
+| 3. `Processing`_
+| 4. `Outputs`_
 
 ------------------------------------------------------------------------------
 _`Introduction`
