@@ -2,8 +2,8 @@
 
 # MASTER BRANCH:
 
-git checkout master
-cd doc
+#git checkout master
+#cd doc
 make html
 cd ..
 git add -f doc/build/html/api
