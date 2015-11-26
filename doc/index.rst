@@ -34,9 +34,9 @@ Arora S, Little MA, Venkataraman V, Donohue S, Biglan K, Dorsey ER. High-accurac
 
 .. _`Sage Bionetworks`: http://sagebase.org
 .. _mPower: http://parkinsonmpower.org
-.. _documentation: http://binarybottle.github.io/mhealthx/api/index.html
-.. _repository: https://github.com/binarybottle/mhealthx
+.. _documentation: http://sage-bionetworks.github.io/mhealthx/api/index.html
+.. _repository: https://github.com/sage-bionetworks/mhealthx
 .. _Arno: http://binarybottle.com
-.. _gait: http://binarybottle.github.io/mhealthx/api/generated/mhealthx.extractors.pyGait.html
-.. _tapping: http://binarybottle.github.io/mhealthx/api/generated/mhealthx.extractors.tapping.html
-.. _`main function`: http://binarybottle.github.io/mhealthx/api/generated/mhealthx.extract.html
+.. _gait: http://sage-bionetworks.github.io/mhealthx/api/generated/mhealthx.extractors.pyGait.html
+.. _tapping: http://sage-bionetworks.github.io/mhealthx/api/generated/mhealthx.extractors.tapping.html
+.. _`main function`: http://sage-bionetworks.github.io/mhealthx/api/generated/mhealthx.extract.html
