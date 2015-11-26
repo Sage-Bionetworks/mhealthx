@@ -10,7 +10,7 @@ README for Sage Bionetwork's mhealthx feature extraction software pipeline
 ------------------------------------------------------------------------------
 _`Introduction`
 ------------------------------------------------------------------------------
-This open source (Nipype) pipeline automates feature extraction 
+This open source software pipeline automates feature extraction 
 from mobile health data saved as a Synapse project (synapse.org).
 
   - For help in a terminal window:  extractor -h
