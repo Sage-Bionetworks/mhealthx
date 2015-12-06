@@ -7,7 +7,7 @@
 make html
 cd ..
 git add -f doc/build/html/api
-git add -f doc/build/html/genindex.html
+#git add -f doc/build/html/genindex.html
 git commit -m "Update documentation for website."
 git push origin master
 
@@ -15,7 +15,7 @@ git push origin master
 
 git checkout gh-pages
 git checkout master -- doc/build/html/api
-git checkout master -- doc/build/html/genindex.html
+#git checkout master -- doc/build/html/genindex.html
 
 # Replace existing html pages:
 rm -r api
@@ -30,7 +30,7 @@ rm api/*.bk
 rm api/generated/*.bk
 
 # Push changes:
-git add api index.html genindex.html
+git add api index.html #genindex.html
 git commit -m "Update documentation for website."
 git push origin gh-pages
 
