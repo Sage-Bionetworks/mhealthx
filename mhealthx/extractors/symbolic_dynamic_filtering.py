@@ -25,6 +25,7 @@ def max_entropy_partition(data, number_of_symbols):
     ----------
     data : numpy array
     number_of_symbols : integer
+        number of symbols for symbolic dynamic filtering method
 
     Returns
     -------
@@ -42,6 +43,13 @@ def max_entropy_partition(data, number_of_symbols):
 
     """
     import numpy as np
+
+    if isinstance(data, np.ndarray):
+        pass
+    elif isinstance(data, list):
+        data = np.asarray(data)
+    else:
+        raise IOError("data should be a numpy array")
 
     # Change into long vector:
     data = data.flatten()
@@ -115,7 +123,8 @@ def generate_symbol_sequence(data, partition):
 
 def analyze_symbol_sequence(symbols, number_of_states, morph_matrix_flag):
     """
-    Estimate the morph matrix and its eigenvector
+    Estimate the state transition probability ("morph") matrix of the
+    probabilistic finite state automata, and its eigenvector
     corresponding to eigenvalue 1 by counting.
 
     NOTE: Currently the number of states is set to the number of symbols.
@@ -176,7 +185,7 @@ def analyze_symbol_sequence(symbols, number_of_states, morph_matrix_flag):
     return morph_matrix, pvec
 
 
-def extract_sdf_features(data, number_of_symbols, pi_matrix_flag):
+def sdf_features(data, number_of_symbols, pi_matrix_flag=False):
     """
     Extract symbolic dynamic filtering features from time series data.
 
@@ -185,9 +194,10 @@ def extract_sdf_features(data, number_of_symbols, pi_matrix_flag):
     Parameters
     ----------
     data : numpy array
-    partition : numpy array
     number_of_symbols : integer
+        number of symbols for symbolic dynamic filtering method
     pi_matrix_flag : Boolean
+        feature as vectorized morph matrix (default: False)?
 
     Returns
     -------
@@ -197,11 +207,11 @@ def extract_sdf_features(data, number_of_symbols, pi_matrix_flag):
     --------
     >>> # Example checked against original Matlab code:
     >>> import numpy as np
-    >>> from mhealthx.extractors.symbolic_dynamic_filtering import extract_sdf_features
+    >>> from mhealthx.extractors.symbolic_dynamic_filtering import sdf_features
     >>> data = np.array([0.82487374,  0.21834812,  0.60166418,  0.76465689, 0.44819955,  0.72335342,  0.8710113,  0.73258881, 0.97047932,  0.5975058,  0.02474567,  0.38093561]) #np.random.random((3,4))
     >>> number_of_symbols = 4
     >>> pi_matrix_flag = False
-    >>> feature = extract_sdf_features(data, number_of_symbols, pi_matrix_flag)
+    >>> feature = sdf_features(data, number_of_symbols, pi_matrix_flag)
     array([ 0.18181818,  0.18181818,  0.27272727,  0.36363636])
     """
     import numpy as np
@@ -225,7 +235,7 @@ def extract_sdf_features(data, number_of_symbols, pi_matrix_flag):
     if pi_matrix_flag:
         b = np.transpose(morph_matrix)
         feature = b.flatten()
-    # Feature as state prob vec store:
+    # Feature as state transition probability vector store:
     else:
         feature = pvec
 

@@ -383,6 +383,63 @@ def run_signal_features(data, row, file_path, table_stem, save_rows=False):
     return feature_row, feature_table
 
 
+def run_sdf_features(data, number_of_symbols, row, file_path, table_stem, save_rows):
+    """
+    Extract symbolic dynamic filtering features.
+
+    Parameters
+    ----------
+    data : numpy array
+    number_of_symbols : integer
+        number of symbols for symbolic dynamic filtering method
+
+    Returns
+    -------
+    feature_row : pandas Series
+        row combining the original row with a row of SDF feature values
+    feature_table : string
+        output table file (full path)
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from mhealthx.xio import read_accel_json
+    >>> from mhealthx.extract import run_sdf_features
+    >>> input_file = '/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp'
+    >>> start = 150
+    >>> device_motion = False
+    >>> t, axyz, gxyz, uxyz, rxyz, sample_rate, duration = read_accel_json(input_file, start, device_motion)
+    >>> ax, data, az = axyz
+    >>> number_of_symbols = 4
+    >>> row = pd.Series({'a':[1], 'b':[2], 'c':[3]})
+    >>> file_path = '.'
+    >>> table_stem = './walking'
+    >>> save_rows = True
+    >>> feature_row, feature_table = run_sdf_features(data, number_of_symbols, row, file_path, table_stem, save_rows)
+
+    """
+    import pandas as pd
+
+    from mhealthx.extract import make_row_table
+    from mhealthx.extractors.symbolic_dynamic_filtering import sdf_features
+
+    sdf = sdf_features(data, number_of_symbols, pi_matrix_flag=False)
+
+    # Create row of data:
+    row_data = pd.DataFrame({'SDF eigenvector 1': sdf[0]}, index=[0])
+    for isdf in range(1, len(sdf)):
+        hdr = 'SDF eigenvalue ' + str(isdf + 1)
+        df = pd.DataFrame({hdr: sdf[isdf]}, index=[0])
+        row_data = pd.concat([row_data, df], axis=1,
+                             join_axes=[row_data.index])
+
+    # Write feature row to a table or append to a feature table:
+    feature_row, feature_table = make_row_table(file_path, table_stem,
+                                                save_rows, row, row_data,
+                                                feature_row=None)
+    return feature_row, feature_table
+
+
 def run_tap_features(xtaps, ytaps, t, threshold,
                      row, file_path, table_stem, save_rows=False):
     """

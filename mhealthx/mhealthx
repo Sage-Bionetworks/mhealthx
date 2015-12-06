@@ -41,7 +41,7 @@ from nipype.interfaces.io import DataSink
 from nipype.interfaces.utility import Function as Fn
 from nipype.pipeline.engine import Workflow, Node
 from mhealthx.extract import run_openSMILE, run_pyGait, run_signal_features, \
-    run_tap_features, run_quality
+    run_tap_features, run_quality, run_sdf_features
 from mhealthx.extractors.pyGait import project_walk_direction_attitude
 from mhealthx.xio import extract_synapse_rows, write_wav, \
     get_convert_audio, get_accel, get_tap
@@ -548,7 +548,6 @@ elif synID_walk and not setup_rows:
                                                 'walk_pyGait')
     pyGaitWalk.inputs.save_rows = True
 
-
     # ------------------------------------------------------------------------
     # signal_features() on walk data (each axis):
     # ------------------------------------------------------------------------
@@ -610,6 +609,72 @@ elif synID_walk and not setup_rows:
                                                      'balance_y_signals')
     signalsBalanceZ.inputs.table_stem = os.path.join(feature_table_path,
                                                      'balance_z_signals')
+
+    # ------------------------------------------------------------------------
+    # Symbolic Dynamic Filtering on walk data (each axis):
+    # ------------------------------------------------------------------------
+    sdfWalkX = Node(name='sdf_walk_x',
+                    interface=Fn(function=run_sdf_features,
+                                 input_names=['data',
+                                              'number_of_symbols',
+                                              'row',
+                                              'file_path',
+                                              'table_stem',
+                                              'save_rows'],
+                                 output_names=['feature_row',
+                                               'feature_table']))
+    sdfWalkX.inputs.number_of_symbols = 4
+    sdfWalkX.inputs.save_rows = True
+    sdfWalkY = sdfWalkX.clone('sdf_walk_y')
+    sdfWalkZ = sdfWalkX.clone('sdf_walk_z')
+    Flow.connect(projectAccel, 'px', sdfWalkX, 'data')
+    Flow.connect(projectAccel, 'py', sdfWalkY, 'data')
+    Flow.connect(projectAccel, 'pz', sdfWalkZ, 'data')
+    Flow.connect(getWalking, 'row', sdfWalkX, 'row')
+    Flow.connect(getWalking, 'row', sdfWalkY, 'row')
+    Flow.connect(getWalking, 'row', sdfWalkZ, 'row')
+    Flow.connect(getWalking, 'file_path', sdfWalkX, 'file_path')
+    Flow.connect(getWalking, 'file_path', sdfWalkY, 'file_path')
+    Flow.connect(getWalking, 'file_path', sdfWalkZ, 'file_path')
+    sdfWalkX.inputs.table_stem = os.path.join(feature_table_path,
+                                              'walk_x_sdf')
+    sdfWalkY.inputs.table_stem = os.path.join(feature_table_path,
+                                              'walk_y_sdf')
+    sdfWalkZ.inputs.table_stem = os.path.join(feature_table_path,
+                                              'walk_z_sdf')
+
+    # ------------------------------------------------------------------------
+    # Repeat for balance data (each axis):
+    # ------------------------------------------------------------------------
+    sdfBalanceX = Node(name='sdf_balance_x',
+                       interface=Fn(function=run_sdf_features,
+                                    input_names=['data',
+                                                 'number_of_symbols',
+                                                 'row',
+                                                 'file_path',
+                                                 'table_stem',
+                                                 'save_rows'],
+                                    output_names=['feature_row',
+                                                  'feature_table']))
+    sdfBalanceX.inputs.number_of_symbols = 4
+    sdfBalanceX.inputs.save_rows = True
+    sdfBalanceY = sdfBalanceX.clone('sdf_balance_y')
+    sdfBalanceZ = sdfBalanceX.clone('sdf_balance_z')
+    Flow.connect(projectAccel, 'px', sdfBalanceX, 'data')
+    Flow.connect(projectAccel, 'py', sdfBalanceY, 'data')
+    Flow.connect(projectAccel, 'pz', sdfBalanceZ, 'data')
+    Flow.connect(getWalking, 'row', sdfBalanceX, 'row')
+    Flow.connect(getWalking, 'row', sdfBalanceY, 'row')
+    Flow.connect(getWalking, 'row', sdfBalanceZ, 'row')
+    Flow.connect(getWalking, 'file_path', sdfBalanceX, 'file_path')
+    Flow.connect(getWalking, 'file_path', sdfBalanceY, 'file_path')
+    Flow.connect(getWalking, 'file_path', sdfBalanceZ, 'file_path')
+    sdfBalanceX.inputs.table_stem = os.path.join(feature_table_path,
+                                                 'balance_x_sdf')
+    sdfBalanceY.inputs.table_stem = os.path.join(feature_table_path,
+                                                 'balance_y_sdf')
+    sdfBalanceZ.inputs.table_stem = os.path.join(feature_table_path,
+                                                 'balance_z_sdf')
 
     # ------------------------------------------------------------------------
     # Convert balance data from json to wav format for each axis:
@@ -826,6 +891,26 @@ elif synID_tap and not setup_rows:
     Flow.connect(getTap, 'file_path', Tap, 'file_path')
     Tap.inputs.table_stem = os.path.join(feature_table_path, 'tap')
     Tap.inputs.save_rows = True
+
+    # ------------------------------------------------------------------------
+    # Symbolic Dynamic Filtering on walk data (each axis):
+    # ------------------------------------------------------------------------
+    sdfTap = Node(name='sdf_tap_features',
+                  interface=Fn(function=run_sdf_features,
+                               input_names=['data',
+                                            'number_of_symbols',
+                                            'row',
+                                            'file_path',
+                                            'table_stem',
+                                            'save_rows'],
+                               output_names=['feature_row',
+                                             'feature_table']))
+    sdfTap.inputs.number_of_symbols = 4
+    Flow.connect(getTap, 'tx', sdfTap, 'data')
+    Flow.connect(getTap, 'row', sdfTap, 'row')
+    Flow.connect(getTap, 'file_path', sdfTap, 'file_path')
+    sdfTap.inputs.table_stem = os.path.join(feature_table_path, 'tap_sdf')
+    sdfTap.inputs.save_rows = True
 
 
 # ============================================================================
