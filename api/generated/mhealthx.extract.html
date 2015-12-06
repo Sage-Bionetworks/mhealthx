@@ -315,6 +315,38 @@
 </dd></dl>
 
 <dl class="function">
+<dt id="mhealthx.extract.run_sdf_features">
+<code class="descclassname">mhealthx.extract.</code><code class="descname">run_sdf_features</code><span class="sig-paren">(</span><em>data</em>, <em>number_of_symbols</em>, <em>row</em>, <em>file_path</em>, <em>table_stem</em>, <em>save_rows</em><span class="sig-paren">)</span><a class="headerlink" href="#mhealthx.extract.run_sdf_features" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract symbolic dynamic filtering features.</p>
+<p>data : numpy array
+number_of_symbols : integer</p>
+<blockquote>
+<div>number of symbols for symbolic dynamic filtering method</div></blockquote>
+<dl class="docutils">
+<dt>feature_row <span class="classifier-delimiter">:</span> <span class="classifier">pandas Series</span></dt>
+<dd>row combining the original row with a row of SDF feature values</dd>
+<dt>feature_table <span class="classifier-delimiter">:</span> <span class="classifier">string</span></dt>
+<dd>output table file (full path)</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">mhealthx.xio</span> <span class="kn">import</span> <span class="n">read_accel_json</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">mhealthx.extract</span> <span class="kn">import</span> <span class="n">run_sdf_features</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">input_file</span> <span class="o">=</span> <span class="s">&#39;/Users/arno/DriveWork/mhealthx/mpower_sample_data/accel_walking_outbound.json.items-6dc4a144-55c3-4e6d-982c-19c7a701ca243282023468470322798.tmp&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">start</span> <span class="o">=</span> <span class="mi">150</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">device_motion</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="p">,</span> <span class="n">axyz</span><span class="p">,</span> <span class="n">gxyz</span><span class="p">,</span> <span class="n">uxyz</span><span class="p">,</span> <span class="n">rxyz</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">duration</span> <span class="o">=</span> <span class="n">read_accel_json</span><span class="p">(</span><span class="n">input_file</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">device_motion</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ax</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">az</span> <span class="o">=</span> <span class="n">axyz</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">number_of_symbols</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">row</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span><span class="s">&#39;a&#39;</span><span class="p">:[</span><span class="mi">1</span><span class="p">],</span> <span class="s">&#39;b&#39;</span><span class="p">:[</span><span class="mi">2</span><span class="p">],</span> <span class="s">&#39;c&#39;</span><span class="p">:[</span><span class="mi">3</span><span class="p">]})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">file_path</span> <span class="o">=</span> <span class="s">&#39;.&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">table_stem</span> <span class="o">=</span> <span class="s">&#39;./walking&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">save_rows</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">feature_row</span><span class="p">,</span> <span class="n">feature_table</span> <span class="o">=</span> <span class="n">run_sdf_features</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">number_of_symbols</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">table_stem</span><span class="p">,</span> <span class="n">save_rows</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
 <dt id="mhealthx.extract.run_signal_features">
 <code class="descclassname">mhealthx.extract.</code><code class="descname">run_signal_features</code><span class="sig-paren">(</span><em>data</em>, <em>row</em>, <em>file_path</em>, <em>table_stem</em>, <em>save_rows=False</em><span class="sig-paren">)</span><a class="headerlink" href="#mhealthx.extract.run_signal_features" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract various features from time series data.</p>
