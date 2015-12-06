@@ -176,8 +176,11 @@ def analyze_symbol_sequence(symbols, number_of_states, morph_matrix_flag):
     return morph_matrix, pvec
 
 
-def extract_sdf_features(data, partition, number_of_symbols, pi_matrix_flag):
+def extract_sdf_features(data, number_of_symbols, pi_matrix_flag):
     """
+    Extract symbolic dynamic filtering features from time series data.
+
+    NOTE: Currently the number of states is set to the number of symbols.
 
     Parameters
     ----------
@@ -194,27 +197,29 @@ def extract_sdf_features(data, partition, number_of_symbols, pi_matrix_flag):
     --------
     >>> # Example checked against original Matlab code:
     >>> import numpy as np
-    >>> from mhealthx.extractors.symbolic_dynamic_filtering import extract_sdf_features, max_entropy_partition
+    >>> from mhealthx.extractors.symbolic_dynamic_filtering import extract_sdf_features
     >>> data = np.array([0.82487374,  0.21834812,  0.60166418,  0.76465689, 0.44819955,  0.72335342,  0.8710113,  0.73258881, 0.97047932,  0.5975058,  0.02474567,  0.38093561]) #np.random.random((3,4))
     >>> number_of_symbols = 4
-    >>> partition = max_entropy_partition(data, number_of_symbols)
     >>> pi_matrix_flag = False
-    >>> feature = extract_sdf_features(data, partition, number_of_symbols, pi_matrix_flag)
+    >>> feature = extract_sdf_features(data, number_of_symbols, pi_matrix_flag)
     array([ 0.18181818,  0.18181818,  0.27272727,  0.36363636])
     """
     import numpy as np
 
     from mhealthx.extractors.symbolic_dynamic_filtering import \
-        generate_symbol_sequence, analyze_symbol_sequence
+        max_entropy_partition, generate_symbol_sequence, \
+        analyze_symbol_sequence
+
+    # Generate partitions:
+    partition = max_entropy_partition(data, number_of_symbols)
 
     # Generate symbols:
     symbols = generate_symbol_sequence(data, partition)
 
     # morph_matrix is the estimated Morph Matrix, and
     # pvec is the eigenvector corresponding to the eigenvalue 1:
-    morph_matrix, pvec = \
-        analyze_symbol_sequence(symbols, number_of_symbols,
-                                pi_matrix_flag)
+    morph_matrix, pvec = analyze_symbol_sequence(symbols, number_of_symbols,
+                                                 pi_matrix_flag)
 
     # Feature as vectorized morph matrix:
     if pi_matrix_flag:
