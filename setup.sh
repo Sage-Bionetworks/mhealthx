@@ -9,15 +9,13 @@
 #     bash setup.sh
 #
 #     Or with arguments:
-#     bash setup.sh <download_dir> <install_dir> <env>
+#     bash setup.sh <download_dir> <install_dir>
 #
 #     For example:
 #     bash setup.sh /home/downloads /home/install /home/.bash_profile
 #
 # Note:
-#     All arguments are optional; folders, <env> will be created if required.
-#     <env> is a global environment sourcing script
-#           to set environment variables, such as .bash_profile.
+#     All arguments are optional; folders will be created if required.
 #     Software such as openSMILE should be placed on an accessible server.
 #
 # Authors:
@@ -31,7 +29,6 @@
 #-----------------------------------------------------------------------------
 DOWNLOADS=$1
 INSTALLS=$2
-X_ENV=$3
 
 export PATH=$INSTALLS/bin:$PATH
 
@@ -50,17 +47,6 @@ if [ -z "$INSTALLS" ]; then
 fi
 if [ ! -d $INSTALLS ]; then
     mkdir -p $INSTALLS;
-fi
-
-if [ -z "$X_ENV" ]; then
-    X_ENV="$HOME/.bash_profile"
-fi
-if [ ! -e "$X_ENV" ] ; then
-    touch "$X_ENV"
-fi
-if [ ! -w "$X_ENV" ] ; then
-    echo cannot write to $X_ENV
-    exit 1
 fi
 
 #-----------------------------------------------------------------------------
