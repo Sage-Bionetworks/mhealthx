@@ -1,70 +1,174 @@
-# Installation of mhealthx and dependencies.
+#!/bin/bash
+#=============================================================================
+# This script provides directions for installing mhealthx and dependencies
+# (http://sage-bionetworks.github.io/mhealthx/).
+# Running it requires a good Internet connection.
+# Tested on an Ubuntu 14.04 machine.
 #
-# by Arno Klein, 2015  (arno@sagebase.org)  http://binarybottle.com
+# Usage:
+#     bash setup.sh
 #
-# Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
+#     Or with arguments:
+#     bash setup.sh <download_dir> <install_dir> <env>
+#
+#     For example:
+#     bash setup.sh /home/downloads /home/install /home/.bash_profile
+#
+# Note:
+#     All arguments are optional; folders, <env> will be created if required.
+#     <env> is a global environment sourcing script
+#           to set environment variables, such as .bash_profile.
+#     Software such as openSMILE should be placed on an accessible server.
+#
+# Authors:
+#     - Arno Klein, 2015-2016  (arno@sagebase.org)  http://binarybottle.com
+#
+# Copyright 2016,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
+#=============================================================================
 
-# Set bin path:
-mkdir /shared/software/bin
-PATH="/shared/software/bin:$PATH"
+#-----------------------------------------------------------------------------
+# Assign download and installation path arguments:
+#-----------------------------------------------------------------------------
+DOWNLOADS=$1
+INSTALLS=$2
+X_ENV=$3
 
-# Install Continuum's miniconda Python distribution and some Python libraries:
-wget -nc http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -P /shared/software
-chmod +x /shared/software/Miniconda-latest-Linux-x86_64.sh
-bash /shared/software/Miniconda-latest-Linux-x86_64.sh -b -f -p /shared/software/anaconda
-/shared/software/anaconda/bin/conda install --yes numpy scipy pandas nose networkx traits ipython # matplotlib
+export PATH=$INSTALLS/bin:$PATH
+
+#-----------------------------------------------------------------------------
+# Create folders and file if they don't exist:
+#-----------------------------------------------------------------------------
+if [ -z "$DOWNLOADS" ]; then
+    DOWNLOADS="${HOME}/downloads"
+fi
+if [ ! -d $DOWNLOADS ]; then
+    mkdir -p $DOWNLOADS;
+fi
+
+if [ -z "$INSTALLS" ]; then
+    INSTALLS="${HOME}/install"
+fi
+if [ ! -d $INSTALLS ]; then
+    mkdir -p $INSTALLS;
+fi
+
+if [ -z "$X_ENV" ]; then
+    X_ENV="${HOME}/.bash_profile"
+fi
+if [ ! -e "$X_ENV" ] ; then
+    touch "$X_ENV"
+fi
+if [ ! -w "$X_ENV" ] ; then
+    echo cannot write to $X_ENV
+    exit 1
+fi
+
+#-----------------------------------------------------------------------------
+# System-wide dependencies:
+#-----------------------------------------------------------------------------
+sudo apt-get update
+sudo apt-get install -y git
+
+#-----------------------------------------------------------------------------
+# Anaconda's miniconda Python distribution for local installs:
+#-----------------------------------------------------------------------------
+CONDA_URL="http://repo.continuum.io/miniconda"
+CONDA_FILE="Miniconda-latest-${OS}-x86_64.sh"
+CONDA_DL="$DOWNLOADS/${CONDA_FILE}"
+CONDA_PATH="$INSTALLS/miniconda2"
+wget -O $CONDA_DL ${CONDA_URL}/$CONDA_FILE
+chmod +x $CONDA_DL
+# -b           run install in batch mode (without manual intervention),
+#              it is expected the license terms are agreed upon
+# -f           no error if install prefix already exists
+# -p PREFIX    install prefix, defaults to /home/ubuntu/miniconda
+bash $CONDA_DL -b -f -p $CONDA_PATH
+export PATH=${CONDA_PATH}/bin:$PATH
+
+#-----------------------------------------------------------------------------
+# Additional resources for installing packages:
+#-----------------------------------------------------------------------------
+conda install --yes cmake pip
+
+#-----------------------------------------------------------------------------
+# Install some Python libraries:
+#-----------------------------------------------------------------------------
+conda install --yes numpy scipy pandas nose networkx traits ipython matplotlib
 
 # Install nipype pipeline framework:
-pip install nipype
+INSTALLS/miniconda/bin/pip install nipype
+
+# Install Synapse client:
+INSTALLS/miniconda/bin/pip install synapseclient
 
 # https://pythonhosted.org/lockfile/lockfile.html
-pip install lockfile
+INSTALLS/miniconda/bin/pip install lockfile
 
-# Install ffmpeg dependencies:
+# Install scikit-learn for text-to-audio conversion:
+INSTALLS/miniconda/bin/pip install scikit-learn
+
+#-----------------------------------------------------------------------------
+# Install mhealthx nipype workflow for feature extraction:
+#-----------------------------------------------------------------------------
+cd $INSTALLS
+git clone git@github.com:sage-bionetworks/mhealthx.git
+cd $INSTALLS/mhealthx
+python setup.py install
+export PATH=$INSTALLS/mhealthx/mhealthx:$PATH
+export PYTHONPATH=$PYTHONPATH:$INSTALLS/mhealthx
+
+#-----------------------------------------------------------------------------
+# Install ffmpeg and dependencies for audio file conversion:
+#-----------------------------------------------------------------------------
 # (from https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu)
-mkdir /shared/software/ffmpeg
-mkdir /shared/software/ffmpeg/ffmpeg_sources
-mkdir /shared/software/ffmpeg/ffmpeg_build
+mkdir $INSTALLS/ffmpeg
+mkdir $INSTALLS/ffmpeg/ffmpeg_sources
+mkdir $INSTALLS/ffmpeg/ffmpeg_build
 sudo apt-get update
 sudo apt-get -y --force-yes install autoconf automake build-essential libass-dev libfreetype6-dev libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev pkg-config texi2html zlib1g-dev
 
 # Install yasm (ffmpeg dependency):
-cd /shared/software/ffmpeg/ffmpeg_sources
+cd $INSTALLS/ffmpeg/ffmpeg_sources
 wget -nc http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz
 tar xzvf yasm-1.3.0.tar.gz
-cd /shared/software/ffmpeg/ffmpeg_sources/yasm-1.3.0
-./configure --prefix="/shared/software/ffmpeg/ffmpeg_build" --bindir="/shared/software/bin"
+cd $INSTALLS/ffmpeg/ffmpeg_sources/yasm-1.3.0
+./configure --prefix="$INSTALLS/ffmpeg/ffmpeg_build" --bindir="$INSTALLS/bin"
 make
 make install
 make distclean
 
 # Install ffmpeg:
-cd /shared/software/ffmpeg/ffmpeg_sources
+cd $INSTALLS/ffmpeg/ffmpeg_sources
 wget -nc http://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
 tar xjvf ffmpeg-snapshot.tar.bz2
 cd ffmpeg
-PATH="/shared/software/bin:$PATH" PKG_CONFIG_PATH="/shared/software/ffmpeg/ffmpeg_build/lib/pkgconfig" ./configure --prefix="/home/shared/software/ffmpeg/ffmpeg_build" --pkg-config-flags="--static" --extra-cflags="-I/home/shared/software/ffmpeg/ffmpeg_build/include" --extra-ldflags="-L/home/shared/software/ffmpeg/ffmpeg_build/lib" --bindir="/home/shared/software/bin" --enable-gpl
+PATH="$INSTALLS/bin:$PATH" PKG_CONFIG_PATH="$INSTALLS/ffmpeg/ffmpeg_build/lib/pkgconfig" ./configure --prefix="/home$INSTALLS/ffmpeg/ffmpeg_build" --pkg-config-flags="--static" --extra-cflags="-I/home$INSTALLS/ffmpeg/ffmpeg_build/include" --extra-ldflags="-L/home$INSTALLS/ffmpeg/ffmpeg_build/lib" --bindir="/home$INSTALLS/bin" --enable-gpl
 #--enable-libass --enable-libfreetype --enable-libtheora --enable-libvorbis --enable-libx264 --enable-libx265 --enable-nonfree --enable-libfdk-aac --enable-libmp3lame --enable-libopus --enable-libvpx
 make
 make install
-PATH="/shared/software/ffmpeg/ffmpeg_sources/ffmpeg:$PATH"
+export PATH=$INSTALLS/ffmpeg/ffmpeg_sources/ffmpeg:$PATH
 
+#-----------------------------------------------------------------------------
 # Install openSMILE:
-cd /shared/software
+#-----------------------------------------------------------------------------
+cd $INSTALLS
 wget -nc http://binarybottle.com/software/openSMILE-2.1.0.tar.gz
 tar xvf openSMILE-2.1.0.tar.gz
 cd openSMILE-2.1.0
-bash buildStandalone.sh -p /shared/software
-#PATH="/shared/software/bin:$PATH"
+bash buildStandalone.sh -p $INSTALLS
+export PATH=$INSTALLS/bin:$PATH
 
+#-----------------------------------------------------------------------------
+# Other voice feature extraction software (for future integration):
+#-----------------------------------------------------------------------------
 # Install Essentia dependencies:
-sudo apt-get install libyaml-dev libfftw3-dev libavcodec-dev libavformat-dev libavutil-dev libavresample-dev python-dev libsamplerate0-dev libtag1-dev
+#sudo apt-get install libyaml-dev libfftw3-dev libavcodec-dev libavformat-dev libavutil-dev libavresample-dev python-dev libsamplerate0-dev libtag1-dev
 #    build-essential
-sudo apt-get install pkg-config
-pip install pyyaml
+#sudo apt-get install pkg-config
+#INSTALLS/miniconda/bin/pip install pyyaml
 
 # Install Essentia:
-#cd /shared/software
+#cd $INSTALLS
 ##git clone https://github.com/MTG/essentia.git
 ##cd essentia
 #wget -nc https://github.com/MTG/essentia/archive/v2.1_beta2.tar.gz
@@ -82,23 +186,23 @@ pip install pyyaml
 #sudo ./waf install
 
 # Install Kaldi dependencies:
-sudo apt-get install libtool subversion
-sudo apt-get install libatlas-dev libatlas-base-dev
+#sudo apt-get install libtool subversion
+#sudo apt-get install libatlas-dev libatlas-base-dev
 
 # Install Kaldi:
-cd /shared/software
-git clone https://github.com/kaldi-asr/kaldi.git kaldi-trunk --origin golden
-cd /shared/software/kaldi-trunk/tools
-make
-cd /shared/software/kaldi-trunk/src
-./configure; make depend; make
+#cd $INSTALLS
+#git clone https://github.com/kaldi-asr/kaldi.git kaldi-trunk --origin golden
+#cd $INSTALLS/kaldi-trunk/tools
+#make
+#cd $INSTALLS/kaldi-trunk/src
+#./configure; make depend; make
 
 # Install YAAFE dependencies:
 #sudo apt-get install cmake-curses-gui libargtable2-0 libargtable2-dev libsndfile1 libsndfile1-dev libmpg123-0 libmpg123-dev libfftw3-3 libfftw3-dev liblapack-dev libhdf5-serial-dev libhdf5-7
 ##   cmake
 # Install YAAFE:
 #mkdir build; cd build
-#ccmake -DCMAKE_PREFIX_PATH=/shared/software/yaafe-v0.64/build/lib -DCMAKE_INSTALL_PREFIX=/shared/software/yaafe-v0.64/ ..
+#ccmake -DCMAKE_PREFIX_PATH=$INSTALLS/yaafe-v0.64/build/lib -DCMAKE_INSTALLS=$INSTALLS/yaafe-v0.64/ ..
 #make; make install
 
 # Install jAudio dependencies:
@@ -106,19 +210,18 @@ cd /shared/software/kaldi-trunk/src
 #sudo apt-get install openjdk-7-jdk
 # Install jAudio:
 #git clone https://github.com/anjackson/jAudio.git
-#cd /shared/software/jAudio
+#cd $INSTALLS/jAudio
 #ant jar
 #...
 
 # Install grt:
 #sudo apt-get install g++-4.8
 
-# Install text to audio conversion:
-pip install scikit-learn
+#-----------------------------------------------------------------------------
+# Finally, remove non-essential directories:
+#-----------------------------------------------------------------------------
+rm_extras=0
+if [ $rm_extras -eq 1 ]; then
+    rm -r $DOWNLOADS/*
+fi
 
-# Install mhealthx nipype workflow for feature extraction:
-cd /shared/software
-git clone git@github.com:binarybottle/mhealthx.git
-cd /shared/software/mhealthx
-python setup.py install
-PATH="/shared/software/mhealthx/mhealthx:$PATH"

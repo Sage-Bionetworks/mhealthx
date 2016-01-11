@@ -7,7 +7,7 @@ Example to prepare the first three rows of mhealth data from Synapse:
     mhealthx --voice syn4590865 --walk syn4590866 --tap syn4590864 \
              -d /software --rows 3 --setup
 
-Example to extract features from the above three rows:
+Example to extract features from the above three rows (remove "--setup"):
 
     mhealthx --voice syn4590865 --walk syn4590866 --tap syn4590864 \
              -d /software --rows 3
@@ -27,9 +27,9 @@ environment that enables mhealthx to run in a flexible, modular manner
 while storing provenance information. Authors are listed per file.
 
 Authors:
-    - Arno Klein, 2015  (arno@sagebase.org)  http://binarybottle.com
+    - Arno Klein, 2015-2016  (arno@sagebase.org)  http://binarybottle.com
 
-Copyright 2015,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
+Copyright 2016,  Sage Bionetworks (http://sagebase.org), Apache v2.0 License
 
 """
 
