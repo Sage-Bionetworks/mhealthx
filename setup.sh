@@ -82,16 +82,16 @@ conda install --yes cmake pip
 conda install --yes numpy scipy pandas nose networkx traits ipython matplotlib
 
 # Install nipype pipeline framework:
-INSTALLS/miniconda/bin/pip install nipype
+$INSTALLS/miniconda/bin/pip install nipype
 
 # Install Synapse client:
-INSTALLS/miniconda/bin/pip install synapseclient
+$INSTALLS/miniconda/bin/pip install synapseclient
 
 # https://pythonhosted.org/lockfile/lockfile.html
-INSTALLS/miniconda/bin/pip install lockfile
+$INSTALLS/miniconda/bin/pip install lockfile
 
 # Install scikit-learn for text-to-audio conversion:
-INSTALLS/miniconda/bin/pip install scikit-learn
+$INSTALLS/miniconda/bin/pip install scikit-learn
 
 #-----------------------------------------------------------------------------
 # Install mhealthx nipype workflow for feature extraction:
@@ -138,7 +138,7 @@ export PATH=$INSTALLS/ffmpeg/ffmpeg_sources/ffmpeg:$PATH
 # Install openSMILE:
 #-----------------------------------------------------------------------------
 cd $INSTALLS
-wget -nc http://binarybottle.com/software/openSMILE-2.1.0.tar.gz
+synapse get syn5584794
 tar xvf openSMILE-2.1.0.tar.gz
 cd openSMILE-2.1.0
 bash buildStandalone.sh -p $INSTALLS
