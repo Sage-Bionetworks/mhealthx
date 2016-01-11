@@ -39,21 +39,21 @@ export PATH=$INSTALLS/bin:$PATH
 # Create folders and file if they don't exist:
 #-----------------------------------------------------------------------------
 if [ -z "$DOWNLOADS" ]; then
-    DOWNLOADS="${HOME}/downloads"
+    DOWNLOADS="$HOME/downloads"
 fi
 if [ ! -d $DOWNLOADS ]; then
     mkdir -p $DOWNLOADS;
 fi
 
 if [ -z "$INSTALLS" ]; then
-    INSTALLS="${HOME}/install"
+    INSTALLS="$HOME/install"
 fi
 if [ ! -d $INSTALLS ]; then
     mkdir -p $INSTALLS;
 fi
 
 if [ -z "$X_ENV" ]; then
-    X_ENV="${HOME}/.bash_profile"
+    X_ENV="$HOME/.bash_profile"
 fi
 if [ ! -e "$X_ENV" ] ; then
     touch "$X_ENV"
