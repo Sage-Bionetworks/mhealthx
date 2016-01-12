@@ -42,13 +42,13 @@ fi
 # System-wide dependencies:
 #-----------------------------------------------------------------------------
 sudo apt-get update
-sudo apt-get install -y git pip
+sudo apt-get install -y git
 
 #-----------------------------------------------------------------------------
 # Anaconda's miniconda Python distribution for local installs:
 #-----------------------------------------------------------------------------
 CONDA_URL="http://repo.continuum.io/miniconda"
-CONDA_FILE="Miniconda-latest-${OS}-x86_64.sh"
+CONDA_FILE="Miniconda-latest-Linux-x86_64.sh"
 CONDA_DL="$INSTALLS/${CONDA_FILE}"
 CONDA_PATH="$INSTALLS/miniconda2"
 wget -O $CONDA_DL ${CONDA_URL}/$CONDA_FILE
@@ -117,7 +117,9 @@ cd $INSTALLS/ffmpeg/ffmpeg_sources
 wget -nc http://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
 tar xjvf ffmpeg-snapshot.tar.bz2
 cd ffmpeg
-PATH="$INSTALLS/bin:$PATH" PKG_CONFIG_PATH="$INSTALLS/ffmpeg/ffmpeg_build/lib/pkgconfig" ./configure --prefix="/home$INSTALLS/ffmpeg/ffmpeg_build" --pkg-config-flags="--static" --extra-cflags="-I/home$INSTALLS/ffmpeg/ffmpeg_build/include" --extra-ldflags="-L/home$INSTALLS/ffmpeg/ffmpeg_build/lib" --bindir="/home$INSTALLS/bin" --enable-gpl
+PATH=$INSTALLS/bin:$PATH
+PKG_CONFIG_PATH=$INSTALLS/ffmpeg/ffmpeg_build/lib/pkgconfig
+./configure --prefix=$INSTALLS/ffmpeg/ffmpeg_build --pkg-config-flags="--static" --extra-cflags="-I$INSTALLS/ffmpeg/ffmpeg_build/include" --extra-ldflags="-L$INSTALLS/ffmpeg/ffmpeg_build/lib" --bindir="$INSTALLS/bin" --enable-gpl
 #--enable-libass --enable-libfreetype --enable-libtheora --enable-libvorbis --enable-libx264 --enable-libx265 --enable-nonfree --enable-libfdk-aac --enable-libmp3lame --enable-libopus --enable-libvpx
 make
 make install
