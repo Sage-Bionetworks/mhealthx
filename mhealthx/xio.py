@@ -778,6 +778,200 @@ def write_wav(data, file_stem, file_append,
     return wav_file
 
 
+def select_columns_from_table(table, column_headers, write_table=True,
+                              output_table=''):
+    """
+    Select columns from table and make a new table.
+
+    Parameters
+    ----------
+    table : string
+    column_headers : list of strings
+        headers for columns to select
+    write_table : Boolean
+        write output table?
+    output_table : string
+        output table file name
+
+    Returns
+    -------
+    columns : list of lists of floats or integers
+        columns of data
+    output_table :  string
+        output table file name
+
+    Examples
+    --------
+    >>> import os
+    >>> from mhealthx.xio import select_columns_from_table
+    >>> path = os.environ['MHEALTHX_OUTPUT']
+    >>> table = os.path.join(path, 'feature_tables',
+    ...         'tap_row0_v0_9d44a388-5d7e-4271-8705-2faa66204486.csv']
+    >>> column_headers = ['tapping_results.json.ButtonRectLeft',
+    ...                   'accel_tapping.json.items']
+    >>> write_table = True
+    >>> output_table = ''
+    >>> columns, output_table = select_columns_from_table(table, column_headers, write_table, output_table)
+
+    """
+    import os
+    import pandas as pd
+
+    #-------------------------------------------------------------------------
+    # Load table:
+    #-------------------------------------------------------------------------
+    input_columns = pd.read_csv(table)
+
+    #-------------------------------------------------------------------------
+    # Construct a table:
+    #-------------------------------------------------------------------------
+    columns = []
+    for column_header in column_headers:
+
+        #---------------------------------------------------------------------
+        # Extract column from the table:
+        #---------------------------------------------------------------------
+        columns.append(input_columns.loc(column_header))
+        #columns.append(input_columns.iloc[:, index])
+
+    #-------------------------------------------------------------------------
+    # Write tables:
+    #-------------------------------------------------------------------------
+    if write_table and columns:
+        if all([len(x) == len(columns[0]) for x in columns]):
+            if not output_table:
+                output_table = os.path.join(os.getcwd(),
+                                            'select_columns_from_table.csv')
+            df = pd.DataFrame({'': columns})
+            df.to_csv(output_table, index=False)
+        else:
+            print('Not saving table.')
+
+    return columns, output_table
+
+
+def write_synapse_table(table_data, synapse_project_id, table_name='',
+                        username='', password=''):
+    """
+    Write data to a Synapse table.
+
+    Parameters
+    ----------
+    table_data : Pandas DataFrame
+        Synapse table contents
+    synapse_project_id : string
+        Synapse ID for project within which table is to be written
+    table_name : string
+        schema name of table
+    username : string
+        Synapse username (only needed once on a given machine)
+    password : string
+        Synapse password (only needed once on a given machine)
+
+    Examples
+    --------
+    >>> from mhealthx.xio import read_files_from_synapse_row
+    >>> from mhealthx.xio import write_synapse_table
+    >>> synapse_table = 'syn4590865'
+    >>> row =
+    >>> column_name = ''
+    >>> out_path = '.'
+    >>> username = ''
+    >>> password = ''
+    >>> table_data, files = read_files_from_synapse_row(synapse_table, row, column_name, out_path, username, password)
+    >>> synapse_project_id = 'syn4899451'
+    >>> table_name = 'Contents of ' + synapse_table
+    >>> write_synapse_table(table_data, synapse_project_id, table_name, username, password)
+
+    """
+    import synapseclient
+    from synapseclient import Schema, Table, as_table_columns
+
+    syn = synapseclient.Synapse()
+
+    # Log in to Synapse:
+    if username and password:
+        syn.login(username, password)
+    else:
+        syn.login()
+
+    table_data.index = range(table_data.shape[0])
+
+    schema = Schema(name=table_name, columns=as_table_columns(table_data),
+                    parent=synapse_project_id, includeRowIdAndRowVersion=False)
+
+    syn.store(Table(schema, table_data))
+
+
+def write_columns_to_synapse_table(table, column_headers, synapse_project_id,
+                                   table_name='', username='', password=''):
+    """
+    Select columns from a table and write data to a Synapse table.
+
+    Parameters
+    ----------
+    table : string
+    column_headers : list of strings
+        headers for columns to select
+    synapse_project_id : string
+        Synapse ID for project within which table is to be written
+    table_name : string
+        schema name of table
+    username : string
+        Synapse username (only needed once on a given machine)
+    password : string
+        Synapse password (only needed once on a given machine)
+
+    Examples
+    --------
+    >>> import os
+    >>> from mhealthx.xio import write_columns_to_synapse_table
+    >>> path = os.environ['MHEALTHX_OUTPUT']
+    >>> table = os.path.join(path, 'feature_tables',
+    ...         'tap_row0_v0_9d44a388-5d7e-4271-8705-2faa66204486.csv']
+    >>> column_headers = ['tapping_results.json.ButtonRectLeft',
+    ...                   'accel_tapping.json.items']
+    >>> username = ''
+    >>> password = ''
+    >>> synapse_project_id = 'syn4899451'
+    >>> table_name = 'Contents written to ' + synapse_table
+    >>> write_columns_to_synapse_table(table, column_headers, synapse_project_id, table_name, username, password)
+
+    """
+    import pandas as pd
+    import synapseclient
+    from synapseclient import Schema, Table, as_table_columns
+
+    #-------------------------------------------------------------------------
+    # Load table:
+    #-------------------------------------------------------------------------
+    input_columns = pd.read_csv(table)
+
+    #-------------------------------------------------------------------------
+    # Construct a table:
+    #-------------------------------------------------------------------------
+    columns = []
+    for column_header in column_headers:
+
+        #---------------------------------------------------------------------
+        # Extract column from the table:
+        #---------------------------------------------------------------------
+        columns.append(input_columns.loc(column_header))
+        #columns.append(input_columns.iloc[:, index])
+
+    # Log in to Synapse:
+    syn = synapseclient.Synapse()
+    if username and password:
+        syn.login(username, password)
+    else:
+        syn.login()
+
+    schema = Schema(name=table_name, columns=as_table_columns(columns),
+                    parent=synapse_project_id, includeRowIdAndRowVersion=False)
+
+    syn.store(Table(schema, columns))
+
+
 # ============================================================================
 if __name__ == '__main__':
 

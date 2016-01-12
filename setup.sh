@@ -22,21 +22,18 @@
 #=============================================================================
 
 #-----------------------------------------------------------------------------
-# Assign download and installation path arguments:
+# Assign download and installation path.
+# Create installation folder if it doesn't exist:
 #-----------------------------------------------------------------------------
 INSTALLS=$1
 
-export PATH=$INSTALLS/bin:$PATH
-
-#-----------------------------------------------------------------------------
-# Create installation folder if it doesn't exist:
-#-----------------------------------------------------------------------------
 if [ -z "$INSTALLS" ]; then
     INSTALLS="$HOME/install"
 fi
 if [ ! -d $INSTALLS ]; then
     mkdir -p $INSTALLS;
 fi
+PATH=$INSTALLS/bin:$PATH
 
 #-----------------------------------------------------------------------------
 # System-wide dependencies:
@@ -51,6 +48,7 @@ CONDA_URL="http://repo.continuum.io/miniconda"
 CONDA_FILE="Miniconda-latest-Linux-x86_64.sh"
 CONDA_DL="$INSTALLS/${CONDA_FILE}"
 CONDA_PATH="$INSTALLS/miniconda2"
+CONDA="${CONDA_PATH}/bin"
 wget -O $CONDA_DL ${CONDA_URL}/$CONDA_FILE
 chmod +x $CONDA_DL
 # -b           run install in batch mode (without manual intervention),
@@ -58,29 +56,29 @@ chmod +x $CONDA_DL
 # -f           no error if install prefix already exists
 # -p PREFIX    install prefix
 bash $CONDA_DL -b -f -p $CONDA_PATH
-export PATH=${CONDA_PATH}/bin:$PATH
+PATH=$CONDA:$PATH
 
 #-----------------------------------------------------------------------------
 # Additional resources for installing packages:
 #-----------------------------------------------------------------------------
-conda install --yes cmake pip
+$CONDA/conda install --yes cmake pip
 
 #-----------------------------------------------------------------------------
 # Install some Python libraries:
 #-----------------------------------------------------------------------------
-conda install --yes numpy scipy pandas nose networkx traits ipython matplotlib
+$CONDA/conda install --yes numpy scipy pandas nose networkx traits ipython matplotlib
 
 # Install nipype pipeline framework:
-$INSTALLS/miniconda2/bin/pip install nipype
+$CONDA/pip install nipype
 
 # Install Synapse client:
-$INSTALLS/miniconda2/bin/pip install synapseclient
+$CONDA/pip install synapseclient
 
 # https://pythonhosted.org/lockfile/lockfile.html
-$INSTALLS/miniconda2/bin/pip install lockfile
+$CONDA/pip install lockfile
 
 # Install scikit-learn for text-to-audio conversion:
-$INSTALLS/miniconda2/bin/pip install scikit-learn
+$CONDA/pip install scikit-learn
 
 #-----------------------------------------------------------------------------
 # Install mhealthx nipype workflow for feature extraction:
@@ -89,8 +87,8 @@ cd $INSTALLS
 git clone git@github.com:sage-bionetworks/mhealthx.git
 cd $INSTALLS/mhealthx
 python setup.py install
-export PATH=$INSTALLS/mhealthx/mhealthx:$PATH
-export PYTHONPATH=$PYTHONPATH:$INSTALLS/mhealthx
+PATH=$INSTALLS/mhealthx/mhealthx:$PATH
+PYTHONPATH=$PYTHONPATH:$INSTALLS/mhealthx
 
 #-----------------------------------------------------------------------------
 # Install ffmpeg and dependencies for audio file conversion:
@@ -116,13 +114,12 @@ cd $INSTALLS/ffmpeg/ffmpeg_sources
 wget -nc http://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
 tar xjvf ffmpeg-snapshot.tar.bz2
 cd ffmpeg
-PATH=$INSTALLS/bin:$PATH
 PKG_CONFIG_PATH=$INSTALLS/ffmpeg/ffmpeg_build/lib/pkgconfig
 ./configure --prefix=$INSTALLS/ffmpeg/ffmpeg_build --pkg-config-flags="--static" --extra-cflags="-I$INSTALLS/ffmpeg/ffmpeg_build/include" --extra-ldflags="-L$INSTALLS/ffmpeg/ffmpeg_build/lib" --bindir="$INSTALLS/bin" --enable-gpl
 #--enable-libass --enable-libfreetype --enable-libtheora --enable-libvorbis --enable-libx264 --enable-libx265 --enable-nonfree --enable-libfdk-aac --enable-libmp3lame --enable-libopus --enable-libvpx
 make
 make install
-export PATH=$INSTALLS/ffmpeg/ffmpeg_sources/ffmpeg:$PATH
+PATH=$INSTALLS/ffmpeg/ffmpeg_sources/ffmpeg:$PATH
 
 #-----------------------------------------------------------------------------
 # Install openSMILE:
@@ -132,7 +129,6 @@ synapse get syn5584794
 tar xvf openSMILE-2.1.0.tar.gz
 cd openSMILE-2.1.0
 bash buildStandalone.sh -p $INSTALLS
-export PATH=$INSTALLS/bin:$PATH
 
 #-----------------------------------------------------------------------------
 # Other voice feature extraction software (for future integration):
@@ -141,7 +137,7 @@ export PATH=$INSTALLS/bin:$PATH
 #sudo apt-get install libyaml-dev libfftw3-dev libavcodec-dev libavformat-dev libavutil-dev libavresample-dev python-dev libsamplerate0-dev libtag1-dev
 #    build-essential
 #sudo apt-get install pkg-config
-#INSTALLS/miniconda/bin/pip install pyyaml
+#$CONDA/pip install pyyaml
 
 # Install Essentia:
 #cd $INSTALLS

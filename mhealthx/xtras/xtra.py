@@ -137,59 +137,6 @@ def copy_synapse_table(synapse_table_id, synapse_project_id, table_name='',
     return table_data, table_name, synapse_project_id
 
 
-def write_synapse_table(table_data, synapse_project_id, table_name='',
-                        username='', password=''):
-    """
-    Write data to a Synapse table.
-
-    Parameters
-    ----------
-    table_data : Pandas DataFrame
-        Synapse table contents
-    synapse_project_id : string
-        Synapse ID for project within which table is to be written
-    table_name : string
-        schema name of table
-    username : string
-        Synapse username (only needed once on a given machine)
-    password : string
-        Synapse password (only needed once on a given machine)
-
-    Examples
-    --------
-    >>> from mhealthx.xio import read_files_from_synapse_row
-    >>> from mhealthx.xtra import write_synapse_table
-    >>> synapse_table = 'syn4590865'
-    >>> row =
-    >>> column_name = ''
-    >>> out_path = '.'
-    >>> username = ''
-    >>> password = ''
-    >>> table_data, files = read_files_from_synapse_row(synapse_table, row, column_name, out_path, username, password)
-    >>> synapse_project_id = 'syn4899451'
-    >>> table_name = 'Contents of ' + synapse_table
-    >>> write_synapse_table(table_data, synapse_project_id, table_name, username, password)
-
-    """
-    import synapseclient
-    from synapseclient import Schema, Table, as_table_columns
-
-    syn = synapseclient.Synapse()
-
-    # Log in to Synapse:
-    if username and password:
-        syn.login(username, password)
-    else:
-        syn.login()
-
-    table_data.index = range(table_data.shape[0])
-
-    schema = Schema(name=table_name, columns=as_table_columns(table_data),
-                    parent=synapse_project_id, includeRowIdAndRowVersion=False)
-
-    syn.store(Table(schema, table_data))
-
-
 def feature_file_to_synapse_table(feature_file, raw_feature_file,
                                   source_file_id, provenance_activity_id,
                                   command, command_line,
