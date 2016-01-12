@@ -8,15 +8,12 @@
 # Usage:
 #     bash setup.sh
 #
-#     Or with arguments:
-#     bash setup.sh <download_dir> <install_dir>
-#
-#     For example:
-#     bash setup.sh /home/downloads /home/install /home/.bash_profile
+#     Installation directory as an optional argument:
+#     bash setup.sh <install_dir>
 #
 # Note:
-#     All arguments are optional; folders will be created if required.
-#     Software such as openSMILE should be placed on an accessible server.
+#     Third-party software not in the GitHub repository are on Synapse:
+#     https://www.synapse.org/#!Synapse:syn5584792
 #
 # Authors:
 #     - Arno Klein, 2015-2016  (arno@sagebase.org)  http://binarybottle.com
@@ -27,21 +24,13 @@
 #-----------------------------------------------------------------------------
 # Assign download and installation path arguments:
 #-----------------------------------------------------------------------------
-DOWNLOADS=$1
-INSTALLS=$2
+INSTALLS=$1
 
 export PATH=$INSTALLS/bin:$PATH
 
 #-----------------------------------------------------------------------------
-# Create folders and file if they don't exist:
+# Create installation folder if it doesn't exist:
 #-----------------------------------------------------------------------------
-if [ -z "$DOWNLOADS" ]; then
-    DOWNLOADS="$HOME/downloads"
-fi
-if [ ! -d $DOWNLOADS ]; then
-    mkdir -p $DOWNLOADS;
-fi
-
 if [ -z "$INSTALLS" ]; then
     INSTALLS="$HOME/install"
 fi
@@ -53,21 +42,21 @@ fi
 # System-wide dependencies:
 #-----------------------------------------------------------------------------
 sudo apt-get update
-sudo apt-get install -y git
+sudo apt-get install -y git pip
 
 #-----------------------------------------------------------------------------
 # Anaconda's miniconda Python distribution for local installs:
 #-----------------------------------------------------------------------------
 CONDA_URL="http://repo.continuum.io/miniconda"
 CONDA_FILE="Miniconda-latest-${OS}-x86_64.sh"
-CONDA_DL="$DOWNLOADS/${CONDA_FILE}"
+CONDA_DL="$INSTALLS/${CONDA_FILE}"
 CONDA_PATH="$INSTALLS/miniconda2"
 wget -O $CONDA_DL ${CONDA_URL}/$CONDA_FILE
 chmod +x $CONDA_DL
 # -b           run install in batch mode (without manual intervention),
 #              it is expected the license terms are agreed upon
 # -f           no error if install prefix already exists
-# -p PREFIX    install prefix, defaults to /home/ubuntu/miniconda
+# -p PREFIX    install prefix
 bash $CONDA_DL -b -f -p $CONDA_PATH
 export PATH=${CONDA_PATH}/bin:$PATH
 
@@ -82,16 +71,16 @@ conda install --yes cmake pip
 conda install --yes numpy scipy pandas nose networkx traits ipython matplotlib
 
 # Install nipype pipeline framework:
-$INSTALLS/miniconda/bin/pip install nipype
+$INSTALLS/miniconda2/bin/pip install nipype
 
 # Install Synapse client:
-$INSTALLS/miniconda/bin/pip install synapseclient
+$INSTALLS/miniconda2/bin/pip install synapseclient
 
 # https://pythonhosted.org/lockfile/lockfile.html
-$INSTALLS/miniconda/bin/pip install lockfile
+$INSTALLS/miniconda2/bin/pip install lockfile
 
 # Install scikit-learn for text-to-audio conversion:
-$INSTALLS/miniconda/bin/pip install scikit-learn
+$INSTALLS/miniconda2/bin/pip install scikit-learn
 
 #-----------------------------------------------------------------------------
 # Install mhealthx nipype workflow for feature extraction:
@@ -202,12 +191,3 @@ export PATH=$INSTALLS/bin:$PATH
 
 # Install grt:
 #sudo apt-get install g++-4.8
-
-#-----------------------------------------------------------------------------
-# Finally, remove non-essential directories:
-#-----------------------------------------------------------------------------
-rm_extras=0
-if [ $rm_extras -eq 1 ]; then
-    rm -r $DOWNLOADS/*
-fi
-
