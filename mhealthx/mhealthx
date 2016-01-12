@@ -44,7 +44,7 @@ from mhealthx.extract import run_openSMILE, run_pyGait, run_signal_features, \
     run_tap_features, run_quality, run_sdf_features
 from mhealthx.extractors.pyGait import project_walk_direction_attitude
 from mhealthx.xio import extract_synapse_rows, write_wav, \
-    get_convert_audio, get_accel, get_tap
+    get_convert_audio, get_accel, get_tap, write_columns_to_synapse_table
 
 # ============================================================================
 #
@@ -309,6 +309,27 @@ elif synID_voice and not setup_rows:
     Flow.connect(getPhonation0, 'row', SMILEvoice0, 'row')
     SMILEvoice0.inputs.table_stem = os.path.join(feature_table_path,
         'voice_count{0}'.format(smile_string1))
+
+    # ------------------------------------------------------------------------
+    # Select openSMILE columns and store as Synapse table:
+    # ------------------------------------------------------------------------
+    StoreOpenSMILE = Node(name='store_openSMILE',
+                          interface=Fn(function=write_columns_to_synapse_table,
+                                       input_names=['table',
+                                                    'column_headers',
+                                                    'synapse_project_id',
+                                                    'table_name',
+                                                    'username',
+                                                    'password'],
+                                       output_names=[]))
+    Flow.connect(SaveOpenSMILE, 'feature_table',
+                 StoreOpenSMILE, 'table')
+    StoreOpenSMILE.inputs.column_headers = ''
+    StoreOpenSMILE.inputs.synapse_project_id = ''
+    StoreOpenSMILE.inputs.table_name = 'voice{0}'.format(smile_string1)
+    StoreOpenSMILE.inputs.username = ''
+    StoreOpenSMILE.inputs.password = ''
+
 
 # ============================================================================
 #
@@ -970,8 +991,6 @@ if __name__ == '__main__':
         Flow.run()  # Use all processors: Flow.run(plugin='MultiProc')
 
     print('Done! ({0:0.2f} seconds)'.format(time() - time0))
-
-
 
 
 # ------------------------------------------------------------------------

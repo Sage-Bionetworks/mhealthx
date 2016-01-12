@@ -806,7 +806,7 @@ def select_columns_from_table(table, column_headers, write_table=True,
     >>> from mhealthx.xio import select_columns_from_table
     >>> path = os.environ['MHEALTHX_OUTPUT']
     >>> table = os.path.join(path, 'feature_tables',
-    ...         'tap_row0_v0_9d44a388-5d7e-4271-8705-2faa66204486.csv']
+    ...         'tap_row0_v0_9d44a388-5d7e-4271-8705-2faa66204486.csv')
     >>> column_headers = ['tapping_results.json.ButtonRectLeft',
     ...                   'accel_tapping.json.items']
     >>> write_table = True
@@ -823,29 +823,20 @@ def select_columns_from_table(table, column_headers, write_table=True,
     input_columns = pd.read_csv(table)
 
     #-------------------------------------------------------------------------
-    # Construct a table:
+    # Construct a table from selected columns:
     #-------------------------------------------------------------------------
-    columns = []
-    for column_header in column_headers:
-
-        #---------------------------------------------------------------------
-        # Extract column from the table:
-        #---------------------------------------------------------------------
-        columns.append(input_columns.loc(column_header))
-        #columns.append(input_columns.iloc[:, index])
+    columns = input_columns[column_headers]
 
     #-------------------------------------------------------------------------
-    # Write tables:
+    # Write table:
     #-------------------------------------------------------------------------
-    if write_table and columns:
-        if all([len(x) == len(columns[0]) for x in columns]):
-            if not output_table:
-                output_table = os.path.join(os.getcwd(),
-                                            'select_columns_from_table.csv')
-            df = pd.DataFrame({'': columns})
-            df.to_csv(output_table, index=False)
-        else:
-            print('Not saving table.')
+    if write_table and not columns.empty:
+        if not output_table:
+            output_table = os.path.join(os.getcwd(),
+                                        'select_columns_from_table.csv')
+        columns.to_csv(output_table, index=False)
+    else:
+        print('Not saving table.')
 
     return columns, output_table
 
@@ -870,17 +861,17 @@ def write_synapse_table(table_data, synapse_project_id, table_name='',
 
     Examples
     --------
-    >>> from mhealthx.xio import read_files_from_synapse_row
+    >>> import os
+    >>> import pandas as pd
     >>> from mhealthx.xio import write_synapse_table
-    >>> synapse_table = 'syn4590865'
-    >>> row =
-    >>> column_name = ''
-    >>> out_path = '.'
+    >>> path = os.environ['MHEALTHX_OUTPUT']
+    >>> table = os.path.join(path, 'feature_tables',
+    ...         'tap_row0_v0_9d44a388-5d7e-4271-8705-2faa66204486.csv')
+    >>> table_data = pd.read_csv(table)
     >>> username = ''
     >>> password = ''
-    >>> table_data, files = read_files_from_synapse_row(synapse_table, row, column_name, out_path, username, password)
     >>> synapse_project_id = 'syn4899451'
-    >>> table_name = 'Contents of ' + synapse_table
+    >>> table_name = 'Contents of table'
     >>> write_synapse_table(table_data, synapse_project_id, table_name, username, password)
 
     """
@@ -895,7 +886,7 @@ def write_synapse_table(table_data, synapse_project_id, table_name='',
     else:
         syn.login()
 
-    table_data.index = range(table_data.shape[0])
+    #table_data.index = range(table_data.shape[0])
 
     schema = Schema(name=table_name, columns=as_table_columns(table_data),
                     parent=synapse_project_id, includeRowIdAndRowVersion=False)
@@ -938,38 +929,16 @@ def write_columns_to_synapse_table(table, column_headers, synapse_project_id,
     >>> write_columns_to_synapse_table(table, column_headers, synapse_project_id, table_name, username, password)
 
     """
-    import pandas as pd
-    import synapseclient
-    from synapseclient import Schema, Table, as_table_columns
+    from mhealthx.xio import select_columns_from_table, write_synapse_table
 
     #-------------------------------------------------------------------------
-    # Load table:
+    # Select columns:
     #-------------------------------------------------------------------------
-    input_columns = pd.read_csv(table)
+    columns, output_table = select_columns_from_table(table, column_headers,
+                                                      False, '')
 
-    #-------------------------------------------------------------------------
-    # Construct a table:
-    #-------------------------------------------------------------------------
-    columns = []
-    for column_header in column_headers:
-
-        #---------------------------------------------------------------------
-        # Extract column from the table:
-        #---------------------------------------------------------------------
-        columns.append(input_columns.loc(column_header))
-        #columns.append(input_columns.iloc[:, index])
-
-    # Log in to Synapse:
-    syn = synapseclient.Synapse()
-    if username and password:
-        syn.login(username, password)
-    else:
-        syn.login()
-
-    schema = Schema(name=table_name, columns=as_table_columns(columns),
-                    parent=synapse_project_id, includeRowIdAndRowVersion=False)
-
-    syn.store(Table(schema, columns))
+    write_synapse_table(columns, synapse_project_id, table_name,
+                        username, password)
 
 
 # ============================================================================

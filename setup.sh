@@ -6,10 +6,11 @@
 # Tested on an Ubuntu 14.04 machine.
 #
 # Usage:
-#     bash setup.sh
+#     bash setup.sh 1
 #
-#     Installation directory as an optional argument:
-#     bash setup.sh <install_dir>
+#     bash setup.sh <install_mhealthx> <install_dir>
+#       <install_mhealthx>: 1 or 0 (do/not install mhealthx)
+#       <install_dir>: path to installation directory (optional)
 #
 # Note:
 #     Third-party software not in the GitHub repository are on Synapse:
@@ -25,30 +26,34 @@
 # Assign download and installation path.
 # Create installation folder if it doesn't exist:
 #-----------------------------------------------------------------------------
-INSTALLS=$1
-
-if [ -z "$INSTALLS" ]; then
-    INSTALLS="$HOME/install"
+MHEALTHX=$1
+INSTALLS=$2
+if [ -z $MHEALTHX ]; then
+    MHEALTHX=1
+fi
+if [ -z $INSTALLS ]; then
+    INSTALLS=$HOME/install
 fi
 if [ ! -d $INSTALLS ]; then
     mkdir -p $INSTALLS;
 fi
-PATH=$INSTALLS/bin:$PATH
+export $INSTALLS
+export PATH=$INSTALLS/bin:$PATH
 
 #-----------------------------------------------------------------------------
 # System-wide dependencies:
 #-----------------------------------------------------------------------------
 sudo apt-get update
-sudo apt-get install -y git
+#sudo apt-get install -y git
 
 #-----------------------------------------------------------------------------
 # Anaconda's miniconda Python distribution for local installs:
 #-----------------------------------------------------------------------------
 CONDA_URL="http://repo.continuum.io/miniconda"
 CONDA_FILE="Miniconda-latest-Linux-x86_64.sh"
-CONDA_DL="$INSTALLS/${CONDA_FILE}"
-CONDA_PATH="$INSTALLS/miniconda2"
-CONDA="${CONDA_PATH}/bin"
+CONDA_DL=$INSTALLS/${CONDA_FILE}
+CONDA_PATH=$INSTALLS/miniconda2
+CONDA=${CONDA_PATH}/bin
 wget -O $CONDA_DL ${CONDA_URL}/$CONDA_FILE
 chmod +x $CONDA_DL
 # -b           run install in batch mode (without manual intervention),
@@ -56,7 +61,7 @@ chmod +x $CONDA_DL
 # -f           no error if install prefix already exists
 # -p PREFIX    install prefix
 bash $CONDA_DL -b -f -p $CONDA_PATH
-PATH=$CONDA:$PATH
+export PATH=$CONDA:$PATH
 
 #-----------------------------------------------------------------------------
 # Additional resources for installing packages:
@@ -83,12 +88,14 @@ $CONDA/pip install scikit-learn
 #-----------------------------------------------------------------------------
 # Install mhealthx nipype workflow for feature extraction:
 #-----------------------------------------------------------------------------
-cd $INSTALLS
-git clone git@github.com:sage-bionetworks/mhealthx.git
-cd $INSTALLS/mhealthx
-python setup.py install
-PATH=$INSTALLS/mhealthx/mhealthx:$PATH
-PYTHONPATH=$PYTHONPATH:$INSTALLS/mhealthx
+if [ "$MHEALTHX" -eq "1" ]; then
+    cd $INSTALLS
+    git clone git@github.com:sage-bionetworks/mhealthx.git
+    cd $INSTALLS/mhealthx
+    sudo python setup.py install
+    export PATH=$INSTALLS/mhealthx/mhealthx:$PATH
+    export PYTHONPATH=$PYTHONPATH:$INSTALLS/mhealthx
+fi
 
 #-----------------------------------------------------------------------------
 # Install ffmpeg and dependencies for audio file conversion:
@@ -119,7 +126,7 @@ PKG_CONFIG_PATH=$INSTALLS/ffmpeg/ffmpeg_build/lib/pkgconfig
 #--enable-libass --enable-libfreetype --enable-libtheora --enable-libvorbis --enable-libx264 --enable-libx265 --enable-nonfree --enable-libfdk-aac --enable-libmp3lame --enable-libopus --enable-libvpx
 make
 make install
-PATH=$INSTALLS/ffmpeg/ffmpeg_sources/ffmpeg:$PATH
+export PATH=$INSTALLS/ffmpeg/ffmpeg_sources/ffmpeg:$PATH
 
 #-----------------------------------------------------------------------------
 # Install openSMILE:
