@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 """
-This pipeline runs feature extraction on mHealth data stored on Synapse.org.
+This pipeline runs feature extraction on mhealth data stored on Synapse.org.
+
+This command results in a one-row csv table for each recordId.
+This recordId corresponds to a source row of mhealth data --
+a given participant, for a given activity, at a given time.
+Follow the "mhealthx" command with the "mhealthy" command.
 
 Example to prepare the first three rows of mhealth data from Synapse:
 
@@ -12,6 +17,7 @@ Example to extract features from the above three rows (remove "--setup"):
     mhealthx --voice syn4590865 --walk syn4590866 --tap syn4590864 \
              -d /software --rows 3
 
+Note:
 - First-time use on a given machine: include -u and -p for Synapse login.
 - Replace -d argument with path to installed feature extraction software.
 
@@ -44,7 +50,7 @@ from mhealthx.extract import run_openSMILE, run_pyGait, run_signal_features, \
     run_tap_features, run_quality, run_sdf_features
 from mhealthx.extractors.pyGait import project_walk_direction_attitude
 from mhealthx.xio import extract_synapse_rows, write_wav, \
-    get_convert_audio, get_accel, get_tap, write_columns_to_synapse_table
+    get_convert_audio, get_accel, get_tap
 
 # ============================================================================
 #
@@ -309,26 +315,6 @@ elif synID_voice and not setup_rows:
     Flow.connect(getPhonation0, 'row', SMILEvoice0, 'row')
     SMILEvoice0.inputs.table_stem = os.path.join(feature_table_path,
         'voice_count{0}'.format(smile_string1))
-
-    # ------------------------------------------------------------------------
-    # Select openSMILE columns and store as Synapse table:
-    # ------------------------------------------------------------------------
-    StoreOpenSMILE = Node(name='store_openSMILE',
-                          interface=Fn(function=write_columns_to_synapse_table,
-                                       input_names=['table',
-                                                    'column_headers',
-                                                    'synapse_project_id',
-                                                    'table_name',
-                                                    'username',
-                                                    'password'],
-                                       output_names=[]))
-    Flow.connect(SaveOpenSMILE, 'feature_table',
-                 StoreOpenSMILE, 'table')
-    StoreOpenSMILE.inputs.column_headers = ''
-    StoreOpenSMILE.inputs.synapse_project_id = ''
-    StoreOpenSMILE.inputs.table_name = 'voice{0}'.format(smile_string1)
-    StoreOpenSMILE.inputs.username = ''
-    StoreOpenSMILE.inputs.password = ''
 
 
 # ============================================================================
@@ -991,71 +977,3 @@ if __name__ == '__main__':
         Flow.run()  # Use all processors: Flow.run(plugin='MultiProc')
 
     print('Done! ({0:0.2f} seconds)'.format(time() - time0))
-
-
-# ------------------------------------------------------------------------
-# Store openSMILE features to its own Synapse table:
-# ------------------------------------------------------------------------
-# SaveOpenSMILE = JoinNode(name='save_openSMILE',
-#                          joinsource='OpenSMILE',
-#                          joinfield='dataframes',
-#                          interface=Fn(function=dataframes_to_csv_file,
-#                                       input_names=['dataframes',
-#                                                    'csv_file'],
-#                                       output_names=['table_data',
-#                                                     'csv_file']))
-# Flow.connect(FormatOpenSMILE, 'feature_table',
-#              SaveOpenSMILE, 'dataframes')
-# SaveOpenSMILE.inputs.csv_file = 'openSMILE_IS13_ComParE.csv'
-# Flow.connect(SaveOpenSMILE, 'csv_file', Sink, 'voice.@features')
-
-# ------------------------------------------------------------------------
-# Store openSMILE features to its own Synapse table:
-# FIX: WOULD NEED TO REORGANIZE: | feature | statistical summary | value |
-# ------------------------------------------------------------------------
-# SaveOpenSMILE = Node(name='save_openSMILE',
-#              interface=Fn(function=concatenate_tables_to_synapse_table,
-#                           input_names=['tables',
-#                                        'synapse_project_id',
-#                                        'table_name',
-#                                        'username',
-#                                        'password'],
-#                           output_names=['table_data',
-#                                         'table_name',
-#                                         'synapse_table_id',
-#                                         'synapse_project_id']))
-# Flow.connect(FormatOpenSMILE, 'feature_table', SaveOpenSMILE, 'tables')
-# SaveOpenSMILE.inputs.synapse_project_id = 'syn4899451'
-# SaveOpenSMILE.inputs.table_name = 'Phonation openSMILE feature table'
-# SaveOpenSMILE.inputs.username = ''
-# SaveOpenSMILE.inputs.password = ''
-
-# ------------------------------------------------------------------------
-# Store openSMILE output file handle to the mPower voice file table:
-# ------------------------------------------------------------------------
-# StoreOpenSMILE = Node(name='store_openSMILE',
-#                       interface=Fn(function=file_to_synapse_table,
-#                                    input_names=['feature_file',
-#                                                 'raw_feature_file',
-#                                                 'source_file_id',
-#                                                 'provenance_activity_id',
-#                                                 'command_line',
-#                                                 'synapse_table_id',
-#                                                 'username',
-#                                                 'password'],
-#                                    output_names=[]))
-# Flow.connect(SaveOpenSMILE, 'csv_file',
-#              StoreOpenSMILE, 'feature_file')
-# Flow.connect(OpenSMILE, 'argn',
-#              StoreOpenSMILE, 'raw_feature_file')
-# StoreOpenSMILE.inputs.provenance_activity_id = ''
-# #Flow.connect(OpenSMILE, 'argn',
-# #             StoreOpenSMILE, 'source_file_id')
-# StoreOpenSMILE.inputs.source_file_id = ''
-# Flow.connect(OpenSMILE, 'command_line',
-#              StoreOpenSMILE, 'command_line')
-# Flow.connect(PrepPhonation, 'synapse_table_id',
-#              StoreOpenSMILE, 'synapse_table_id')
-# StoreOpenSMILE.inputs.username = ''
-# StoreOpenSMILE.inputs.password = ''
-

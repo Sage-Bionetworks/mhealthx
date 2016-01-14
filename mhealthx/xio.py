@@ -778,6 +778,83 @@ def write_wav(data, file_stem, file_append,
     return wav_file
 
 
+def concatenate_tables_vertically(tables, output_csv_file=None):
+    """
+    Vertically concatenate multiple table files or pandas DataFrames
+    with the same column names and store as a csv table.
+
+    Parameters
+    ----------
+    tables : list of table files or pandas DataFrames
+        each table or dataframe has the same column names
+    output_csv_file : string or None
+        output table file (full path)
+
+    Returns
+    -------
+    table_data : Pandas DataFrame
+        output table data
+    output_csv_file : string or None
+        output table file (full path)
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from mhealthx.xio import concatenate_tables_vertically
+    >>> df1 = pd.DataFrame({'A': ['A0', 'A1', 'A2', 'A3'],
+    >>>                     'B': ['B0', 'B1', 'B2', 'B3'],
+    >>>                     'C': ['C0', 'C1', 'C2', 'C3']},
+    >>>                    index=[0, 1, 2, 3])
+    >>> df2 = pd.DataFrame({'A': ['A4', 'A5', 'A6', 'A7'],
+    >>>                     'B': ['B4', 'B5', 'B6', 'B7'],
+    >>>                     'C': ['C4', 'C5', 'C6', 'C7']},
+    >>>                     index=[0, 1, 2, 3])
+    >>> tables = [df1, df2]
+    >>> tables = ['/Users/arno/csv/table1.csv', '/Users/arno/csv/table2.csv']
+    >>> output_csv_file = None #'./test.csv'
+    >>> table_data, output_csv_file = concatenate_tables_vertically(tables, output_csv_file)
+    """
+    import os
+    import pandas as pd
+
+    if not tables:
+        table_data = None
+        output_csv_file = None
+    else:
+        try:
+            # pandas DataFrames:
+            if type(tables[0]) == pd.DataFrame:
+                tables_no_Nones = []
+                for table in tables:
+                    if table is not None and type(table) == pd.DataFrame:
+                        tables_no_Nones.append(table)
+                tables = tables_no_Nones
+            # file strings:
+            elif type(tables[0]) == str:
+                tables_from_files = []
+                for table in tables:
+                    if os.path.isfile(table):
+                        tables_from_files.append(pd.read_csv(table))
+                    else:
+                        raise Warning('{0} is not a file.'.format(table))
+                tables = tables_from_files
+            else:
+                raise Warning("'tables' should contain strings or "
+                              "pandas DataFrames.")
+
+            # Vertically concatenate tables:
+            table_data = pd.concat(tables, ignore_index=True)
+
+            # Store as csv file:
+            if output_csv_file:
+                table_data.to_csv(output_csv_file, index=False)
+        except:
+            table_data = None
+            output_csv_file = None
+
+    return table_data, output_csv_file
+
+
 def select_columns_from_table(table, column_headers, write_table=True,
                               output_table=''):
     """
