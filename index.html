@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>mhealthxyz</title>
+    <script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+    <script type="text/javascript" src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js">
+    </script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js">
+    </script>
+
+    <style type="text/css">
+    .chart {
+      background: #ffffff;
+      margin: 10px;
+      padding-top: 10px; 
+    }
+    .chart .right {
+      stroke: white;
+      fill: #6F6975; 
+    }
+    .chart .left {
+      stroke: white;
+      fill: #2C1EA2; 
+    }
+    .chart .up {
+      stroke: white;
+      fill: #9F5B0D; 
+    }
+    .chart .down {
+      stroke: white;
+      fill: #C02504; 
+    }
+    .chart rect:hover {
+      fill: #64707d; 
+    }
+    .chart text {
+      fill: white; //black; 
+    }
+    </style>
+
+    <link rel="stylesheet" type="text/css" href="./www/style.css" />                 
+  </head>
+
+  <body>
+
+      <div class="header">
+          <h1>mhealthxyz</h1>
+          <button id="back" name="back" ><</button>
+          <b><label id="currentMonth">January 2016</label></b>
+          <button id="forward" name="forward" >></button>
+      </div>
+
+      <div id="chart"></div>
+
+      <script type="text/javascript" src="./www/radial_barchart.js" ></script>
+
+      <script type="text/javascript" src="./www/calendar.js" ></script>
+
+  </body>
+</html>
