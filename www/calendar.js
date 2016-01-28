@@ -232,28 +232,24 @@ function drawGraphsForMonthlyData() {
 
 
 
-
-// Generate some random data that can be used to draw pie charts:
+// Generate some random data:
+var number_of_values = 8;
+var max_number = 20;
+var randomNumbers = function(number_of_values, max_number) { 
+    var numbers = [];
+    for (var i = 0; i < number_of_values; i++) {
+        numbers.push(parseInt(Math.random() * max_number));
+    }
+    return numbers;
+};
 function getDataForMonth() {
     var randomData = [];
     for (var i = 0; i < 35; i++) {
-        randomData.push([Math.floor(Math.random()*100),Math.floor(Math.random()*100),Math.floor(Math.random()*100),Math.floor(Math.random()*100),Math.floor(Math.random()*100),Math.floor(Math.random()*100),Math.floor(Math.random()*100),Math.floor(Math.random()*100)]);
+        randomData.push(randomNumbers(number_of_values, max_number));
     }
     return randomData;
 }
-/*
-var number_of_bars = 2;
-var max_number = 20;
-var randomNumbers = function() { 
-    var numbers = [];
-    var colors = [];
-    for (var i = 0; i < number_of_bars; i++) {
-        numbers.push(parseInt(Math.random() * max_number));
-        colors.push(d3.scale.category20(parseInt(Math.random() * max_number)));
-    }
-    return [numbers, colors];
-};
-*/
+
 
 
 

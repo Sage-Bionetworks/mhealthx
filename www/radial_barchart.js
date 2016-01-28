@@ -5,18 +5,22 @@ var number_of_values = number_of_sides * number_of_bars;
 var max_number = 20;
 // Pre/post-med for voice, stand, tap, and walk:
 var color_list = ["#EEBE32", "#9F5B0D", "#B0A9B7", "#6F6975", "#EB7D65", "#C02504", "#20AED8", "#2C1EA2"];
-var randomNumbers = function(number_of_values, max_number, color_list) { 
+var randomNumbers = function(number_of_values, max_number) { 
     var numbers = [];
-    var colors = [];
     for (var i = 0; i < number_of_values; i++) {
         numbers.push(parseInt(Math.random() * max_number));
+    }
+    return numbers;
+};
+var randomColors = function(number_of_values, color_list) { 
+    var colors = [];
+    for (var i = 0; i < number_of_values; i++) {
         colors.push(color_list[i]);
     }
-    return [numbers, colors];
+    return colors;
 };
-var Data = randomNumbers(number_of_values, max_number, color_list);
-var values = Data[0];
-var colors = Data[1];
+var values = randomNumbers(number_of_values, max_number);
+var colors = randomColors(number_of_values, color_list);
 var leftData = [values[0], values[1]];
 var rightData = [values[2], values[3]];
 var upData = [values[4], values[5]];
