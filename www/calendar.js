@@ -237,11 +237,23 @@ function drawGraphsForMonthlyData() {
 function getDataForMonth() {
     var randomData = [];
     for (var i = 0; i < 35; i++) {
-        randomData.push([Math.floor(Math.random()*100),Math.floor(Math.random()*100),Math.floor(Math.random()*100),Math.floor(Math.random()*100)]);
+        randomData.push([Math.floor(Math.random()*100),Math.floor(Math.random()*100),Math.floor(Math.random()*100),Math.floor(Math.random()*100),Math.floor(Math.random()*100),Math.floor(Math.random()*100),Math.floor(Math.random()*100),Math.floor(Math.random()*100)]);
     }
     return randomData;
 }
-
+/*
+var number_of_bars = 2;
+var max_number = 20;
+var randomNumbers = function() { 
+    var numbers = [];
+    var colors = [];
+    for (var i = 0; i < number_of_bars; i++) {
+        numbers.push(parseInt(Math.random() * max_number));
+        colors.push(d3.scale.category20(parseInt(Math.random() * max_number)));
+    }
+    return [numbers, colors];
+};
+*/
 
 
 

@@ -1,24 +1,36 @@
 // Random data
-var number_of_bars = 10;
+var number_of_sides = 4; // FIXED
+var number_of_bars = 2; // FIXED
+var number_of_values = number_of_sides * number_of_bars;
 var max_number = 20;
-var randomNumbers = function() { 
+// Pre/post-med for voice, stand, tap, and walk:
+var color_list = ["#EEBE32", "#9F5B0D", "#B0A9B7", "#6F6975", "#EB7D65", "#C02504", "#20AED8", "#2C1EA2"];
+var randomNumbers = function(number_of_values, max_number, color_list) { 
     var numbers = [];
     var colors = [];
-    for (var i = 0; i < number_of_bars; i++) {
+    for (var i = 0; i < number_of_values; i++) {
         numbers.push(parseInt(Math.random() * max_number));
-        colors.push(d3.scale.category20(parseInt(Math.random() * max_number)));
+        colors.push(color_list[i]);
     }
     return [numbers, colors];
 };
-var leftData = randomNumbers();
-var rightData = randomNumbers();
-var upData = randomNumbers();
-var downData = randomNumbers();
+var Data = randomNumbers(number_of_values, max_number, color_list);
+var values = Data[0];
+var colors = Data[1];
+var leftData = [values[0], values[1]];
+var rightData = [values[2], values[3]];
+var upData = [values[4], values[5]];
+var downData = [values[6], values[7]];
+var leftColors = [colors[0], colors[1]];
+var rightColors = [colors[2], colors[3]];
+var upColors = [colors[4], colors[5]];
+var downColors = [colors[6], colors[7]];
 
 // Plot dimensions
 var chart,
-    bar_width = 20,
-    bar_length = 100,
+    glyph_size = 160;
+    bar_width = 15,
+    bar_length = glyph_size / 2 - 2 * bar_width,
     right_offset = 100,
     left_origin = right_offset + bar_length
     top_offset = 120;
@@ -39,50 +51,51 @@ var translate_y = function(d, index){ return top_offset + y(index); }
 
 // Position LEFT data
 chart.selectAll("rect.left")
-    .data(leftData[0])
+    .data(leftData)
   .enter().append("rect")
     .attr("x", function(pos) { return left_origin - value2length(pos); })
     .attr("y", translate_y)
     .attr("width", value2length)
     .attr("height", bar_width)
-    .style("fill", leftData[1])
+    .style("fill", function(d, i) { return leftColors[i]; })
     .attr("class", "left");
 
 // Position RIGHT data
 chart.selectAll("rect.right")
-    .data(rightData[0])
+    .data(rightData)
   .enter().append("rect")
     .attr("x", left_origin + barplot_width)
     .attr("y", translate_y)
     .attr("width", value2length)
     .attr("height", bar_width) 
-//          .style("fill", function(d, i) { return index2color(i); })
+    .style("fill", function(d, i) { return rightColors[i]; })
     .attr("class", "right");
 
 // Position UP data
 var translate_x = function(d, i) { return "translate(" + (left_origin + i * bar_width) + ", 0)"; }
 chart.selectAll("rect.up")
-    .data(upData[0])
+    .data(upData)
   .enter().append("rect")
     .attr("transform", translate_x)
     .attr("y", function(pos) { return top_offset - value2length(pos); })
     .attr("height", value2length)
     .attr("width", bar_width - 1)
-//          .style("fill", function(d, i) { return index2color(i); })
+    .style("fill", function(d, i) { return upColors[i]; })
     .attr("class", "up");
 
 // Position DOWN data
 chart.selectAll("rect.down")
-    .data(downData[0])
+    .data(downData)
   .enter().append("rect")
     .attr("transform", translate_x)
     .attr("y", top_offset + barplot_width)
     .attr("height", value2length)
     .attr("width", bar_width)
-//          .style("fill", function(d, i) { return index2color(i); })
+    .style("fill", function(d, i) { return downColors[i]; })
     .attr("class", "down");
 
 
+/*
 // Text (numbers on bars) for left data
 chart.selectAll("text.leftscore")
     .data(leftData[0])
@@ -105,3 +118,4 @@ chart.selectAll("text.score")
     .attr("text-anchor", "end")
     .attr('class', 'score')
     .text(String);
+*/
