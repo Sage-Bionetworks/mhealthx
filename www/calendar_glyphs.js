@@ -15,7 +15,7 @@ function drawGraphsForMonthlyData() {
 
         // Get data for a month:
         // Number of bars per bar chart (2 for pre-/post-medication),
-        // each extending from the side of a square (4 sides for 4 activites),
+        // each extending from the side of a square (4 sides for 4 activities),
         // with a maximum display value of max_number, centered within a calendar cell:
         var number_of_sides = 4; // CURRENTLY FIXED
         var number_of_bars = 2;  // CURRENTLY FIXED
@@ -32,17 +32,6 @@ function drawGraphsForMonthlyData() {
         var colors = d3.scale.ordinal()
           .domain([1,2,3,4,5,6,7,8])
           .range(["#EEBE32", "#9F5B0D", "#B0A9B7", "#6F6975", "#EB7D65", "#C02504", "#20AED8", "#2C1EA2"]);
-/*
-function getColorsForMonth(color_list) {
-    var colorData = [];
-    for (var i = 0; i < 35; i++) {
-        colorData.push(color_list);
-    }
-    return colorData;
-}
-        var colors = getColorsForMonth(color_list);
-*/
-
         var leftColors = [colors[0], colors[1]];
         var rightColors = [colors[2], colors[3]];
         var upColors = [colors[4], colors[5]];
@@ -54,9 +43,69 @@ function getColorsForMonth(color_list) {
         var innerRadius = 20;
 
 
-        var pie = d3.layout.pie();
-        //var colors = d3.scale.category10();
-        //var colors = d3.scale.category10().domain(d3.range(0,10));
+
+
+        var pie = d3.layout.histogram();
+        var glyph = d3.svg.arc().innerRadius(innerRadius).outerRadius(outerRadius);
+
+        // Index and group the pie charts and slices so that they can be rendered in correct cells.
+        // We call D3's 'pie' function of each of the data elements.
+        var indexedData = [];
+        for (i = 0; i < data.length; i++) {
+            var pieSlices = pie(data[i]);
+            // This loop stores an index (j) for each of the slices of a given pie chart.
+            // Two different charts on different days will have the the same set of numbers for slices
+            // (eg: 0,1,2). This will help us pick the same colors for the slices for independent charts.
+            // Otherwise, the colors of the slices will be different each day.
+            for (j = 0; j < number_of_values; j++) {
+                indexedData.push([pieSlices[j], i, j]);
+            }
+        }
+
+        var cellPositions = d3CalendarGlobals.gridCellPositions;
+
+        d3CalendarGlobals.chartsGroup
+                .selectAll("g.glyph")
+                .remove();
+
+        var glyphs = d3CalendarGlobals.chartsGroup.selectAll("g.glyph")
+                      // Use the indexed data so that each pie chart can be drawn in a different cell:
+//                      .data(indexedData)
+                      .data(indexedData)
+                      .enter()
+                      .append("g")
+                      .attr("class", "glyph")
+                      // Use the index here to translate the glyph and render it
+                      // in the appropriate cell. Normally, the glyph would be squashed up
+                      // against the top left of the cell, obscuring the text that shows the day
+                      // of the month. We use the gridXTranslation and gridYTranslation and multiply it
+                      // by a factor to move it to the center of the cell. There is probably
+                      // a better way of doing this, though.
+                      .attr("transform", function (d) {
+                          var currentDataIndex = d[1];
+                          return "translate(" +  (half_cell_width + d3CalendarGlobals.gridXTranslation * 1 + cellPositions[currentDataIndex][0]) + ", " +  (half_cell_width + d3CalendarGlobals.gridYTranslation * 1 + cellPositions[currentDataIndex][1]) + ")";
+                      });
+
+        glyphs.append("path")
+            // The color is generated using the second index.
+            // Each slice of the pie is given a fixed number.
+            // This applies to all charts (see the indexing loop above).
+            // This way, by using the index we can generate the same colors
+            // for each of the slices for different charts on different days.
+            .attr("fill", function (d, i) {
+//                return colors(i);
+                return colors(d[2]);
+            })
+            // Standard functions for drawing a pie charts in D3:
+            .attr("d", function (d, i) {
+                return glyph(d[0]);
+            });
+
+
+/*
+        var pie = d3.layout.histogram();
+//        var pie = d3.layout.pie();
+//        var pie = radial_bars();
         var glyph = d3.svg.arc().innerRadius(innerRadius).outerRadius(outerRadius);
 
 
@@ -96,7 +145,8 @@ function getColorsForMonth(color_list) {
                           var currentDataIndex = d[1];
                           return "translate(" +  (half_cell_width + d3CalendarGlobals.gridXTranslation * 1 + cellPositions[currentDataIndex][0]) + ", " +  (half_cell_width + d3CalendarGlobals.gridYTranslation * 1 + cellPositions[currentDataIndex][1]) + ")";
                       });
-
+*/
+/*
         glyphs.append("path")
             // The color is generated using the second index.
             // Each slice of the pie is given a fixed number.
@@ -111,100 +161,105 @@ function getColorsForMonth(color_list) {
             .attr("d", function (d, i) {
                 return glyph(d[0]);
             });
+*/
 
+        //--------------------------------------------------------------------
+        // Radial barchart function
+        //--------------------------------------------------------------------
+        function radial_bars() { 
 
-
-        // Plot dimensions
-        var chart,
-            glyph_size = 160;
-            bar_width = 15,
-            bar_length = glyph_size / 2 - 2 * bar_width,
-            right_offset = 100,
-            left_origin = right_offset + bar_length
-            top_offset = 120;
-            barplot_width = number_of_bars * bar_width,
-            total_width = barplot_width + 2 * bar_length
-        var chart = d3.select("body")
-          .append('svg')
-            .attr('class', 'chart')
-            .attr('width', right_offset + total_width)
-            .attr('height', top_offset + total_width);
-        var value2length = d3.scale.linear()
-           .domain([0, max_number])
-           .range([0, bar_length]);
-        var y = d3.scale.linear()
-           .domain([0, number_of_bars])
-           .range([0, barplot_width]);
-        var translate_y = function(d, index){ return top_offset + y(index); } 
-        
-        // Position LEFT data
-        chart.selectAll("rect.left")
-            .data(leftData)
-          .enter().append("rect")
-            .attr("x", function(pos) { return left_origin - value2length(pos); })
-            .attr("y", translate_y)
-            .attr("width", value2length)
-            .attr("height", bar_width)
-            .style("fill", function(d, i) { return leftColors[i]; })
-            .attr("class", "left");
-        
-        // Position RIGHT data
-        chart.selectAll("rect.right")
-            .data(rightData)
-          .enter().append("rect")
-            .attr("x", left_origin + barplot_width)
-            .attr("y", translate_y)
-            .attr("width", value2length)
-            .attr("height", bar_width) 
-            .style("fill", function(d, i) { return rightColors[i]; })
-            .attr("class", "right");
-        
-        // Position UP data
-        var translate_x = function(d, i) { return "translate(" + (left_origin + i * bar_width) + ", 0)"; }
-        chart.selectAll("rect.up")
-            .data(upData)
-          .enter().append("rect")
-            .attr("transform", translate_x)
-            .attr("y", function(pos) { return top_offset - value2length(pos); })
-            .attr("height", value2length)
-            .attr("width", bar_width - 1)
-            .style("fill", function(d, i) { return upColors[i]; })
-            .attr("class", "up");
-        
-        // Position DOWN data
-        chart.selectAll("rect.down")
-            .data(downData)
-          .enter().append("rect")
-            .attr("transform", translate_x)
-            .attr("y", top_offset + barplot_width)
-            .attr("height", value2length)
-            .attr("width", bar_width)
-            .style("fill", function(d, i) { return downColors[i]; })
-            .attr("class", "down");
-        /*
-        // Text (numbers on bars) for left data
-        chart.selectAll("text.leftscore")
-            .data(leftData[0])
-          .enter().append("text")
-            .attr("x", function(pos) { return left_origin - value2length(pos); })
-            .attr("y", translate_y)
-            .attr("dx", "1.2em")
-            .attr("dy", bar_width - 3)
-            .attr("text-anchor", "end")
-            .attr('class', 'leftscore')
-            .text(String);
-        // Text (numbers on bars) for right data
-        chart.selectAll("text.score")
-            .data(rightData[0])
-          .enter().append("text")
-            .attr("x", function(pos) { return left_origin + barplot_width + value2length(pos); })
-            .attr("y", translate_y)
-            .attr("dx", "-.36em")
-            .attr("dy", bar_width - 3)
-            .attr("text-anchor", "end")
-            .attr('class', 'score')
-            .text(String);
-        */
+            // Plot dimensions
+            var chart,
+                glyph_size = 160;
+                bar_width = 15,
+                bar_length = glyph_size / 2 - 2 * bar_width,
+                right_offset = 100,
+                left_origin = right_offset + bar_length
+                top_offset = 120;
+                barplot_width = number_of_bars * bar_width,
+                total_width = barplot_width + 2 * bar_length
+            var chart = d3.select("body")
+              .append('svg')
+                .attr('class', 'chart')
+                .attr('width', right_offset + total_width)
+                .attr('height', top_offset + total_width);
+            var value2length = d3.scale.linear()
+               .domain([0, max_number])
+               .range([0, bar_length]);
+            var y = d3.scale.linear()
+               .domain([0, number_of_bars])
+               .range([0, barplot_width]);
+            var translate_y = function(d, index){ return top_offset + y(index); } 
+            
+            // Position LEFT data
+            chart.selectAll("rect.left")
+                .data(leftData)
+              .enter().append("rect")
+                .attr("x", function(pos) { return left_origin - value2length(pos); })
+                .attr("y", translate_y)
+                .attr("width", value2length)
+                .attr("height", bar_width)
+                .style("fill", function(d, i) { return leftColors[i]; })
+                .attr("class", "left");
+            
+            // Position RIGHT data
+            chart.selectAll("rect.right")
+                .data(rightData)
+              .enter().append("rect")
+                .attr("x", left_origin + barplot_width)
+                .attr("y", translate_y)
+                .attr("width", value2length)
+                .attr("height", bar_width) 
+                .style("fill", function(d, i) { return rightColors[i]; })
+                .attr("class", "right");
+            
+            // Position UP data
+            var translate_x = function(d, i) { return "translate(" + (left_origin + i * bar_width) + ", 0)"; }
+            chart.selectAll("rect.up")
+                .data(upData)
+              .enter().append("rect")
+                .attr("transform", translate_x)
+                .attr("y", function(pos) { return top_offset - value2length(pos); })
+                .attr("height", value2length)
+                .attr("width", bar_width - 1)
+                .style("fill", function(d, i) { return upColors[i]; })
+                .attr("class", "up");
+            
+            // Position DOWN data
+            chart.selectAll("rect.down")
+                .data(downData)
+              .enter().append("rect")
+                .attr("transform", translate_x)
+                .attr("y", top_offset + barplot_width)
+                .attr("height", value2length)
+                .attr("width", bar_width)
+                .style("fill", function(d, i) { return downColors[i]; })
+                .attr("class", "down");
+            /*
+            // Text (numbers on bars) for left data
+            chart.selectAll("text.leftscore")
+                .data(leftData[0])
+              .enter().append("text")
+                .attr("x", function(pos) { return left_origin - value2length(pos); })
+                .attr("y", translate_y)
+                .attr("dx", "1.2em")
+                .attr("dy", bar_width - 3)
+                .attr("text-anchor", "end")
+                .attr('class', 'leftscore')
+                .text(String);
+            // Text (numbers on bars) for right data
+            chart.selectAll("text.score")
+                .data(rightData[0])
+              .enter().append("text")
+                .attr("x", function(pos) { return left_origin + barplot_width + value2length(pos); })
+                .attr("y", translate_y)
+                .attr("dx", "-.36em")
+                .attr("dy", bar_width - 3)
+                .attr("text-anchor", "end")
+                .attr('class', 'score')
+                .text(String);
+            */
+        };
 
 
 
@@ -265,18 +320,17 @@ function getColorsForMonth(color_list) {
             // The color is generated using the second index.
             // Each slice of the pie is given a fixed number.
             // This applies to all charts (see the indexing loop above).
-            // This way, by using the index we can generate the same colors
+            // By using the index we can generate the same colors
             // for each of the slices for different charts on different days.
             .attr("fill", function (d, i) {
                 return color(d[2]);
             })
-            // Standard functions for drawing a pie charts in D3:
+            // Standard functions for drawing pie charts in D3:
             .attr("d", function (d, i) {
                 return arc(d[0]);
             });
         arcs.append("text")
             .attr("transform", function (d,i) {
-                // Standard functions for drawing a pie charts in D3.
                 return "translate(" + arc.centroid(d[0]) + ")";
             })
         .attr("text-anchor", "middle")

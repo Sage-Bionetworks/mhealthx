@@ -43,7 +43,7 @@ http://www.recursion.org/d3-for-mere-mortals/
     function radial_bars() { 
 
       // Random data
-      var number_of_bars = 10;
+      var number_of_bars = 2;
       var max_number = 20;
       var randomNumbers = function() { 
           var numbers = [];
@@ -126,7 +126,7 @@ http://www.recursion.org/d3-for-mere-mortals/
 //          .style("fill", function(d, i) { return index2color(i); })
           .attr("class", "down");
 
-
+/*
       // Text (numbers on bars) for left data
       chart.selectAll("text.leftscore")
           .data(leftData[0])
@@ -149,6 +149,8 @@ http://www.recursion.org/d3-for-mere-mortals/
           .attr("text-anchor", "end")
           .attr('class', 'score')
           .text(String);
+*/
+
     };
 
     radial_bars();
