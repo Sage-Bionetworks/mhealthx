@@ -1,6 +1,25 @@
 // This JavaScript program uses D3 to generate radial barchart glyphs
 // in the cells of a monthly calendar.
 
+//----------------------------------------------------------------------------
+// DATA
+//----------------------------------------------------------------------------
+// Generate a list of number_of_values random numbers with maximum value max_number:
+var randomNumbers = function(number_of_values, max_number) { 
+    var numbers = [];
+    for (var i = 0; i < number_of_values; i++) {
+        numbers.push(parseInt(Math.random() * max_number));
+    }
+    return numbers;
+};
+// Generate 35 lists of random numbers for the days of a month:
+function getDataForMonth(number_of_values, max_number) {
+    var randomData = [];
+    for (var i = 0; i < 35; i++) {
+        randomData.push(randomNumbers(number_of_values, max_number));
+    }
+    return randomData;
+};
 
 //----------------------------------------------------------------------------
 // Graph glyphs within a calendar
@@ -10,173 +29,160 @@ function drawGraphsForMonthlyData() {
     //------------------------------------------------------------------------
     // Radial barcharts
     //------------------------------------------------------------------------
-    var pies = 0;
-    if (pies == 0) {
 
-        // Get data for a month:
-        // Number of bars per bar chart (2 for pre-/post-medication),
-        // each extending from the side of a square (4 sides for 4 activities),
-        // with a maximum display value of max_number, centered within a calendar cell:
-        var number_of_sides = 4; // CURRENTLY FIXED
-        var number_of_bars = 2;  // CURRENTLY FIXED
-        var max_number = 20;
-        var data = getDataForMonth(number_of_sides * number_of_bars, max_number);
+    // Get data for a month:
+    // Number of bars per bar chart (2 for pre-/post-medication),
+    // each extending from the side of a square (4 sides for 4 activities),
+    // with a maximum display value of max_number, centered within a calendar cell:
+    var number_of_sides = 4; // CURRENTLY FIXED
+    var number_of_bars = 2;  // CURRENTLY FIXED
+    var max_number = 20;
+    var data = getDataForMonth(number_of_sides * number_of_bars, max_number);
 
 
-        // Create radial barchart glyph:
-        var rbars = radial_bars(data, number_of_bars, max_number);
-
-
-        // Set up variables required to draw a pie chart:
-        var outerRadius = d3CalendarGlobals.cellWidth / 2;
-        var innerRadius = 20;
-        var pie = d3.layout.pie();
-        var colors = d3.scale.ordinal()
-          .domain([1,2,3,4,5,6,7,8])
-          .range(["#EEBE32", "#9F5B0D", "#B0A9B7", "#6F6975", "#EB7D65", "#C02504", "#20AED8", "#2C1EA2"]);
-        var arc = d3.svg.arc().innerRadius(innerRadius).outerRadius(outerRadius);
-
-        // Index and group the pie charts and slices so that they can be rendered in correct cells.
-        // We call D3's 'pie' function of each of the data elements.
-        var indexedPieData = [];
-        for (i = 0; i < data.length; i++) {
-            var pieSlices = pie(data[i]);
-            // This loop stores an index (j) for each of the slices of a given pie chart.
-            // Two different charts on different days will have the the same set of numbers for slices
-            // (eg: 0,1,2). This will help us pick the same colors for the slices for independent charts.
-            // Otherwise, the colors of the slices will be different each day.
-            for (j = 0; j < pieSlices.length; j++) {
-                indexedPieData.push([pieSlices[j], i, j]);
+    // Create radial barchart glyphs:
+    for (i = 0; i < 5; i++) {
+        for (j = 0; j < 7; j++) {
+            var shade = 0;
+            if (i == 0) {
+                if (j < 5) {
+                    shade = 1;
+                }
             }
+            var rbars = radial_bars(data[i*7 + j], number_of_bars, max_number, shade);
+        }
+    }
+
+    //--------------------------------------------------------------------
+    // Radial barchart function
+    //--------------------------------------------------------------------
+    function radial_bars(data, number_of_bars, max_number, shade) { 
+
+        // Data broken up into pairs for each of four directions
+        // (pre-/post-med for voice, stand, tap, and walk activities):
+        var leftData = [data[0], data[1]];
+        var rightData = [data[2], data[3]];
+        var upData = [data[4], data[5]];
+        var downData = [data[6], data[7]];
+
+        // Colors broken up into pairs for each of four directions
+        // (pre-/post-med for voice, stand, tap, and walk activities):
+        colors = ["#EEBE32", "#9F5B0D", "#B0A9B7", "#6F6975", "#EB7D65", "#C02504", "#20AED8", "#2C1EA2"];
+        var leftColors = [colors[0], colors[1]];
+        var rightColors = [colors[2], colors[3]];
+        var upColors = [colors[4], colors[5]];
+        var downColors = [colors[6], colors[7]];
+        if (shade == 0) {
+            fill_shade1 = "#ffffff";
+            fill_shade2 = "#ffffff";
+        } else {
+            fill_shade1 = "#b2b2b2";
+            fill_shade2 = "#F2F2F2";
         }
 
-        var cellPositions = d3CalendarGlobals.gridCellPositions;
+        // Plot dimensions
+        var bar_width = 15,
+            bar_length = 50,
+            left_origin = bar_length,
+            barplot_width = number_of_bars * bar_width,
+            total_width = barplot_width + 2 * bar_length,
+            total_width_neg = bar_length - total_width;
+        var glyph = d3.select("#chart")
+          .append('svg')
+            .attr('class', 'glyph')
+            .attr('width', total_width)
+            .attr('height', total_width)
+           .append("g")
+            .attr("transform", "translate(" + 0 + "," + total_width_neg + ")");
+        var value2length = d3.scale.linear()
+           .domain([0, max_number])
+           .range([0, bar_length]);
+        var y = d3.scale.linear()
+           .domain([0, number_of_bars])
+           .range([0, barplot_width]);
+        var translate_y = function(d, index){ return total_width + y(index); } 
 
-        d3CalendarGlobals.chartsGroup
-                .selectAll("g.arc")
-                .remove();
+        // Enclosing square:
+        var bra = glyph.selectAll("rect.square")
+            .data(leftData)
+          .enter().append("rect")
+                   .attr("x", 0)
+                   .attr("y", bar_width + total_width/2)
+                   .attr("width", total_width)
+                   .attr("height", total_width)
+                   .style("stroke", "#aaaaaa")
+                   .style("stroke-width", 1)
+                   .style("fill", fill_shade1)
+                   .append("text").text("HEY");
 
-        var arcs = d3CalendarGlobals.chartsGroup.selectAll("g.arc")
-                      // Use the indexed data so that each pie chart can be drawn in a different cell:
-                      .data(indexedPieData)
-                      .enter()
-                      .append("g")
-                      .attr("class", "arc")
-                      // Use the index here to translate the pie chart and render it
-                      // in the appropriate cell. Normally, the chart would be squashed up
-                      // against the top left of the cell, obscuring the text that shows the day
-                      // of the month. We use the gridXTranslation and gridYTranslation and multiply it
-                      // by a factor to move it to the center of the cell. There is probably
-                      // a better way of doing this, though.
-                      .attr("transform", function (d) {
-                          var currentDataIndex = d[1];
-                          return "translate(" +  (outerRadius + d3CalendarGlobals.gridXTranslation * 1 + cellPositions[currentDataIndex][0]) + ", " +  (outerRadius + d3CalendarGlobals.gridYTranslation * 1 + cellPositions[currentDataIndex][1]) + ")";
-                      });
-        arcs.append("path")
-            // The color is generated using the second index.
-            // Each slice of the pie is given a fixed number.
-            // This applies to all charts (see the indexing loop above).
-            // By using the index we can generate the same colors
-            // for each of the slices for different charts on different days.
-            .attr("fill", function (d, i) {
-                return colors(d[2]);
-            })
-            // Standard functions for drawing pie charts in D3:
-            .attr("d", function (d, i) {
-                return arc(d[0]);
-            });
+        bra.append("text")
+    .attr("x", 30)
+    .attr("y", 20)
+    .text("HEY");
 
+        // Enclosing circle:
+        glyph.selectAll("rect.circle")
+            .data(leftData)
+          .enter().append("circle")
+                   .attr("cx", total_width/2)
+                   .attr("cy", bar_width + total_width)
+                   .attr("r", total_width/2)
+                   .style("stroke", "#aaaaaa")
+                   .style("stroke-width", 0.5)
+                   .style("fill", fill_shade2);
 
+        // Position LEFT data
+        glyph.selectAll("rect.left")
+            .data(leftData)
+          .enter().append("rect")
+            .attr("x", function(pos) { return left_origin - value2length(pos); })
+            .attr("y", translate_y)
+            .attr("width", value2length)
+            .attr("height", bar_width)
+            .style("fill", function(d, i) { return leftColors[i]; })
+            .attr("class", "left");
 
-        //--------------------------------------------------------------------
-        // Radial barchart function
-        //--------------------------------------------------------------------
-        function radial_bars(data, number_of_bars, max_number) { 
+        // Position RIGHT data
+        glyph.selectAll("rect.right")
+            .data(rightData)
+          .enter().append("rect")
+            .attr("x", left_origin + barplot_width)
+            .attr("y", translate_y)
+            .attr("width", value2length)
+            .attr("height", bar_width) 
+            .style("fill", function(d, i) { return rightColors[i]; })
+            .attr("class", "right");
 
-            // Data broken up into pairs for each of four directions
-            // (pre-/post-med for voice, stand, tap, and walk activities):
-            var leftData = [data[0][0], data[0][1]];
-            var rightData = [data[1][0], data[1][1]];
-            var upData = [data[2][0], data[2][1]];
-            var downData = [data[3][0], data[3][1]];
+        // Position UP data
+        var translate_x = function(d, i) { return "translate(" + (left_origin + i * bar_width) + ", 0)"; }
+        glyph.selectAll("rect.up")
+            .data(upData)
+          .enter().append("rect")
+            .attr("transform", translate_x)
+            .attr("y", function(pos) { return total_width - value2length(pos); })
+            .attr("height", value2length)
+            .attr("width", bar_width - 1)
+            .style("fill", function(d, i) { return upColors[i]; })
+            .attr("class", "up");
 
-            // Colors broken up into pairs for each of four directions
-            // (pre-/post-med for voice, stand, tap, and walk activities):
-            colors = ["#EEBE32", "#9F5B0D", "#B0A9B7", "#6F6975", "#EB7D65", "#C02504", "#20AED8", "#2C1EA2"];
-            var leftColors = [colors[0], colors[1]];
-            var rightColors = [colors[2], colors[3]];
-            var upColors = [colors[4], colors[5]];
-            var downColors = [colors[6], colors[7]];
+        // Position DOWN data
+        glyph.selectAll("rect.down")
+            .data(downData)
+          .enter().append("rect")
+            .attr("transform", translate_x)
+            .attr("y", total_width + barplot_width)
+            .attr("height", value2length)
+            .attr("width", bar_width)
+            .style("fill", function(d, i) { return downColors[i]; })
+            .attr("class", "down");
+    };
+};
 
-            // Plot dimensions
-            var bar_width = 20,
-                bar_length = 100,
-                right_offset = 0,
-                left_origin = right_offset + bar_length
-                top_offset = 120;
-                barplot_width = number_of_bars * bar_width,
-                total_width = barplot_width + 2 * bar_length
-            var glyph = d3.select("body")
-              .append('svg')
-                .attr('class', 'glyph')
-                .attr('width', right_offset + total_width)
-                .attr('height', top_offset + total_width);
-            var value2length = d3.scale.linear()
-               .domain([0, max_number])
-               .range([0, bar_length]);
-            var y = d3.scale.linear()
-               .domain([0, number_of_bars])
-               .range([0, barplot_width]);
-            var translate_y = function(d, index){ return top_offset + y(index); } 
-
-            // Position LEFT data
-            glyph.selectAll("rect.left")
-                .data(leftData)
-              .enter().append("rect")
-                .attr("x", function(pos) { return left_origin - value2length(pos); })
-                .attr("y", translate_y)
-                .attr("width", value2length)
-                .attr("height", bar_width)
-                .style("fill", function(d, i) { return leftColors[i]; })
-                .attr("class", "left");
-
-            // Position RIGHT data
-            glyph.selectAll("rect.right")
-                .data(rightData)
-              .enter().append("rect")
-                .attr("x", left_origin + barplot_width)
-                .attr("y", translate_y)
-                .attr("width", value2length)
-                .attr("height", bar_width) 
-                .style("fill", function(d, i) { return rightColors[i]; })
-                .attr("class", "right");
-
-            // Position UP data
-            var translate_x = function(d, i) { return "translate(" + (left_origin + i * bar_width) + ", 0)"; }
-            glyph.selectAll("rect.up")
-                .data(upData)
-              .enter().append("rect")
-                .attr("transform", translate_x)
-                .attr("y", function(pos) { return top_offset - value2length(pos); })
-                .attr("height", value2length)
-                .attr("width", bar_width - 1)
-                .style("fill", function(d, i) { return upColors[i]; })
-                .attr("class", "up");
-
-            // Position DOWN data
-            glyph.selectAll("rect.down")
-                .data(downData)
-              .enter().append("rect")
-                .attr("transform", translate_x)
-                .attr("y", top_offset + barplot_width)
-                .attr("height", value2length)
-                .attr("width", bar_width)
-                .style("fill", function(d, i) { return downColors[i]; })
-                .attr("class", "down");
-        };
+drawGraphsForMonthlyData();
 
 
 
+/*
     //------------------------------------------------------------------------
     // Alternative (debugging): PIE CHARTS
     //------------------------------------------------------------------------
@@ -252,32 +258,12 @@ function drawGraphsForMonthlyData() {
             return d[0].value;
             });
     }
-}
+*/
 
 
 
-//----------------------------------------------------------------------------
-// DATA
-//----------------------------------------------------------------------------
-// Generate a list of number_of_values random numbers with maximum value max_number:
-var randomNumbers = function(number_of_values, max_number) { 
-    var numbers = [];
-    for (var i = 0; i < number_of_values; i++) {
-        numbers.push(parseInt(Math.random() * max_number));
-    }
-    return numbers;
-};
-// Generate 35 lists of random numbers for the days of a month:
-function getDataForMonth(number_of_values, max_number) {
-    var randomData = [];
-    for (var i = 0; i < 35; i++) {
-        randomData.push(randomNumbers(number_of_values, max_number));
-    }
-    return randomData;
-};
 
-
-
+/*
 //----------------------------------------------------------------------------
 // CALENDAR  (derived from http://bl.ocks.org/chaitanyagurrapu/6007521)
 //----------------------------------------------------------------------------
@@ -386,7 +372,7 @@ var d3CalendarGlobals = function() {
         gridCellPositions: publicGridCellPositions(),
         daysInMonth : publicDaysInMonth
     }
-}();
+};
 
 // Render calendar and days of the month:
 $(document).ready( function (){
@@ -502,4 +488,4 @@ function renderCalendarGrid(month, year) {
     // Call each time the user presses the forward or backward buttons:
     drawGraphsForMonthlyData();
 }
-
+*/

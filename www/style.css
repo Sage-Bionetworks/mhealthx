@@ -10,7 +10,7 @@ div.header {
 
 #chart {
   position: absolute; 
-  top: 0px; 
+  top: 100px; 
   left: 100px;
   width: 1000px;
 }

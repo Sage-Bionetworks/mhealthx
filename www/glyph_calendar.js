@@ -43,16 +43,20 @@ function drawGraphsForMonthlyData() {
     // Create radial barchart glyphs:
     for (i = 0; i < 5; i++) {
         for (j = 0; j < 7; j++) {
-            var vert_index = i
-            var horz_index = j
-            var rbars = radial_bars(data[i*7 + j], number_of_bars, max_number, vert_index, horz_index);
+            var shade = 0;
+            if (i == 0) {
+                if (j < 5) {
+                    shade = 1;
+                }
+            }
+            var rbars = radial_bars(data[i*7 + j], number_of_bars, max_number, shade);
         }
     }
 
     //--------------------------------------------------------------------
     // Radial barchart function
     //--------------------------------------------------------------------
-    function radial_bars(data, number_of_bars, max_number, vert_index, horz_index) { 
+    function radial_bars(data, number_of_bars, max_number, shade) { 
 
         // Data broken up into pairs for each of four directions
         // (pre-/post-med for voice, stand, tap, and walk activities):
@@ -68,6 +72,13 @@ function drawGraphsForMonthlyData() {
         var rightColors = [colors[2], colors[3]];
         var upColors = [colors[4], colors[5]];
         var downColors = [colors[6], colors[7]];
+        if (shade == 0) {
+            fill_shade1 = "#ffffff";
+            fill_shade2 = "#ffffff";
+        } else {
+            fill_shade1 = "#b2b2b2";
+            fill_shade2 = "#F2F2F2";
+        }
 
         // Plot dimensions
         var bar_width = 15,
@@ -92,7 +103,7 @@ function drawGraphsForMonthlyData() {
         var translate_y = function(d, index){ return total_width + y(index); } 
 
         // Enclosing square:
-        glyph.selectAll("rect.square")
+        var bra = glyph.selectAll("rect.square")
             .data(leftData)
           .enter().append("rect")
                    .attr("x", 0)
@@ -101,7 +112,13 @@ function drawGraphsForMonthlyData() {
                    .attr("height", total_width)
                    .style("stroke", "#aaaaaa")
                    .style("stroke-width", 1)
-                   .style("fill", "#ffffff");
+                   .style("fill", fill_shade1)
+                   .append("text").text("HEY");
+
+        bra.append("text")
+    .attr("x", 30)
+    .attr("y", 20)
+    .text("HEY");
 
         // Enclosing circle:
         glyph.selectAll("rect.circle")
@@ -112,7 +129,7 @@ function drawGraphsForMonthlyData() {
                    .attr("r", total_width/2)
                    .style("stroke", "#aaaaaa")
                    .style("stroke-width", 0.5)
-                   .style("fill", "#ffffff");
+                   .style("fill", fill_shade2);
 
         // Position LEFT data
         glyph.selectAll("rect.left")
