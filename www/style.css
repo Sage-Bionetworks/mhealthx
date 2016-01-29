@@ -8,6 +8,13 @@ div.header {
   left: 100px; 
 }
 
+#chart {
+  position: absolute; 
+  top: 0px; 
+  left: 100px;
+  width: 1000px;
+}
+
 .axis path,
 .axis line {
   fill: none;
@@ -40,6 +47,7 @@ div.header {
   font-size: 500%;
 }
 
+/*
 .d3-tip {
   line-height: 1;
   font-weight: bold;
@@ -48,9 +56,10 @@ div.header {
   color: #fff;
   border-radius: 2px;
 }
-
+*/
 /* Creates a small triangle extender for the tooltip */
-.d3-tip:after {
+/*
+ .d3-tip:after {
   box-sizing: border-box;
   display: inline;
   font-size: 10px;
@@ -61,10 +70,12 @@ div.header {
   position: absolute;
   text-align: center;
 }
+*/
 
 /* Style northward tooltips differently */
-.d3-tip.n:after {
+/*.d3-tip.n:after {
   margin: -1px 0 0 0;
   top: 100%;
   left: 0;
 }
+*/
