@@ -112,13 +112,7 @@ function drawGraphsForMonthlyData() {
                    .attr("height", total_width)
                    .style("stroke", "#aaaaaa")
                    .style("stroke-width", 1)
-                   .style("fill", fill_shade1)
-                   .append("text").text("HEY");
-
-        bra.append("text")
-    .attr("x", 30)
-    .attr("y", 20)
-    .text("HEY");
+                   .style("fill", fill_shade1);
 
         // Enclosing circle:
         glyph.selectAll("rect.circle")
