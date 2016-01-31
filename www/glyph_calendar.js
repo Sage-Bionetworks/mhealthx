@@ -1,22 +1,32 @@
 // This JavaScript program uses D3 to generate radial barchart glyphs
 // in the cells of a monthly calendar.
+//
+// Authors:
+//  - Arno Klein, 2016  (arno@sagebase.org)  http://binarybottle.com
+//
+// Copyright 2016, Sage Bionetworks (sagebase.org), Apache v2.0 License
 
 //----------------------------------------------------------------------------
-// DATA
+// Generate random data
 //----------------------------------------------------------------------------
-// Generate a list of number_of_values random numbers with maximum value max_number:
-var randomNumbers = function(number_of_values, max_number) { 
+// Generate number_of_values random numbers with maximum value max_value:
+var randomNumbers = function(number_of_values, max_value, empty_value) { 
     var numbers = [];
     for (var i = 0; i < number_of_values; i++) {
-        numbers.push(parseInt(Math.random() * max_number));
+        number = parseInt(Math.random() * (max_value - empty_value)) + empty_value;
+        if (number < 0) {
+          numbers.push(empty_value);
+        } else {
+          numbers.push(number);
+        }
     }
     return numbers;
 };
 // Generate 35 lists of random numbers for the days of a month:
-function getDataForMonth(number_of_values, max_number) {
+function getDataForMonth(number_of_values, max_value, empty_value) {
     var randomData = [];
     for (var i = 0; i < 35; i++) {
-        randomData.push(randomNumbers(number_of_values, max_number));
+        randomData.push(randomNumbers(number_of_values, max_value, empty_value));
     }
     return randomData;
 };
@@ -29,91 +39,79 @@ function drawGraphsForMonthlyData() {
     //------------------------------------------------------------------------
     // Radial barcharts
     //------------------------------------------------------------------------
-
-    // Get data for a month:
     // Number of bars per bar chart (2 for pre-/post-medication),
-    // each extending from the side of a square (4 sides for 4 activities),
-    // with a maximum display value of max_number, centered within a calendar cell:
-    var number_of_sides = 4; // CURRENTLY FIXED
-    var number_of_bars = 2;  // CURRENTLY FIXED
-    var max_number = 20;
-    var data = getDataForMonth(number_of_sides * number_of_bars, max_number);
-//    data[2][0] = 0
+    // each extending from the side of a square (4 sides for 4 activities):
+    number_of_sides = 4;  // CURRENTLY FIXED
+    number_of_bars = 2;   // CURRENTLY FIXED
+    max_value = 11;       // maximum value for randomly generated data
+    cap_value = 10;       // value corresponding to radius of circle (e.g., control median)
+    empty_value = -1;     // negative value corresponding to missing data
+    dates = [27,3,10,17,24,28,4,11,18,25,29,5,12,19,26,30,6,13,20,27,31,7,14,21,28,
+             1,8,15,22,29,2,9,16,23,30];
+            //[27,28,29,30,31,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+            // 16,17,18,19,20,21,22,23,24,25,26,27,28,29,30];
 
+    // Generate random data:
+    data = getDataForMonth(number_of_sides * number_of_bars, max_value, empty_value);
 
-    // Create radial barchart glyphs:
-    var dates = [27,3,10,17,24,28,4,11,18,25,29,5,12,19,26,30,6,13,20,27,31,7,14,21,28,1,8,15,22,29,2,9,16,23,30];
-//[27,28,29,30,31,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30];
-    var shade = 0;
-    for (i = 0; i < 5; i++) {
-        for (j = 0; j < 7; j++) {
-            /*
-            var shade = 0;
-            if (i == 0) {
-                if (j < 5) {
-                    shade = 1;
-                }
-            }
-            */
-            date = dates[j*5 + i]
-            var rbars = radial_bars(data[i*7 + j], number_of_bars, max_number, date, shade);
+    // Create a radial barchart glyph for each date:
+    for (var i = 0; i < 5; i++) {
+        for (var j = 0; j < 7; j++) {
+            var date = dates[j*5 + i];
+            var rbars = radial_bars(data[i*7 + j],
+                                    number_of_bars, cap_value, empty_value, date);
         }
     }
 
     //--------------------------------------------------------------------
     // Radial barchart function
     //--------------------------------------------------------------------
-    function radial_bars(data, number_of_bars, max_number, date, shade) { 
+    function radial_bars(data, number_of_bars, cap_value, empty_value, date) { 
 
-        // Data broken up into pairs for each of four directions
-        // (pre-/post-med for voice, stand, tap, and walk activities):
-        var leftData = [data[0], data[1]];
-        var rightData = [data[2], data[3]];
-        var upData = [data[4], data[5]];
-        var downData = [data[6], data[7]];
+        // Plot dimensions:
+        bar_width = 15;        // width of each bar in the bar plot (pixels)
+        bar_length = 50;       // maximum bar length (in pixels)
+        circle_penumbra = 20;  // border between circle and enclosing box (pixels)
+        barplot_width = number_of_bars * bar_width;
+        total_width = barplot_width + 2 * bar_length;
 
-        // Colors broken up into pairs for each of four directions
-        // (pre-/post-med for voice, stand, tap, and walk activities):
-        var walk_pre_color = "#20AED8",
-            walk_post_color = "#2C1EA2",
-            stand_pre_color = "#6E6E6E", //"#BE81F7",
-            stand_post_color = "#151515", //"#7401DF",
-            voice_pre_color = "#EEBE32",
-            voice_post_color = "#9F5B0D",
-            tap_pre_color = "#F78181",
-            tap_post_color = "#C02504",
-            colors = [walk_pre_color, walk_post_color,
-                      stand_pre_color, stand_post_color,
-                      voice_pre_color, voice_post_color,
-                      tap_pre_color, tap_post_color];
-        var leftColors = [colors[0], colors[1]];
-        var rightColors = [colors[2], colors[3]];
-        var upColors = [colors[4], colors[5]];
-        var downColors = [colors[6], colors[7]];
-        if (shade == 0) {
-            background_color = "#e2e2e2";
-            empty_color = "#ffffff";
-        } else {
-            background_color = "#e2e2e2";
-            empty_color = "#ffffff";
-        }
-
-        // Plot dimensions
-        var bar_width = 15,
-            bar_length = 50,
-            left_origin = bar_length,
-            barplot_width = number_of_bars * bar_width,
-            total_width = barplot_width + 2 * bar_length,
-            total_width_neg = bar_length - total_width,
-            circle_penumbra = 20;
-        var value2length = d3.scale.linear()
-           .domain([0, max_number])
+        // Map data values to plot dimensions: 
+        value2length = d3.scale.linear()
+           .domain([0, cap_value])
            .range([0, bar_length]);
-        var y = d3.scale.linear()
+        plot_y = d3.scale.linear()
            .domain([0, number_of_bars])
            .range([0, barplot_width]);
-        var translate_y = function(d, index){ return total_width/2 + y(index) - bar_width; } 
-        var translate_x = function(d, i) { return "translate(" + (left_origin + i * bar_width) + ", 0)"; }
+        translate_y = function(d, index){ return total_width/2 + plot_y(index) - bar_width; };
+        translate_x = function(d, i) { return "translate(" + (bar_length + i * bar_width) + ", 0)"; };
+
+        // Break up data into pairs for each of four directions
+        // (pre-/post-medication for mPower's voice, stand, tap, and walk activities):
+        left_data = [data[0], data[1]];
+        right_data = [data[2], data[3]];
+        up_data = [data[4], data[5]];
+        down_data = [data[6], data[7]];
+
+        // Background colors:
+        background_color = "#e2e2e2";  // color of circle behind radial bar chart
+        empty_color = "#ffffff";       // color of background calendar squares and empty data
+        // Pairs of colors for 4 directions (pre-/post-medication for mPower's 4 activities):
+        walk_pre_color = "#20AED8";
+        walk_post_color = "#2C1EA2";
+        stand_pre_color = "#6E6E6E";
+        stand_post_color = "#151515";
+        voice_pre_color = "#EEBE32";
+        voice_post_color = "#9F5B0D";
+        tap_pre_color = "#F78181";
+        tap_post_color = "#C02504";
+        colors = [walk_pre_color, walk_post_color,
+                  stand_pre_color, stand_post_color,
+                  voice_pre_color, voice_post_color,
+                  tap_pre_color, tap_post_color];
+        left_colors = [colors[0], colors[1]];
+        right_colors = [colors[2], colors[3]];
+        up_colors = [colors[4], colors[5]];
+        down_colors = [colors[6], colors[7]];
 
         // Glyph:
         chart = d3.select('#chart')
@@ -123,121 +121,117 @@ function drawGraphsForMonthlyData() {
 
         // Enclosing circle:
         glyph.selectAll("rect.circle")
-            .data(leftData)
+            .data(left_data)
           .enter().append("circle")
             .attr("cx", total_width/2)
             .attr("cy", total_width/2)
             .attr("r", total_width/2)
             .style("stroke", "#ffffff")
             .style("stroke-width", circle_penumbra)
-            .style("fill", background_color);
+            .style("fill", background_color)
 
         // LEFT missing data:
-        glyph.selectAll("rect.leftgray")
-            .data(leftData)
+        glyph.selectAll("rect.leftempty")
+            .data(left_data)
           .enter().append("rect")
             .attr("x", 0)
             .attr("y", translate_y)
             .attr("width", bar_length)
             .attr("height", bar_width)
-            .style("fill", function(d, i) { if (leftData[i] == 0) {
-                                      return empty_color;
-                                    } else {
-                                      return "transparent";
-                                    }
-                  })
+            .style("fill", function(d, i) { 
+              if (left_data[i] == empty_value) { return empty_color; }
+              else { return "transparent"; } })
             .attr("class", "gray");
 
-        // LEFT data
+        // LEFT data:
         glyph.selectAll("rect.left")
-            .data(leftData)
+            .data(left_data)
           .enter().append("rect")
-            .attr("x", function(pos) { return left_origin - value2length(pos); })
+            .attr("x", function(pos) { return bar_length - value2length(pos); })
             .attr("y", translate_y)
             .attr("width", value2length)
+              //function(d, i) { 
+              //if (left_data[i] != empty_value) { return value2length; }})
             .attr("height", bar_width - 1)
-            .style("fill", function(d, i) { return leftColors[i]; })
+            .style("fill", function(d, i) { return left_colors[i]; })
             .attr("class", "left");
 
         // RIGHT missing data:
-        glyph.selectAll("rect.rightgray")
-            .data(rightData)
+        glyph.selectAll("rect.rightempty")
+            .data(right_data)
           .enter().append("rect")
-            .attr("x", left_origin + barplot_width)
+            .attr("x", bar_length + barplot_width)
             .attr("y", translate_y)
             .attr("width", bar_length)
             .attr("height", bar_width)
-            .style("fill", function(d, i) { if (rightData[i] == 0) {
-                                      return empty_color;
-                                    } else {
-                                      return "transparent";
-                                    }
-                  })
+            .style("fill", function(d, i) { 
+              if (right_data[i] == empty_value) { return empty_color; }
+              else { return "transparent"; } })
             .attr("class", "gray");
 
-        // RIGHT data
+        // RIGHT data:
         glyph.selectAll("rect.right")
-            .data(rightData)
+            .data(right_data)
           .enter().append("rect")
-            .attr("x", left_origin + barplot_width)
+            .attr("x", bar_length + barplot_width)
             .attr("y", translate_y)
             .attr("width", value2length)
+              //function(d, i) { 
+              //if (right_data[i] != empty_value) { return value2length; }})
             .attr("height", bar_width - 1) 
-            .style("fill", function(d, i) { return rightColors[i]; })
+            .style("fill", function(d, i) { return right_colors[i]; })
             .attr("class", "right");
 
         // UP missing data:
-        glyph.selectAll("rect.upgray")
-            .data(upData)
+        glyph.selectAll("rect.upempty")
+            .data(up_data)
           .enter().append("rect")
             .attr("transform", translate_x)
             .attr("y", 0)
             .attr("height", bar_length)
             .attr("width", bar_width)
-            .style("fill", function(d, i) { if (upData[i] == 0) {
-                                      return empty_color;
-                                    } else {
-                                      return "transparent";
-                                    }
-                  })
+            .style("fill", function(d, i) { 
+              if (up_data[i] == empty_value) { return empty_color; }
+              else { return "transparent"; } })
             .attr("class", "gray");
 
-        // UP data
+        // UP data:
         glyph.selectAll("rect.up")
-            .data(upData)
+            .data(up_data)
           .enter().append("rect")
             .attr("transform", translate_x)
             .attr("y", function(pos) { return total_width/2 - value2length(pos) - bar_width; })
             .attr("height", value2length)
+              //function(d, i) { 
+              //if (up_data[i] != empty_value) { return value2length; }})
             .attr("width", bar_width - 1)
-            .style("fill", function(d, i) { return upColors[i]; })
+            .style("fill", function(d, i) { return up_colors[i]; })
             .attr("class", "up");
 
         // DOWN missing data:
-        glyph.selectAll("rect.downgray")
-            .data(downData)
+        glyph.selectAll("rect.downempty")
+            .data(down_data)
           .enter().append("rect")
             .attr("transform", translate_x)
             .attr("y", total_width/2 + bar_width)
             .attr("height", bar_length)
             .attr("width", bar_width)
-            .style("fill", function(d, i) { if (downData[i] == 0) {
-                                      return empty_color;
-                                    } else {
-                                      return "transparent";
-                                    }
-                  })
+            .style("fill", function(d, i) { 
+              if (down_data[i] == empty_value) { return empty_color; }
+              else { return "transparent"; } })
             .attr("class", "gray");
 
-        // DOWN data
+        // DOWN data:
         glyph.selectAll("rect.down")
-            .data(downData)
+            .data(down_data)
           .enter().append("rect")
             .attr("transform", translate_x)
             .attr("y", total_width/2 + bar_width)
             .attr("height", value2length)
+              //function(d, i) { 
+              //if (down_data[i] != empty_value) { return value2length; }})
             .attr("width", bar_width - 1)
-            .style("fill", function(d, i) { return downColors[i]; })
+            .style("fill", function(d, i) { return down_colors[i]; })
             .attr("class", "down");
 
         // Center square:
@@ -246,8 +240,8 @@ function drawGraphsForMonthlyData() {
             .attr('height', barplot_width)
             .attr('x', total_width/2 - bar_width)
             .attr('y', total_width/2 - bar_width)
-            .style("stroke", "#aaaaaa")
-            .style("stroke-width", 1)
+            //.style("stroke", "#aaaaaa")
+            //.style("stroke-width", 1)
             .style("fill", background_color);
 
         // Enclosing square:
