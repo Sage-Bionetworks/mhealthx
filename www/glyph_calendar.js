@@ -42,16 +42,19 @@ function drawGraphsForMonthlyData() {
 
 
     // Create radial barchart glyphs:
-    var dates = [27,28,29,30,31,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30];
-
+    var dates = [27,3,10,17,24,28,4,11,18,25,29,5,12,19,26,30,6,13,20,27,31,7,14,21,28,1,8,15,22,29,2,9,16,23,30];
+//[27,28,29,30,31,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30];
+    var shade = 0;
     for (i = 0; i < 5; i++) {
         for (j = 0; j < 7; j++) {
+            /*
             var shade = 0;
             if (i == 0) {
                 if (j < 5) {
                     shade = 1;
                 }
             }
+            */
             date = dates[j*5 + i]
             var rbars = radial_bars(data[i*7 + j], number_of_bars, max_number, date, shade);
         }
@@ -71,17 +74,28 @@ function drawGraphsForMonthlyData() {
 
         // Colors broken up into pairs for each of four directions
         // (pre-/post-med for voice, stand, tap, and walk activities):
-        colors = ["#20AED8", "#2C1EA2", "#B0A9B7", "#6F6975", "#EEBE32", "#9F5B0D", "#EB7D65", "#C02504"];
+        var walk_pre_color = "#20AED8",
+            walk_post_color = "#2C1EA2",
+            stand_pre_color = "#6E6E6E", //"#BE81F7",
+            stand_post_color = "#151515", //"#7401DF",
+            voice_pre_color = "#EEBE32",
+            voice_post_color = "#9F5B0D",
+            tap_pre_color = "#F78181",
+            tap_post_color = "#C02504",
+            colors = [walk_pre_color, walk_post_color,
+                      stand_pre_color, stand_post_color,
+                      voice_pre_color, voice_post_color,
+                      tap_pre_color, tap_post_color];
         var leftColors = [colors[0], colors[1]];
         var rightColors = [colors[2], colors[3]];
         var upColors = [colors[4], colors[5]];
         var downColors = [colors[6], colors[7]];
         if (shade == 0) {
-            fill_shade1 = "#ffffff";
-            fill_shade2 = "#ffffff";
+            background_color = "#e2e2e2";
+            empty_color = "#ffffff";
         } else {
-            fill_shade1 = "#F2F2F2";
-            fill_shade2 = "#ffffff";
+            background_color = "#e2e2e2";
+            empty_color = "#ffffff";
         }
 
         // Plot dimensions
@@ -90,7 +104,8 @@ function drawGraphsForMonthlyData() {
             left_origin = bar_length,
             barplot_width = number_of_bars * bar_width,
             total_width = barplot_width + 2 * bar_length,
-            total_width_neg = bar_length - total_width;
+            total_width_neg = bar_length - total_width,
+            circle_penumbra = 20;
         var value2length = d3.scale.linear()
            .domain([0, max_number])
            .range([0, bar_length]);
@@ -98,31 +113,13 @@ function drawGraphsForMonthlyData() {
            .domain([0, number_of_bars])
            .range([0, barplot_width]);
         var translate_y = function(d, index){ return total_width/2 + y(index) - bar_width; } 
+        var translate_x = function(d, i) { return "translate(" + (left_origin + i * bar_width) + ", 0)"; }
 
         // Glyph:
         chart = d3.select('#chart')
         glyph = chart.append('svg')
             .attr('height', total_width)
             .attr('width', total_width)
-
-        // Enclosing square:
-        rect = glyph.append('rect')
-            .attr('width', total_width)
-            .attr('height', total_width)
-            .attr('x', 0)
-            .attr('y', 0)
-            .style("stroke", "#aaaaaa")
-            .style("stroke-width", 1)
-            .style("fill", fill_shade1);
-
-        // Date text:
-        text = glyph.append('text')
-//            .data(dates)
-//          .enter().append("dates")
-            .attr('x', 4)
-            .attr('y', 12)
-            .style('fill', 'black')
-            .text(function(d, i) { return dates[i]; })
 
         // Enclosing circle:
         glyph.selectAll("rect.circle")
@@ -131,40 +128,81 @@ function drawGraphsForMonthlyData() {
             .attr("cx", total_width/2)
             .attr("cy", total_width/2)
             .attr("r", total_width/2)
-            .style("stroke", "#aaaaaa")
-            .style("stroke-width", 0.5)
-            .style("fill", fill_shade2);
+            .style("stroke", "#ffffff")
+            .style("stroke-width", circle_penumbra)
+            .style("fill", background_color);
 
-        // Position LEFT data
+        // LEFT missing data:
+        glyph.selectAll("rect.leftgray")
+            .data(leftData)
+          .enter().append("rect")
+            .attr("x", 0)
+            .attr("y", translate_y)
+            .attr("width", bar_length)
+            .attr("height", bar_width)
+            .style("fill", function(d, i) { if (leftData[i] == 0) {
+                                      return empty_color;
+                                    } else {
+                                      return "transparent";
+                                    }
+                  })
+            .attr("class", "gray");
+
+        // LEFT data
         glyph.selectAll("rect.left")
             .data(leftData)
           .enter().append("rect")
             .attr("x", function(pos) { return left_origin - value2length(pos); })
             .attr("y", translate_y)
             .attr("width", value2length)
-            .attr("height", bar_width)
+            .attr("height", bar_width - 1)
             .style("fill", function(d, i) { return leftColors[i]; })
-/*            .style("fill", 
-                   function(d, i) { if (d.valueOf() > 0) {
-                                    return leftColors[i];
-                                    }
-                                  })
-*/
             .attr("class", "left");
 
-        // Position RIGHT data
+        // RIGHT missing data:
+        glyph.selectAll("rect.rightgray")
+            .data(rightData)
+          .enter().append("rect")
+            .attr("x", left_origin + barplot_width)
+            .attr("y", translate_y)
+            .attr("width", bar_length)
+            .attr("height", bar_width)
+            .style("fill", function(d, i) { if (rightData[i] == 0) {
+                                      return empty_color;
+                                    } else {
+                                      return "transparent";
+                                    }
+                  })
+            .attr("class", "gray");
+
+        // RIGHT data
         glyph.selectAll("rect.right")
             .data(rightData)
           .enter().append("rect")
             .attr("x", left_origin + barplot_width)
             .attr("y", translate_y)
             .attr("width", value2length)
-            .attr("height", bar_width) 
+            .attr("height", bar_width - 1) 
             .style("fill", function(d, i) { return rightColors[i]; })
             .attr("class", "right");
 
-        // Position UP data
-        var translate_x = function(d, i) { return "translate(" + (left_origin + i * bar_width) + ", 0)"; }
+        // UP missing data:
+        glyph.selectAll("rect.upgray")
+            .data(upData)
+          .enter().append("rect")
+            .attr("transform", translate_x)
+            .attr("y", 0)
+            .attr("height", bar_length)
+            .attr("width", bar_width)
+            .style("fill", function(d, i) { if (upData[i] == 0) {
+                                      return empty_color;
+                                    } else {
+                                      return "transparent";
+                                    }
+                  })
+            .attr("class", "gray");
+
+        // UP data
         glyph.selectAll("rect.up")
             .data(upData)
           .enter().append("rect")
@@ -175,16 +213,61 @@ function drawGraphsForMonthlyData() {
             .style("fill", function(d, i) { return upColors[i]; })
             .attr("class", "up");
 
-        // Position DOWN data
+        // DOWN missing data:
+        glyph.selectAll("rect.downgray")
+            .data(downData)
+          .enter().append("rect")
+            .attr("transform", translate_x)
+            .attr("y", total_width/2 + bar_width)
+            .attr("height", bar_length)
+            .attr("width", bar_width)
+            .style("fill", function(d, i) { if (downData[i] == 0) {
+                                      return empty_color;
+                                    } else {
+                                      return "transparent";
+                                    }
+                  })
+            .attr("class", "gray");
+
+        // DOWN data
         glyph.selectAll("rect.down")
             .data(downData)
           .enter().append("rect")
             .attr("transform", translate_x)
             .attr("y", total_width/2 + bar_width)
             .attr("height", value2length)
-            .attr("width", bar_width)
+            .attr("width", bar_width - 1)
             .style("fill", function(d, i) { return downColors[i]; })
             .attr("class", "down");
+
+        // Center square:
+        rect = glyph.append('rect')
+            .attr('width', barplot_width)
+            .attr('height', barplot_width)
+            .attr('x', total_width/2 - bar_width)
+            .attr('y', total_width/2 - bar_width)
+            .style("stroke", "#aaaaaa")
+            .style("stroke-width", 1)
+            .style("fill", background_color);
+
+        // Enclosing square:
+        rect = glyph.append('rect')
+            .attr('width', total_width)
+            .attr('height', total_width)
+            .attr('x', 0)
+            .attr('y', 0)
+            .style("stroke", "#aaaaaa")
+            .style("stroke-width", 1)
+            .style("fill", "transparent");
+
+        // Date text:
+        text = glyph.append('text')
+            .attr('x', 4)
+            .attr('y', 16)
+            .style('fill', 'black')
+            .style('font-size', '9pt')
+            .text(date)
+
     };
 };
 

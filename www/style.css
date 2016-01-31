@@ -6,8 +6,7 @@ div.header {
   position: absolute; 
   top: 40px; 
   left: 100px;
-   font-size: 30px;
-   font-style: normal;
+  font-size: 30px;
 }
 
 div.main {
@@ -21,6 +20,13 @@ div.main {
   top: 120px; 
   left: 0px;
   width: 1000px;
+}
+
+#legend {
+  position: absolute; 
+  top: 485px; 
+  left: 1100px;
+  height: 380px;
 }
 
 .day {

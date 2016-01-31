@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>mPower performance report for Arno Klein</title>
+    <script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+    <!--script type="text/javascript" src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js">
+    </script-->
+    <!--script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"-->
+    <link rel="stylesheet" type="text/css" href="./style.css" />
+  </head>
+
+  <body onLoad="setToday()">
+
+    <div class="header">mPower performance report for Arno Klein
+    </div>
+
+    <div class="main">
+      <div class="form">
+
+        <!-- Select-A-Month -->
+        <FORM NAME="calControl" onSubmit="return false;" method="post">
+          <div class="styled-select">
+            <TABLE CELLPADDING=0 CELLSPACING=0 BORDER=0>
+            <TR><TD COLSPAN=7 align="center">
+            <SELECT NAME="month" onChange="selectDate()">
+              <OPTION>January</OPTION>
+              <OPTION>February</OPTION>
+              <OPTION>March</OPTION>
+              <OPTION>April</OPTION>
+              <OPTION>May</OPTION>
+              <OPTION>June</OPTION>
+              <OPTION>July</OPTION>
+              <OPTION>August</OPTION>
+              <OPTION>September</OPTION>
+              <OPTION>October</OPTION>
+              <OPTION>November</OPTION>
+              <OPTION>December</OPTION>
+            </SELECT>
+            <INPUT NAME="year" TYPE=TEXT SIZE=4 MAXLENGTH=4>
+            <!--INPUT TYPE="button" NAME="Go" value="Build!" onClick="selectDate()"-->
+            </TD></TR>
+            </TABLE>
+            <INPUT NAME="previousYear" VALUE=" <<  "  onClick="setPreviousYear()" type="image" src="assets/arrow-left2_40px.png" id="arrow">
+            <INPUT NAME="previousYear" VALUE="  <  "  onClick="setPreviousMonth()" type="image" src="assets/arrow-left_40px.png" id="arrow">
+            <INPUT TYPE=BUTTON NAME="previousYear" VALUE="Today"  onClick="setToday()" id="today">
+            <INPUT NAME="previousYear" VALUE="  >  " onClick="setNextMonth()" type="image" src="assets/arrow-right_40px.png" id="arrow">
+            <INPUT NAME="previousYear" VALUE="  >>  " onClick="setNextYear()" type="image" src="assets/arrow-right2_40px.png" id="arrow">
+          </div>
+        <!--/FORM>
+        <FORM NAME="calButtons" method="post">
+        <TR><TD><textarea FONT="Courier" NAME="calPage" WRAP=no ROWS=8 COLS=22></textarea></TD><TR><TD>
+        </TD></TR-->
+        </FORM>
+      </div>
+
+      <div class="day" id="Sunday">Sunday</div>
+      <div class="day" id="Monday">Monday</div>
+      <div class="day" id="Tuesday">Tuesday</div>
+      <div class="day" id="Wednesday">Wednesday</div>
+      <div class="day" id="Thursday">Thursday</div>
+      <div class="day" id="Friday">Friday</div>
+      <div class="day" id="Saturday">Saturday</div>
+
+      <div id="chart"></div>
+
+    </div>
+
+    <script type="text/javascript" src="./glyph_calendar.js"></script>
+
+    <img src="assets/patient_report_legend_20160130.png" id="legend">
+
+  </body>
+</html>
