@@ -38,6 +38,7 @@ function drawGraphsForMonthlyData() {
     var number_of_bars = 2;  // CURRENTLY FIXED
     var max_number = 20;
     var data = getDataForMonth(number_of_sides * number_of_bars, max_number);
+//    data[2][0] = 0
 
 
     // Create radial barchart glyphs:
@@ -70,7 +71,7 @@ function drawGraphsForMonthlyData() {
 
         // Colors broken up into pairs for each of four directions
         // (pre-/post-med for voice, stand, tap, and walk activities):
-        colors = ["#EEBE32", "#9F5B0D", "#B0A9B7", "#6F6975", "#EB7D65", "#C02504", "#20AED8", "#2C1EA2"];
+        colors = ["#20AED8", "#2C1EA2", "#B0A9B7", "#6F6975", "#EEBE32", "#9F5B0D", "#EB7D65", "#C02504"];
         var leftColors = [colors[0], colors[1]];
         var rightColors = [colors[2], colors[3]];
         var upColors = [colors[4], colors[5]];
@@ -118,8 +119,8 @@ function drawGraphsForMonthlyData() {
         text = glyph.append('text')
 //            .data(dates)
 //          .enter().append("dates")
-            .attr('x', 5)
-            .attr('y', 15)
+            .attr('x', 4)
+            .attr('y', 12)
             .style('fill', 'black')
             .text(function(d, i) { return dates[i]; })
 
@@ -143,6 +144,12 @@ function drawGraphsForMonthlyData() {
             .attr("width", value2length)
             .attr("height", bar_width)
             .style("fill", function(d, i) { return leftColors[i]; })
+/*            .style("fill", 
+                   function(d, i) { if (d.valueOf() > 0) {
+                                    return leftColors[i];
+                                    }
+                                  })
+*/
             .attr("class", "left");
 
         // Position RIGHT data

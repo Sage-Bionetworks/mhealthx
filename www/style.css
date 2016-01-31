@@ -3,17 +3,90 @@ body {
 }
 
 div.header {
-  position: relative; 
+  position: absolute; 
   top: 40px; 
-  left: 100px; 
+  left: 100px;
+   font-size: 30px;
+   font-style: normal;
+}
+
+div.main {
+  position: relative; 
+  top: 100px; 
+  left: 100px;
 }
 
 #chart {
   position: absolute; 
-  top: 140px; 
+  top: 120px; 
   left: 0px;
   width: 1000px;
 }
+
+.day {
+  position: absolute; 
+  top: 94px; 
+  font-size: 18px;
+}
+#Sunday {
+  left: 32px;
+}
+#Monday {
+  left: 160px;
+}
+#Tuesday {
+  left: 286px;
+}
+#Wednesday {
+  left: 404px;
+}
+#Thursday {
+  left: 546px;
+}
+#Friday {
+  left: 688px;
+}
+#Saturday {
+  left: 800px;
+}
+
+.styled-select {
+   background: transparent;
+   font-size: 30px;
+   border: 0;
+   }
+
+.styled-select SELECT {
+   background: transparent;
+   font-size: 30px;
+   border: 0;
+   padding-right: 5px;
+   direction: rtl;
+   -webkit-appearance: none;
+   }
+
+.styled-select INPUT {
+   background: transparent;
+   font-size: 30px;
+   border: 0;
+   }
+
+#today {
+   position: relative; 
+   left: 86px;
+   font-size: 18px;
+   }
+
+#arrow {
+   position: relative; 
+   left: 86px;
+   padding-left: 0px;
+   padding-right: 0px;
+   border: 0;
+   height: 10px;
+   width: 10px;
+   }
+
 
 .axis path,
 .axis line {
