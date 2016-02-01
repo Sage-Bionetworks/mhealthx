@@ -43,9 +43,14 @@ function drawGraphsForMonthlyData() {
     // each extending from the side of a square (4 sides for 4 activities):
     number_of_sides = 4;  // CURRENTLY FIXED
     number_of_bars = 2;   // CURRENTLY FIXED
-    max_value = 11;       // maximum value for randomly generated data
-    cap_value = 10;       // value corresponding to radius of circle (e.g., control median)
+    max_value = 21;       // maximum value for randomly generated data
+    cap_value = 20;       // value corresponding to radius of circle (e.g., control median)
     empty_value = -1;     // negative value corresponding to missing data
+    control_voice = 0.85; // line to compare with control data
+    control_walk = 0.5;   // line to compare with control data
+    control_stand = 0.75; // line to compare with control data
+    control_tap = 0.68;    // line to compare with control data
+    control_values = [control_voice, control_walk, control_stand, control_tap]
     dates = [31,7,14,21,28,
              1,8,15,22,29,
              2,9,16,23,1,
@@ -70,7 +75,7 @@ function drawGraphsForMonthlyData() {
     // Create a horizon plot for all dates:
     horizon_plot(); //data, cap_value, empty_value);
 
-    barchart_plot();
+    //barchart_plot();
 
 
     //--------------------------------------------------------------------
@@ -308,9 +313,9 @@ function drawGraphsForMonthlyData() {
           //  d.Date = parseDate(d.Date);
           //});
 
-          /* Loop through first row and get each activity
-            and push odd columns into premed and even columns
-            into postmed activity arrays to use later */
+          // Loop through first row and get each activity
+          // and push odd columns into premed and even columns
+          // into postmed activity arrays to use later
           var col = 0;
           for (var prop in data[0]) {
             if (data[0].hasOwnProperty(prop)) {
@@ -343,7 +348,6 @@ function drawGraphsForMonthlyData() {
                 }
               }
             }
-            
             // D3 needs a date object, let's convert it just one time
             //d.Date = new Date(d.Date,0,1);
           });
@@ -354,7 +358,7 @@ function drawGraphsForMonthlyData() {
                                   id: i,
                                   name: activities_post[i],
                                   width: width,
-                                  height: height * (1 / activitiesCount),
+                                  height: height / activitiesCount,
                                   maxDataPoint: maxDataPoint,
                                   svg: svg,
                                   margin: margin,
@@ -367,7 +371,7 @@ function drawGraphsForMonthlyData() {
                                   id: i,
                                   name: activities_pre[i],
                                   width: width,
-                                  height: height * (1 / activitiesCount),
+                                  height: height / activitiesCount,
                                   maxDataPoint: maxDataPoint,
                                   svg: svg,
                                   margin: margin,
@@ -413,7 +417,7 @@ function drawGraphsForMonthlyData() {
                     .text('Click and drag to zoom');
 
           function onBrush(){
-            /* this will return a date range to pass into the chart object */
+            // this will return a date range to pass into the chart object
             var b = brush.empty() ? contextXScale.domain() : brush.extent();
             for(var i = 0; i < activitiesCount; i++){
               charts1[i].showOnly(b);
@@ -435,47 +439,63 @@ function drawGraphsForMonthlyData() {
 
           var localName = this.name;
 
-          /* XScale is time based */
+          // XScale is time based
           this.xScale = d3.time.scale()
                                 .range([0, this.width])
                                 .domain(d3.extent(this.chartData.map(function(d, i) { return d.Date; })));
 
-          /* YScale is linear based on the maxData Point we found earlier */
+          // YScale is linear based on the maxData Point we found earlier
           this.yScale = d3.scale.linear()
                                 .range([this.height,0])
                                 .domain([0, max_value]); //this.maxDataPoint]);
           var xS = this.xScale;
           var yS = this.yScale;
           
-          /* This is what creates the chart.
-             There are a number of interpolation options. 
-            'basis' smooths it the most, however, when working with a lot of data, this will slow it down 
-          */
+          // This is what creates the chart.
+          // There are a number of interpolation options. 
+          // 'basis' smooths it the most, however, when working 
+          // with a lot of data, this will slow it down 
           this.area = d3.svg.area()
                                 .interpolate("linear")  //"cardinal")  //"linear")
                                 .x(function(d) { return xS(d.Date); })
                                 .y0(this.height)
                                 .y1(function(d) { return yS(d[localName]); });
-          /* This isn't required - it simply creates a mask. If this weren't here,
-             when we zoom/panned, we'd see the chart go off to the left under the y-axis */
+          // This isn't required - it simply creates a mask. If this weren't here,
+          // when we zoom/panned, we'd see the chart go off to the left under the y-axis
           this.svg.append("defs").append("clipPath")
                                   .attr("id", "clip-" + this.id)
                                   .append("rect")
                                     .attr("width", this.width)
                                     .attr("height", this.height);
-          /* Assign it a class so we can assign a fill color and position it on the page */
+          // Assign it a class so we can assign a fill color and position it on the page
           this.chartContainer = svg.append("g")
                                     .attr('class',this.name.toLowerCase())
                                     .attr("transform", "translate(" + this.margin.left + "," + (this.margin.top + (this.height * this.id) + (10 * this.id)) + ")");
-    
-          /* We've created everything, let's actually add it to the page */
+
+          // We've created everything, let's actually add it to the page 
           this.chartContainer.append("path")
                               .data([this.chartData])
                               .attr("class", "chart")
                               .attr("clip-path", "url(#clip-" + this.id + ")")
                               .attr("d", this.area);
-                          
-          /* We only want a top axis if it's the first activity */
+
+          // horizontal line to compare against:
+          var shift_control_line = 40;
+          var current_height = this.margin.top + (this.height * this.id) + (10 * this.id);
+          var line_height = current_height + (1 - control_values[this.id]) * this.height;
+          var myLine = svg.append("svg:line")
+              .attr("x1", this.margin.left + shift_control_line)
+              .attr("y1", line_height)
+              .attr("x2", this.margin.left + width)
+              .attr("y2", line_height)
+              .style("stroke", "lightgray");
+
+
+
+
+
+
+          // We only want a top axis if it's the first activity
           /*
           this.xAxisTop = d3.svg.axis().scale(this.xScale).orient("top");
           if(this.id == 0){
@@ -485,7 +505,7 @@ function drawGraphsForMonthlyData() {
                   .call(this.xAxisTop);
           }
           */
-          /* Only want a bottom axis on the last activity */
+          // Only want a bottom axis on the last activity
           this.xAxisBottom = d3.svg.axis().scale(this.xScale).orient("bottom");
           if(this.showBottomAxis){
               this.chartContainer.append("g")
@@ -503,8 +523,8 @@ function drawGraphsForMonthlyData() {
                               .call(this.yAxis);
           this.chartContainer.append("text")
                               .attr("class","activity-title")
-                              .attr("transform", "translate(0,15)")
-                              .text(this.name);
+                              .attr("transform", "translate(0,15)");
+                              //.text(this.name);  // name from data header
         }
         Chart.prototype.showOnly = function(b){
             this.xScale.domain(b);

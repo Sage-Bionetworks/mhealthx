@@ -3,6 +3,30 @@
 @import url('demo.css');
 */
 
+.legends {
+  position: absolute; 
+}
+#voice_legend {
+  left: 925px;
+  top: 965px; 
+  height: 50px;
+}
+#walk_legend {
+  left: 950px;
+  top: 1060px; 
+  height: 50px;
+}
+#stand_legend {
+  left: 940px;
+  top: 1155px; 
+  height: 50px;
+}
+#tap_legend {
+  left: 940px;
+  top: 1235px; 
+  height: 65px;
+}
+
 #chart2 {
   position: absolute; 
   left: -60px; 
@@ -23,14 +47,6 @@
   text-shadow: 0 1px 1px rgba(255,255,255,0.8);
   font-size: 24px;
 }
-
-#chart3 {
-  position: absolute; 
-  left: -60px; 
-  top: 1600px; 
-  width: 1000px; 
-}
-
 
 svg {
   font-family: Helvetica, serif;
@@ -87,6 +103,44 @@ g.walk_post path.chart {
 g.walk_pre path.chart {
   fill: #20AED8;
   opacity: 0.75;
+}
+
+.activity {
+  position: absolute;
+  left: 30px; 
+  font-size: 14px;
+}
+#voice_post {
+  top: 927px; 
+  color: #9F5B0D;
+}
+#voice_pre {
+  top: 941px; 
+  color: #EEBE32;
+}
+#stand_post {
+  top: 1022px; 
+  color: #151515;
+}
+#stand_pre {
+  top: 1036px; 
+  color: #6E6E6E;
+}
+#tap_post {
+  top: 1117px; 
+  color: #C02504;
+}
+#tap_pre {
+  top: 1131px; 
+  color: #F78181;
+}
+#walk_post {
+  top: 1212px; 
+  color: #2C1EA2;
+}
+#walk_pre {
+  top: 1226px; 
+  color: #20AED8;
 }
 
 .axis path, .axis line {
