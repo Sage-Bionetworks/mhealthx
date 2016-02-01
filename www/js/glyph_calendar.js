@@ -292,15 +292,16 @@ function drawGraphsForMonthlyData() {
                     .attr("width", width + margin.left + margin.right)
                     .attr("height", (height + margin.top + margin.bottom));
 
-        var parseDate = d3.time.format("%y-%b-%d").parse,
-            formatPercent = d3.format(".0%");
+//        var parseDate = d3.time.format("%y-%b-%d").parse,
+//            formatPercent = d3.format(".0%");
 
         d3.csv('./data.csv', createChart);
 
         function createChart(data){
           var activities_pre = [];
           var activities_post = [];
-          var charts = [];
+          var charts1 = [];
+          var charts2 = [];
           var maxDataPoint = 0;
 
           //data.forEach(function(d) {
@@ -323,18 +324,16 @@ function drawGraphsForMonthlyData() {
               }
             }
           };
-          
+
           var activitiesCount = activities_post.length;
           var startDate = data[0].Date;
           var endDate = data[data.length - 1].Date;
           var chartHeight = height * (1 / activitiesCount);
           
-          /* Let's make sure these are all numbers, 
-          we don't want javaScript thinking it's text 
-          
-          Let's also figure out the maximum data point
-          We'll use this later to set the Y-Axis scale
-          */
+          // Let's make sure these are all numbers, 
+          // we don't want javaScript thinking it's text 
+          // Let's also figure out the maximum data point
+          // We'll use this later to set the Y-Axis scale
           data.forEach(function(d) {
             for (var prop in d) {
               if (d.hasOwnProperty(prop)) {
@@ -350,7 +349,7 @@ function drawGraphsForMonthlyData() {
           });
     
           for(var i = 0; i < activitiesCount; i++){
-            charts.push(new Chart({
+            charts1.push(new Chart({
                                   data: data.slice(),
                                   id: i,
                                   name: activities_post[i],
@@ -362,11 +361,24 @@ function drawGraphsForMonthlyData() {
                                   showBottomAxis: (i == activities_post.length - 1)
                                 }));
           }
+          for(var i = 0; i < activitiesCount; i++){
+            charts2.push(new Chart({
+                                  data: data.slice(),
+                                  id: i,
+                                  name: activities_pre[i],
+                                  width: width,
+                                  height: height * (1 / activitiesCount),
+                                  maxDataPoint: maxDataPoint,
+                                  svg: svg,
+                                  margin: margin,
+                                  showBottomAxis: (i == activities_post.length - 1)
+                                }));
+          }
 
-          /* Let's create the context brush that will let us zoom and pan the chart */
+          // Let's create the context brush that will let us zoom and pan the chart
           var contextXScale = d3.time.scale()
                                 .range([0, contextWidth])
-                                .domain(charts[0].xScale.domain()); 
+                                .domain(charts1[0].xScale.domain()); 
           var contextAxis = d3.svg.axis()
                                   .scale(contextXScale)
                                   .tickSize(contextHeight)
@@ -404,7 +416,8 @@ function drawGraphsForMonthlyData() {
             /* this will return a date range to pass into the chart object */
             var b = brush.empty() ? contextXScale.domain() : brush.extent();
             for(var i = 0; i < activitiesCount; i++){
-              charts[i].showOnly(b);
+              charts1[i].showOnly(b);
+              charts2[i].showOnly(b);
             }
           }
         }
@@ -488,7 +501,6 @@ function drawGraphsForMonthlyData() {
                               .attr("class", "y axis")
                               .attr("transform", "translate(-10,0)")
                               .call(this.yAxis);
-                              
           this.chartContainer.append("text")
                               .attr("class","activity-title")
                               .attr("transform", "translate(0,15)")

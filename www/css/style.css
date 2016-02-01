@@ -60,29 +60,33 @@ g.context g.axis line {
   stroke-opacity: .1;
 }
 
-g.voice path.chart {
+g.voice_post path.chart {
   fill: #9F5B0D;
 }
 g.voice_pre path.chart {
   fill: #EEBE32;
+  opacity: 0.75;
 }
-g.stand path.chart {
+g.stand_post path.chart {
   fill: #151515;
 }
 g.stand_pre path.chart {
   fill: #6E6E6E;
+  opacity: 0.75;
 }
-g.tap path.chart {
+g.tap_post path.chart {
   fill: #C02504;
 }
 g.tap_pre path.chart {
   fill: #F78181;
+  opacity: 0.75;
 }
-g.walk path.chart {
+g.walk_post path.chart {
   fill: #2C1EA2;
 }
 g.walk_pre path.chart {
   fill: #20AED8;
+  opacity: 0.75;
 }
 
 .axis path, .axis line {
