@@ -24,6 +24,13 @@
   font-size: 24px;
 }
 
+#chart3 {
+  position: absolute; 
+  left: -60px; 
+  top: 1600px; 
+  width: 1000px; 
+}
+
 
 svg {
   font-family: Helvetica, serif;
