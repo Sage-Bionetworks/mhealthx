@@ -1,0 +1,96 @@
+/*
+@import url('normalize.css');
+@import url('demo.css');
+*/
+
+#chart2 {
+  position: absolute; 
+  left: -60px; 
+  top: 900px; 
+  width: 1000px; 
+  margin: 0 auto 0px auto;
+  //background: rgba(255,255,255,0.5);
+  //box-shadow: 1px 1px 4px rgba(0,0,0,0.2);
+  padding: 20px 30px;
+}
+
+#chart2 h2 {
+  position: absolute; 
+  color: #444;
+  margin: 0 0 10px;
+  font-weight: 300;
+  padding: 10px;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.8);
+  font-size: 24px;
+}
+
+
+svg {
+  font-family: Helvetica, serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.8);
+}
+
+text.activity-title {
+  font-size: 18px;
+}
+
+text.instructions {
+  font-size: 14px;
+  fill: rgba(0,0,0,.5);
+}
+
+g.context g.brush rect.background {
+  fill: rgba(0,0,0,.1);
+}
+
+g.context g.axis path {
+  stroke-opacity: 0;
+}
+
+g.context g.axis line {
+  stroke-opacity: .1;
+}
+
+g.voice path.chart {
+  fill: #9F5B0D;
+}
+g.voice_pre path.chart {
+  fill: #EEBE32;
+}
+g.stand path.chart {
+  fill: #151515;
+}
+g.stand_pre path.chart {
+  fill: #6E6E6E;
+}
+g.tap path.chart {
+  fill: #C02504;
+}
+g.tap_pre path.chart {
+  fill: #F78181;
+}
+g.walk path.chart {
+  fill: #2C1EA2;
+}
+g.walk_pre path.chart {
+  fill: #20AED8;
+}
+
+.axis path, .axis line {
+  fill: none;
+  stroke: #aaa;
+  shape-rendering: crispEdges;
+}
+
+.brush .extent {
+  stroke: #f09f8c;
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
+
+g.context rect.background{
+  fill: rgb(200,200,255);
+  visibility: visible !important;
+}​
