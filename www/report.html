@@ -6,8 +6,8 @@
   <head>
     <title>mPower performance report</title>
     <script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="./css/mhealthx.css" />
-    <link rel="stylesheet" type="text/css" href="./css/style.css" />
+    <link rel="stylesheet" type="text/css" href="./css/glyph_calendar.css" />
+    <link rel="stylesheet" type="text/css" href="./css/horizon_plot.css" />
     <link href='http://fonts.googleapis.com/css?family=Lato:300,700' rel='stylesheet' type='text/css' />
     <script type="text/javascript" src="./js/modernizr.custom.79639.js"></script> 
 
@@ -42,11 +42,11 @@
           <!--INPUT TYPE="button" NAME="Go" value="Build!" onClick="selectDate()"-->
           </TD></TR>
           </TABLE>
-          <INPUT NAME="previousYear" VALUE=" <<  "  onClick="setPreviousYear()" type="image" src="assets/arrow-left2_40px.png" id="arrow">
-          <INPUT NAME="previousYear" VALUE="  <  "  onClick="setPreviousMonth()" type="image" src="assets/arrow-left_40px.png" id="arrow">
+          <INPUT NAME="previousYear" VALUE=" <<  "  onClick="setPreviousYear()" type="image" src="images/arrow-left2_40px.png" id="arrow">
+          <INPUT NAME="previousYear" VALUE="  <  "  onClick="setPreviousMonth()" type="image" src="images/arrow-left_40px.png" id="arrow">
           <INPUT TYPE=BUTTON NAME="previousYear" VALUE="Today"  onClick="setToday()" id="today">
-          <INPUT NAME="previousYear" VALUE="  >  " onClick="setNextMonth()" type="image" src="assets/arrow-right_40px.png" id="arrow">
-          <INPUT NAME="previousYear" VALUE="  >>  " onClick="setNextYear()" type="image" src="assets/arrow-right2_40px.png" id="arrow">
+          <INPUT NAME="previousYear" VALUE="  >  " onClick="setNextMonth()" type="image" src="images/arrow-right_40px.png" id="arrow">
+          <INPUT NAME="previousYear" VALUE="  >>  " onClick="setNextYear()" type="image" src="images/arrow-right2_40px.png" id="arrow">
         </div>
       <!--/FORM>
       <FORM NAME="calButtons" method="post">
@@ -75,16 +75,16 @@
       <div class="activity" id="walk_post">post</div>
       <div class="activity" id="walk_pre">pre</div>
 
-      <img src="./assets/icon_voice.png" class="legends" id="voice_legend">
-      <img src="./assets/icon_walk.png" class="legends" id="walk_legend">
-      <img src="./assets/icon_stand.png" class="legends" id="stand_legend">
-      <img src="./assets/icon_tap.png" class="legends" id="tap_legend">
+      <img src="./images/icon_voice.png" class="legends" id="voice_legend">
+      <img src="./images/icon_walk.png" class="legends" id="walk_legend">
+      <img src="./images/icon_stand.png" class="legends" id="stand_legend">
+      <img src="./images/icon_tap.png" class="legends" id="tap_legend">
 
     </div>
 
-    <script type="text/javascript" src="./js/glyph_calendar.js"></script>
+    <script type="text/javascript" src="./js/patient_report.js"></script>
 
-    <img src="./assets/patient_report_legend_20160130_640px.png" id="legend">
+    <img src="./images/patient_report_legend_20160130_640px.png" id="legend">
 
   </body>
 </html>
