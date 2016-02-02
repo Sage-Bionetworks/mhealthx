@@ -1,37 +1,19 @@
-body {
-  font: 10px sans-serif;
-}
-
-div.header {
-  position: absolute; 
-  top: 40px; 
-  left: 100px;
-  font-size: 30px;
-}
-
-div.main {
-  position: absolute; 
-  top: 100px; 
-  left: 100px;
-}
-
-#chart {
+#glyph_calendar {
   position: absolute; 
   top: 120px; 
-  left: 0px;
   width: 1000px;
 }
 
-#legend {
+#glyph_calendar_legend {
   position: absolute; 
-  top: 465px; 
-  left: 1045px;
+  top: 245px; 
+  left: 940px;
   height: 405px;
 }
 
-.day {
+.glyph_calendar_day {
   position: absolute; 
-  top: 94px; 
+  top: -26px; 
   font-size: 18px;
 }
 #Sunday {
@@ -56,13 +38,13 @@ div.main {
   left: 800px;
 }
 
-.styled-select {
+.calendar_form {
    background: transparent;
    font-size: 30px;
    border: 0;
    }
 
-.styled-select SELECT {
+.calendar_form SELECT {
    background: transparent;
    font-size: 30px;
    border: 0;
@@ -71,19 +53,19 @@ div.main {
    -webkit-appearance: none;
    }
 
-.styled-select INPUT {
+.calendar_form INPUT {
    background: transparent;
    font-size: 30px;
    border: 0;
    }
 
-#today {
+#today_button {
    position: relative; 
    left: 86px;
    font-size: 18px;
    }
 
-#arrow {
+#arrow_button {
    position: relative; 
    left: 86px;
    padding-left: 0px;

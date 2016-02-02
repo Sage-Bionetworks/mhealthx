@@ -6,8 +6,10 @@
   <head>
     <title>mPower performance report</title>
     <script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="./css/main.css" />
     <link rel="stylesheet" type="text/css" href="./css/glyph_calendar.css" />
     <link rel="stylesheet" type="text/css" href="./css/horizon_plot.css" />
+    <link rel="stylesheet" type="text/css" href="./css/barchart.css" />
     <link href='http://fonts.googleapis.com/css?family=Lato:300,700' rel='stylesheet' type='text/css' />
     <script type="text/javascript" src="./js/modernizr.custom.79639.js"></script> 
 
@@ -21,7 +23,7 @@
 
       <!-- Select-A-Month -->
       <FORM NAME="calControl" onSubmit="return false;" method="post">
-        <div class="styled-select">
+        <div class="calendar_form">
           <TABLE CELLPADDING=0 CELLSPACING=0 BORDER=0>
           <TR><TD COLSPAN=7 align="center">
           <SELECT NAME="month" onChange="selectDate()">
@@ -42,11 +44,11 @@
           <!--INPUT TYPE="button" NAME="Go" value="Build!" onClick="selectDate()"-->
           </TD></TR>
           </TABLE>
-          <INPUT NAME="previousYear" VALUE=" <<  "  onClick="setPreviousYear()" type="image" src="images/arrow-left2_40px.png" id="arrow">
-          <INPUT NAME="previousYear" VALUE="  <  "  onClick="setPreviousMonth()" type="image" src="images/arrow-left_40px.png" id="arrow">
-          <INPUT TYPE=BUTTON NAME="previousYear" VALUE="Today"  onClick="setToday()" id="today">
-          <INPUT NAME="previousYear" VALUE="  >  " onClick="setNextMonth()" type="image" src="images/arrow-right_40px.png" id="arrow">
-          <INPUT NAME="previousYear" VALUE="  >>  " onClick="setNextYear()" type="image" src="images/arrow-right2_40px.png" id="arrow">
+          <INPUT NAME="previousYear" VALUE=" <<  "  onClick="setPreviousYear()" type="image" src="images/arrow-left2_40px.png" id="arrow_button">
+          <INPUT NAME="previousYear" VALUE="  <  "  onClick="setPreviousMonth()" type="image" src="images/arrow-left_40px.png" id="arrow_button">
+          <INPUT TYPE=BUTTON NAME="previousYear" VALUE="Today"  onClick="setToday()" id="today_button">
+          <INPUT NAME="previousYear" VALUE="  >  " onClick="setNextMonth()" type="image" src="images/arrow-right_40px.png" id="arrow_button">
+          <INPUT NAME="previousYear" VALUE="  >>  " onClick="setNextYear()" type="image" src="images/arrow-right2_40px.png" id="arrow_button">
         </div>
       <!--/FORM>
       <FORM NAME="calButtons" method="post">
@@ -54,37 +56,50 @@
       </TD></TR-->
       </FORM>
 
-      <div class="day" id="Sunday">Sunday</div>
-      <div class="day" id="Monday">Monday</div>
-      <div class="day" id="Tuesday">Tuesday</div>
-      <div class="day" id="Wednesday">Wednesday</div>
-      <div class="day" id="Thursday">Thursday</div>
-      <div class="day" id="Friday">Friday</div>
-      <div class="day" id="Saturday">Saturday</div>
+      <div id="glyph_calendar">
+        <div class="glyph_calendar_day" id="Sunday">Sunday</div>
+        <div class="glyph_calendar_day" id="Monday">Monday</div>
+        <div class="glyph_calendar_day" id="Tuesday">Tuesday</div>
+        <div class="glyph_calendar_day" id="Wednesday">Wednesday</div>
+        <div class="glyph_calendar_day" id="Thursday">Thursday</div>
+        <div class="glyph_calendar_day" id="Friday">Friday</div>
+        <div class="glyph_calendar_day" id="Saturday">Saturday</div>
+        <img src="./images/patient_report_legend_20160130_640px.png" id="glyph_calendar_legend">
+      </div>
 
-      <div id="chart"></div>
+      <div id="horizon_plot">
+        <div class="activity" id="voice_post">post</div>
+        <div class="activity" id="voice_pre">pre</div>
+        <div class="activity" id="stand_post">post</div>
+        <div class="activity" id="stand_pre">pre</div>
+        <div class="activity" id="tap_post">post</div>
+        <div class="activity" id="tap_pre">pre</div>
+        <div class="activity" id="walk_post">post</div>
+        <div class="activity" id="walk_pre">pre</div>
+        <img src="./images/icon_voice.png" class="horizon_plot_legends" id="voice_legend">
+        <img src="./images/icon_walk.png" class="horizon_plot_legends" id="walk_legend">
+        <img src="./images/icon_stand.png" class="horizon_plot_legends" id="stand_legend">
+        <img src="./images/icon_tap.png" class="horizon_plot_legends" id="tap_legend">
+      </div>
 
-      <div id="chart2"></div>
-
-      <div class="activity" id="voice_post">post</div>
-      <div class="activity" id="voice_pre">pre</div>
-      <div class="activity" id="stand_post">post</div>
-      <div class="activity" id="stand_pre">pre</div>
-      <div class="activity" id="tap_post">post</div>
-      <div class="activity" id="tap_pre">pre</div>
-      <div class="activity" id="walk_post">post</div>
-      <div class="activity" id="walk_pre">pre</div>
-
-      <img src="./images/icon_voice.png" class="legends" id="voice_legend">
-      <img src="./images/icon_walk.png" class="legends" id="walk_legend">
-      <img src="./images/icon_stand.png" class="legends" id="stand_legend">
-      <img src="./images/icon_tap.png" class="legends" id="tap_legend">
+      <div id="bar_chart">
+        <div class="barchart_activity" id="voice_post">post</div>
+        <div class="barchart_activity" id="voice_pre">pre</div>
+        <div class="barchart_activity" id="stand_post">post</div>
+        <div class="barchart_activity" id="stand_pre">pre</div>
+        <div class="barchart_activity" id="tap_post">post</div>
+        <div class="barchart_activity" id="tap_pre">pre</div>
+        <div class="barchart_activity" id="walk_post">post</div>
+        <div class="barchart_activity" id="walk_pre">pre</div>
+        <img src="./images/icon_voice.png" class="barchart_legends" id="voice_legend">
+        <img src="./images/icon_walk.png" class="barchart_legends" id="walk_legend">
+        <img src="./images/icon_stand.png" class="barchart_legends" id="stand_legend">
+        <img src="./images/icon_tap.png" class="barchart_legends" id="tap_legend">
+      </div>
 
     </div>
 
     <script type="text/javascript" src="./js/report.js"></script>
-
-    <img src="./images/patient_report_legend_20160130_640px.png" id="legend">
 
   </body>
 </html>

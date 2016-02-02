@@ -1,64 +1,75 @@
-/*
-@import url('normalize.css');
-@import url('demo.css');
-*/
-
-.legends {
-  position: absolute; 
-}
-#voice_legend {
-  left: 925px;
-  top: 965px; 
-  height: 50px;
-}
-#walk_legend {
-  left: 950px;
-  top: 1060px; 
-  height: 50px;
-}
-#stand_legend {
-  left: 940px;
-  top: 1155px; 
-  height: 50px;
-}
-#tap_legend {
-  left: 940px;
-  top: 1235px; 
-  height: 65px;
-}
-
-#chart2 {
+#horizon_plot {
   position: absolute; 
   left: -60px; 
   top: 900px; 
   width: 1000px; 
   margin: 0 auto 0px auto;
-  //background: rgba(255,255,255,0.5);
-  //box-shadow: 1px 1px 4px rgba(0,0,0,0.2);
   padding: 20px 30px;
 }
 
-#chart2 h2 {
-  position: absolute; 
-  color: #444;
-  margin: 0 0 10px;
-  font-weight: 300;
-  padding: 10px;
-  text-shadow: 0 1px 1px rgba(255,255,255,0.8);
-  font-size: 24px;
+.horizon_plot_legends {
+  position: absolute;
+  height: 50px;
+}
+#voice_legend {
+  left: 985px;
+  top: 65px; 
+}
+#walk_legend {
+  left: 1010px;
+  top: 160px; 
+}
+#stand_legend {
+  left: 1000px;
+  top: 255px; 
+}
+#tap_legend {
+  left: 1000px;
+  top: 335px; 
+  height: 65px;
 }
 
-svg {
-  font-family: Helvetica, serif;
-  font-size: 10px;
-  font-weight: 700;
-  text-shadow: 0 1px 1px rgba(255,255,255,0.8);
+.activity {
+  position: absolute;
+  left: 90px; 
+  font-size: 14px;
+}
+#voice_post {
+  top: 27px; 
+  color: #9F5B0D;
+}
+#voice_pre {
+  top: 41px; 
+  color: #EEBE32;
+}
+#walk_post {
+  top: 122px; 
+  color: #2C1EA2;
+}
+#walk_pre {
+  top: 136px; 
+  color: #20AED8;
+}
+#stand_post {
+  top: 217px; 
+  color: #151515;
+}
+#stand_pre {
+  top: 231px; 
+  color: #6E6E6E;
+}
+#tap_post {
+  top: 312px; 
+  color: #C02504;
+}
+#tap_pre {
+  top: 326px; 
+  color: #F78181;
 }
 
 text.activity-title {
   font-size: 18px;
 }
-
 text.instructions {
   font-size: 14px;
   fill: rgba(0,0,0,.5);
@@ -67,80 +78,39 @@ text.instructions {
 g.context g.brush rect.background {
   fill: rgba(0,0,0,.1);
 }
-
 g.context g.axis path {
   stroke-opacity: 0;
 }
-
 g.context g.axis line {
   stroke-opacity: .1;
 }
-
-g.voice_post path.chart {
+g.voice_post path.horizon_plot {
   fill: #9F5B0D;
 }
-g.voice_pre path.chart {
+g.voice_pre path.horizon_plot {
   fill: #EEBE32;
   opacity: 0.75;
 }
-g.stand_post path.chart {
+g.stand_post path.horizon_plot {
   fill: #151515;
 }
-g.stand_pre path.chart {
+g.stand_pre path.horizon_plot {
   fill: #6E6E6E;
   opacity: 0.75;
 }
-g.tap_post path.chart {
+g.tap_post path.horizon_plot {
   fill: #C02504;
 }
-g.tap_pre path.chart {
+g.tap_pre path.horizon_plot {
   fill: #F78181;
   opacity: 0.75;
 }
-g.walk_post path.chart {
+g.walk_post path.horizon_plot {
   fill: #2C1EA2;
 }
-g.walk_pre path.chart {
+g.walk_pre path.horizon_plot {
   fill: #20AED8;
   opacity: 0.75;
-}
-
-.activity {
-  position: absolute;
-  left: 30px; 
-  font-size: 14px;
-}
-#voice_post {
-  top: 927px; 
-  color: #9F5B0D;
-}
-#voice_pre {
-  top: 941px; 
-  color: #EEBE32;
-}
-#stand_post {
-  top: 1022px; 
-  color: #151515;
-}
-#stand_pre {
-  top: 1036px; 
-  color: #6E6E6E;
-}
-#tap_post {
-  top: 1117px; 
-  color: #C02504;
-}
-#tap_pre {
-  top: 1131px; 
-  color: #F78181;
-}
-#walk_post {
-  top: 1212px; 
-  color: #2C1EA2;
-}
-#walk_pre {
-  top: 1226px; 
-  color: #20AED8;
 }
 
 .axis path, .axis line {
