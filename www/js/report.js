@@ -30,27 +30,70 @@ function getDataForMonth(number_of_values, max_value, empty_value) {
     }
     return randomData;
 };
+    //------------------------------------------------------------------------
+    // Load data
+    //------------------------------------------------------------------------
+    var parseDate = d3.time.format("%Y-%b-%d").parse;
+
+    /*
+    d3.csv('./dataYbd.csv', function(error, data) {
+        data.forEach(function(d) {
+            d.date = parseDate(d.date);
+            d.voice_pre = +d.voice_pre;
+            d.voice_post = +d.voice_post;
+            d.walk_pre = +d.walk_pre;
+            d.walk_post = +d.walk_post;
+            d.stand_pre = +d.stand_pre;
+            d.stand_post = +d.stand_post;
+            d.tap_pre = +d.tap_pre;
+            d.tap_post = +d.tap_post;
+        });
+        console.log(data[0]);
+        return data;
+    });
+    console.log(data[0]);
+    */
+
 
 //----------------------------------------------------------------------------
-// Graph glyphs within a calendar
+// Graph monthly report data
 //----------------------------------------------------------------------------
 function drawGraphsForMonthlyData() {
+
+
+    // Data file:
+    data_file = './dataYbd.csv';
+    max_value = 1;       // maximum value for randomly generated data
+    empty_value = -1;     // negative value corresponding to missing data
+    control_voice = 0.85; // line to compare with control data
+    control_walk = 0.5;   // line to compare with control data
+    control_stand = 0.75; // line to compare with control data
+    control_tap = 0.68;   // line to compare with control data
+    control_values = [control_voice, control_walk, control_stand, control_tap]
+
+    // Background colors:
+    background_color = "#e2e2e2";  // color of circle behind radial bar chart
+    empty_color = "#ffffff";       // color of background calendar squares and empty data
+    // Pairs of colors for 4 directions (pre-/post-medication for mPower's 4 activities):
+    walk_pre_color = "#20AED8";
+    walk_post_color = "#2C1EA2";
+    stand_pre_color = "#6E6E6E";
+    stand_post_color = "#151515";
+    voice_pre_color = "#EEBE32";
+    voice_post_color = "#9F5B0D";
+    tap_pre_color = "#F78181";
+    tap_post_color = "#C02504";
 
     //------------------------------------------------------------------------
     // Radial bar charts
     //------------------------------------------------------------------------
     // Number of bars per bar chart (2 for pre-/post-medication),
     // each extending from the side of a square (4 sides for 4 activities):
+    var max_value = 21;   // maximum value for randomly generated data
+    var cap_value = 20;   // value corresponding to radius of circle (e.g., control median)
     number_of_sides = 4;  // CURRENTLY FIXED
     number_of_bars = 2;   // CURRENTLY FIXED
-    max_value = 21;       // maximum value for randomly generated data
-    cap_value = 20;       // value corresponding to radius of circle (e.g., control median)
-    empty_value = -1;     // negative value corresponding to missing data
-    control_voice = 0.85; // line to compare with control data
-    control_walk = 0.5;   // line to compare with control data
-    control_stand = 0.75; // line to compare with control data
-    control_tap = 0.68;    // line to compare with control data
-    control_values = [control_voice, control_walk, control_stand, control_tap]
+    show_zoom = 1;        // show zoom/pan window below charts
     dates = [31,7,14,21,28,
              1,8,15,22,29,
              2,9,16,23,1,
@@ -58,8 +101,6 @@ function drawGraphsForMonthlyData() {
              4,11,18,25,3,
              5,12,19,26,4,
              6,13,20,27,5]
-//    dates2 = [31,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
-//              16,17,18,19,20,21,22,23,24,25,26,27,28,29,1,2,3,4];
 
     // Generate random data:
     data = getDataForMonth(number_of_sides * number_of_bars, max_value, empty_value);
@@ -108,18 +149,7 @@ function drawGraphsForMonthlyData() {
         up_data = [data[4], data[5]];
         down_data = [data[6], data[7]];
 
-        // Background colors:
-        background_color = "#e2e2e2";  // color of circle behind radial bar chart
-        empty_color = "#ffffff";       // color of background calendar squares and empty data
-        // Pairs of colors for 4 directions (pre-/post-medication for mPower's 4 activities):
-        walk_pre_color = "#20AED8";
-        walk_post_color = "#2C1EA2";
-        stand_pre_color = "#6E6E6E";
-        stand_post_color = "#151515";
-        voice_pre_color = "#EEBE32";
-        voice_post_color = "#9F5B0D";
-        tap_pre_color = "#F78181";
-        tap_post_color = "#C02504";
+        // Colors:
         colors = [walk_pre_color, walk_post_color,
                   stand_pre_color, stand_post_color,
                   voice_pre_color, voice_post_color,
@@ -286,23 +316,20 @@ function drawGraphsForMonthlyData() {
     // (http://tympanus.net/codrops/2012/08/29/multiple-area-charts-with-d3-js/)
     function horizon_plot() {  //data, cap_value, empty_value) {
 
-        var max_value = 1;
-
         var margin = {top: 10, right: 40, bottom: 150, left: 60},
             width = 980 - margin.left - margin.right,
             height = 500 - margin.top - margin.bottom,
             contextHeight = 50,
-            contextWidth = width * .5;
+            contextWidth = width * .5,
+            max_value = 1;       // maximum value for randomly generated data
 
         var svg = d3.select("#horizon_plot").append("svg")
                     .attr("width", width + margin.left + margin.right)
                     .attr("height", (height + margin.top + margin.bottom));
 
-//        var parseDate = d3.time.format("%y-%b-%d").parse,
-//            formatPercent = d3.format(".0%");
+        d3.csv(data_file, createChart);
 
-        d3.csv('./data.csv', createChart);
-
+        // Create chart:
         function createChart(data){
           var activities_pre = [];
           var activities_post = [];
@@ -310,17 +337,30 @@ function drawGraphsForMonthlyData() {
           var charts2 = [];
           var maxDataPoint = 0;
 
-//data.forEach(function(d) {
-//  d.Date = parseDate(d.Date);
-//});
+          // Load data and date numbers:
+          var idate = 0;
+          data.forEach(function(d) {
+          idate = idate + 1;
+              d.date = parseDate(d.date);
+              d.datenum = idate;
+              d.voice_pre = +d.voice_pre;
+              d.voice_post = +d.voice_post;
+              d.walk_pre = +d.walk_pre;
+              d.walk_post = +d.walk_post;
+              d.stand_pre = +d.stand_pre;
+              d.stand_post = +d.stand_post;
+              d.tap_pre = +d.tap_pre;
+              d.tap_post = +d.tap_post;
+          });
+          //console.log(data[0].date);
 
-          // Loop through first row and get each activity;
-          // push odd columns into premed and even columns
-          // into postmed activity arrays to use later:
+          // Loop through first row and get each activity
+          // and push odd columns into premed and even columns
+          // into postmed activity arrays to use later
           var col = 0;
           for (var prop in data[0]) {
             if (data[0].hasOwnProperty(prop)) {
-              if (prop != 'Date') {
+              if (prop != 'date') {
                 col = col + 1;
                 if (col % 2 == 0) {
                   activities_post.push(prop)
@@ -330,14 +370,12 @@ function drawGraphsForMonthlyData() {
               }
             }
           };
-
+    
           var activitiesCount = activities_post.length;
-          var startDate = data[0].Date;
-          var endDate = data[data.length - 1].Date;
           var chartHeight = height * (1 / activitiesCount);
-          
-          // make sure these are all numbers and identify 
-          // the maximum value to set the Y-Axis scale:
+
+          // make sure these are all numbers, and identify
+          // the maximum data point to set the Y-Axis scale
           data.forEach(function(d) {
             for (var prop in d) {
               if (d.hasOwnProperty(prop)) {
@@ -348,7 +386,7 @@ function drawGraphsForMonthlyData() {
               }
             }
             // D3 needs a date object, let's convert it just one time
-            //d.Date = new Date(d.Date,0,1);
+            //d.date = new Date(d.date,0,1);
           });
     
           for(var i = 0; i < activitiesCount; i++){
@@ -377,50 +415,52 @@ function drawGraphsForMonthlyData() {
                                   showBottomAxis: (i == activities_post.length - 1)
                                 }));
           }
-
+    
           // Let's create the context brush that will let us zoom and pan the chart
-          var contextXScale = d3.time.scale()
-                                .range([0, contextWidth])
-                                .domain(charts1[0].xScale.domain()); 
-          var contextAxis = d3.svg.axis()
-                                  .scale(contextXScale)
-                                  .tickSize(contextHeight)
-                                  .tickPadding(-10)
-                                  .orient("bottom");
-          var contextArea = d3.svg.area()
-                                  .interpolate("linear")  //*cardinal")
-                                  .x(function(d) { return contextXScale(d.Date); })
-                                  .y0(contextHeight)
-                                  .y1(0);
-          var brush = d3.svg.brush()
-                            .x(contextXScale)
-                            .on("brush", onBrush);
-          var context = svg.append("g")
-                            .attr("class","context")
-                            .attr("transform", "translate(" + (margin.left + width * .25) + "," + (height + margin.top + chartHeight) + ")");
-
-          context.append("g")
-                            .attr("class", "x axis top")
-                            .attr("transform", "translate(0,0)")
-                            .call(contextAxis)
-          context.append("g")
-                            .attr("class", "x brush")
-                            .call(brush)
-                            .selectAll("rect")
-                              .attr("y", 0)
-                              .attr("height", contextHeight);
-
-          context.append("text")
-                    .attr("class","instructions")
-                    .attr("transform", "translate(140," + (contextHeight - 24) + ")")
-                    .text('Click and drag to zoom');
-
-          function onBrush(){
-            // this will return a date range to pass into the chart object
-            var b = brush.empty() ? contextXScale.domain() : brush.extent();
-            for(var i = 0; i < activitiesCount; i++){
-              charts1[i].showOnly(b);
-              charts2[i].showOnly(b);
+          if (show_zoom == 1) {
+            var contextXScale = d3.time.scale()
+                                  .range([0, contextWidth])
+                                  .domain(charts1[0].xScale.domain()); 
+            var contextAxis = d3.svg.axis()
+                                    .scale(contextXScale)
+                                    .tickSize(contextHeight)
+                                    .tickPadding(-10)
+                                    .orient("bottom");
+            var contextArea = d3.svg.area()
+                                    .interpolate("linear")  //*cardinal")
+                                    .x(function(d) { return contextXScale(d.date); })
+                                    .y0(contextHeight)
+                                    .y1(0);
+            var brush = d3.svg.brush()
+                              .x(contextXScale)
+                              .on("brush", onBrush);
+            var context = svg.append("g")
+                              .attr("class","context")
+                              .attr("transform", "translate(" + (margin.left + width * .25) + "," + (height + margin.top + chartHeight) + ")");
+      
+            context.append("g")
+                              .attr("class", "x axis top")
+                              .attr("transform", "translate(0,0)")
+                              .call(contextAxis)
+            context.append("g")
+                              .attr("class", "x brush")
+                              .call(brush)
+                              .selectAll("rect")
+                                .attr("y", 0)
+                                .attr("height", contextHeight);
+      
+            context.append("text")
+                      .attr("class","instructions")
+                      .attr("transform", "translate(140," + (contextHeight - 24) + ")")
+                      .text('Click and drag to zoom');
+      
+            function onBrush(){
+              // this will return a date range to pass into the chart object
+              var b = brush.empty() ? contextXScale.domain() : brush.extent();
+              for(var i = 0; i < activitiesCount; i++){
+                charts1[i].showOnly(b);
+                charts2[i].showOnly(b);
+              }
             }
           }
         }
@@ -441,7 +481,7 @@ function drawGraphsForMonthlyData() {
           // XScale is time based
           this.xScale = d3.time.scale()
                                 .range([0, this.width])
-                                .domain(d3.extent(this.chartData.map(function(d, i) { return d.Date; })));
+                                .domain(d3.extent(this.chartData.map(function(d) { return d.datenum; })));
 
           // YScale is linear based on the maxData Point we found earlier
           this.yScale = d3.scale.linear()
@@ -452,12 +492,12 @@ function drawGraphsForMonthlyData() {
           
           // create the chart (with interpolation):
           this.area = d3.svg.area()
-                                .interpolate("linear")  //"cardinal")  //"linear")
-                                .x(function(d) { return xS(d.Date); })
+                                .interpolate("linear")  //"cardinal")
+                                .x(function(d) { return xS(d.datenum); })
                                 .y0(this.height)
                                 .y1(function(d) { return yS(d[localName]); });
-          // This isn't required - it simply creates a mask. If this weren't here,
-          // when we zoom/panned, we'd see the chart go off to the left under the y-axis
+          // create a mask (not required -- if not here, when we zoom/pan,
+          // we'd see the chart go off to the left under the y-axis):
           this.svg.append("defs").append("clipPath")
                                   .attr("id", "clip-" + this.id)
                                   .append("rect")
@@ -492,7 +532,6 @@ function drawGraphsForMonthlyData() {
               this.chartContainer.append("g")
                   .attr("class", "x axis bottom")
                   .attr("transform", "translate(0," + (this.height + 11) + ")")
-                  //.tickValues([1, 5, 10, 15, 20, 25, 30])
                   .call(this.xAxisBottom);
             }  
             
@@ -510,7 +549,6 @@ function drawGraphsForMonthlyData() {
         Chart.prototype.showOnly = function(b){
             this.xScale.domain(b);
             this.chartContainer.select("path").data([this.chartData]).attr("d", this.area);
-            //this.chartContainer.select(".x.axis.top").call(this.xAxisTop);
             this.chartContainer.select(".x.axis.bottom").call(this.xAxisBottom);
         }
     }
@@ -521,20 +559,20 @@ function drawGraphsForMonthlyData() {
     //------------------------------------------------------------------------
     function barchart_plot() {  //data, cap_value, empty_value) {
 
-        var max_value = 1;
-
         var margin = {top: 10, right: 40, bottom: 150, left: 60},
             width = 980 - margin.left - margin.right,
             height = 500 - margin.top - margin.bottom,
             contextHeight = 50,
-            contextWidth = width * .5;
+            contextWidth = width * .5,
+            max_value = 1;       // maximum value for randomly generated data
 
         var svg = d3.select("#bar_chart").append("svg")
                     .attr("width", width + margin.left + margin.right)
                     .attr("height", (height + margin.top + margin.bottom));
 
-        d3.csv('./data.csv', createChart);
+        d3.csv(data_file, createChart);
 
+        // Create chart:
         function createChart(data){
           var activities_pre = [];
           var activities_post = [];
@@ -542,13 +580,30 @@ function drawGraphsForMonthlyData() {
           var charts2 = [];
           var maxDataPoint = 0;
 
+          // Load data and date numbers:
+          var idate = 0;
+          data.forEach(function(d) {
+          idate = idate + 1;
+              d.date = parseDate(d.date);
+              d.datenum = idate;
+              d.voice_pre = +d.voice_pre;
+              d.voice_post = +d.voice_post;
+              d.walk_pre = +d.walk_pre;
+              d.walk_post = +d.walk_post;
+              d.stand_pre = +d.stand_pre;
+              d.stand_post = +d.stand_post;
+              d.tap_pre = +d.tap_pre;
+              d.tap_post = +d.tap_post;
+          });
+          //console.log(data[0].date);
+
           // Loop through first row and get each activity
           // and push odd columns into premed and even columns
           // into postmed activity arrays to use later
           var col = 0;
           for (var prop in data[0]) {
             if (data[0].hasOwnProperty(prop)) {
-              if (prop != 'Date') {
+              if (prop != 'date') {
                 col = col + 1;
                 if (col % 2 == 0) {
                   activities_post.push(prop)
@@ -558,16 +613,12 @@ function drawGraphsForMonthlyData() {
               }
             }
           };
-
+    
           var activitiesCount = activities_post.length;
-          var startDate = data[0].Date;
-          var endDate = data[data.length - 1].Date;
           var chartHeight = height * (1 / activitiesCount);
-          
-          // Let's make sure these are all numbers, 
-          // we don't want javaScript thinking it's text 
-          // Let's also figure out the maximum data point
-          // We'll use this later to set the Y-Axis scale
+
+          // make sure these are all numbers, and identify
+          // the maximum data point to set the Y-Axis scale
           data.forEach(function(d) {
             for (var prop in d) {
               if (d.hasOwnProperty(prop)) {
@@ -578,7 +629,7 @@ function drawGraphsForMonthlyData() {
               }
             }
             // D3 needs a date object, let's convert it just one time
-            //d.Date = new Date(d.Date,0,1);
+            //d.date = new Date(d.date,0,1);
           });
     
           for(var i = 0; i < activitiesCount; i++){
@@ -607,53 +658,57 @@ function drawGraphsForMonthlyData() {
                                   showBottomAxis: (i == activities_post.length - 1)
                                 }));
           }
-
+/*
+    
           // Let's create the context brush that will let us zoom and pan the chart
-          var contextXScale = d3.time.scale()
-                                .range([0, contextWidth])
-                                .domain(charts1[0].xScale.domain()); 
-          var contextAxis = d3.svg.axis()
-                                  .scale(contextXScale)
-                                  .tickSize(contextHeight)
-                                  .tickPadding(-10)
-                                  .orient("bottom");
-          var contextArea = d3.svg.area()
-                                  .interpolate("linear")  //*cardinal")
-                                  .x(function(d) { return contextXScale(d.Date); })
-                                  .y0(contextHeight)
-                                  .y1(0);
-          var brush = d3.svg.brush()
-                            .x(contextXScale)
-                            .on("brush", onBrush);
-          var context = svg.append("g")
-                            .attr("class","context")
-                            .attr("transform", "translate(" + (margin.left + width * .25) + "," + (height + margin.top + chartHeight) + ")");
-
-          context.append("g")
-                            .attr("class", "x axis top")
-                            .attr("transform", "translate(0,0)")
-                            .call(contextAxis)
-          context.append("g")
-                            .attr("class", "x brush")
-                            .call(brush)
-                            .selectAll("rect")
-                              .attr("y", 0)
-                              .attr("height", contextHeight);
-
-          context.append("text")
-                    .attr("class","instructions")
-                    .attr("transform", "translate(140," + (contextHeight - 24) + ")")
-                    .text('Click and drag to zoom');
-
-          function onBrush(){
-            // this will return a date range to pass into the chart object
-            var b = brush.empty() ? contextXScale.domain() : brush.extent();
-            for(var i = 0; i < activitiesCount; i++){
-              charts1[i].showOnly(b);
-              charts2[i].showOnly(b);
+          if (show_zoom == 1) {
+            var contextXScale = d3.time.scale()
+                                  .range([0, contextWidth])
+                                  .domain(charts1[0].xScale.domain()); 
+            var contextAxis = d3.svg.axis()
+                                    .scale(contextXScale)
+                                    .tickSize(contextHeight)
+                                    .tickPadding(-10)
+                                    .orient("bottom");
+            var contextArea = d3.svg.area()
+                                    .interpolate("linear")  //*cardinal")
+                                    .x(function(d) { return contextXScale(d.date); })
+                                    .y0(contextHeight)
+                                    .y1(0);
+            var brush = d3.svg.brush()
+                              .x(contextXScale)
+                              .on("brush", onBrush);
+            var context = svg.append("g")
+                              .attr("class","context")
+                              .attr("transform", "translate(" + (margin.left + width * .25) + "," + (height + margin.top + chartHeight) + ")");
+      
+            context.append("g")
+                              .attr("class", "x axis top")
+                              .attr("transform", "translate(0,0)")
+                              .call(contextAxis)
+            context.append("g")
+                              .attr("class", "x brush")
+                              .call(brush)
+                              .selectAll("rect")
+                                .attr("y", 0)
+                                .attr("height", contextHeight);
+      
+            context.append("text")
+                      .attr("class","instructions")
+                      .attr("transform", "translate(140," + (contextHeight - 24) + ")")
+                      .text('Click and drag to zoom');
+      
+            function onBrush(){
+              // this will return a date range to pass into the chart object
+              var b = brush.empty() ? contextXScale.domain() : brush.extent();
+              for(var i = 0; i < activitiesCount; i++){
+                charts1[i].showOnly(b);
+                charts2[i].showOnly(b);
+              }
             }
           }
         }
+*/
 
         function Chart(options){
           this.chartData = options.data;
@@ -668,45 +723,61 @@ function drawGraphsForMonthlyData() {
 
           var localName = this.name;
 
+
+        var bar_height = 50;
+        this.xScale = d3.scale.ordinal();
+        this.yScale = d3.scale.linear();
+
           // XScale is time based
           this.xScale = d3.time.scale()
                                 .range([0, this.width])
-                                .domain(d3.extent(this.chartData.map(function(d, i) { return d.Date; })));
+                                .domain(d3.extent(this.chartData.map(function(d) { return d.datenum; })));
 
           // YScale is linear based on the maxData Point we found earlier
-          this.yScale = d3.scale.linear()
-                                .range([this.height,0])
-                                .domain([0, max_value]); //this.maxDataPoint]);
+          this.yScale.domain([0,max_value]);
+          this.yScale.range([0,bar_height]);
           var xS = this.xScale;
           var yS = this.yScale;
-          
-          // This is what creates the chart.
-          // There are a number of interpolation options. 
-          // 'basis' smooths it the most, however, when working 
-          // with a lot of data, this will slow it down 
-          this.area = d3.svg.area()
-                                .interpolate("linear")  //"cardinal")  //"linear")
-                                .x(function(d) { return xS(d.Date); })
-                                .y0(this.height)
-                                .y1(function(d) { return yS(d[localName]); });
-          // This isn't required - it simply creates a mask. If this weren't here,
-          // when we zoom/panned, we'd see the chart go off to the left under the y-axis
+
+
+          // create the chart:
+
+          abba = svg.selectAll("rect")
+            .data(data)
+            .enter().append("rect")
+            .attr("x", function(d, i) {return i * (width / data.length);})
+              .attr("y", function(d){return bar_height - yS(d.voice_post);})
+            .attr("width", width / data.length)
+            .attr("height", function(d) {return yS(d.voice_post);})
+            .attr("fill", voice_post_color);
+
+/*          // create a mask (not required -- if not here, when we zoom/pan,
+          // we'd see the chart go off to the left under the y-axis):
           this.svg.append("defs").append("clipPath")
                                   .attr("id", "clip-" + this.id)
                                   .append("rect")
                                     .attr("width", this.width)
                                     .attr("height", this.height);
+*/
           // Assign it a class so we can assign a fill color and position it on the page
           this.chartContainer = svg.append("g")
                                     .attr('class',this.name.toLowerCase())
                                     .attr("transform", "translate(" + this.margin.left + "," + (this.margin.top + (this.height * this.id) + (10 * this.id)) + ")");
 
+
+
+
+
           // We've created everything, let's actually add it to the page 
-          this.chartContainer.append("path")
+          this.chartContainer.append("barchart1")
                               .data([this.chartData])
-                              .attr("class", "chart")
+                              .attr("class", "bar_chart")
                               .attr("clip-path", "url(#clip-" + this.id + ")")
                               .attr("d", this.area);
+
+
+
+
 
           // horizontal line to compare against:
           var shift_control_line = 40;
@@ -719,13 +790,12 @@ function drawGraphsForMonthlyData() {
               .attr("y2", line_height)
               .style("stroke", "lightgray");
 
-          // Only want a bottom axis on the last activity
+          // bottom axis on the last activity
           this.xAxisBottom = d3.svg.axis().scale(this.xScale).orient("bottom");
           if(this.showBottomAxis){
               this.chartContainer.append("g")
                   .attr("class", "x axis bottom")
                   .attr("transform", "translate(0," + (this.height + 11) + ")")
-                  //.tickValues([1, 5, 10, 15, 20, 25, 30])
                   .call(this.xAxisBottom);
             }  
             
@@ -742,10 +812,10 @@ function drawGraphsForMonthlyData() {
         }
         Chart.prototype.showOnly = function(b){
             this.xScale.domain(b);
-            this.chartContainer.select("path").data([this.chartData]).attr("d", this.area);
-            //this.chartContainer.select(".x.axis.top").call(this.xAxisTop);
+            this.chartContainer.select("barchart1").data([this.chartData]).attr("d", abba);
             this.chartContainer.select(".x.axis.bottom").call(this.xAxisBottom);
         }
+    }
     }
 }
 

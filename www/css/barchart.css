@@ -7,6 +7,28 @@
   padding: 20px 30px;
 }
 
+#voice_post_bars {
+  left: 90px;
+  top: 64px; 
+}
+#voice_pre_bars {
+  left: 90px;
+  top: 64px; 
+}
+#walk_bars {
+  left: 1030px;
+  top: 160px; 
+}
+#stand_bars {
+  left: 1020px;
+  top: 255px; 
+}
+#tap_bars {
+  left: 1020px;
+  top: 335px; 
+  height: 65px;
+}
+
 .barchart_legends {
   position: absolute;
   height: 50px;
@@ -31,7 +53,7 @@
 
 .barchart_activity {
   position: absolute;
-  left: 90px; 
+  left: 60px; 
   font-size: 14px;
 }
 #voice_post {
