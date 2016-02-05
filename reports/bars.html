@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<!-- This website presents a patient report of mPower activities.-->
+<!-- Authors: Arno Klein, 2016  (arno@sagebase.org) http://binarybottle.com -->
+<!-- Copyright 2016, Sage Bionetworks (sagebase.org), Apache v2.0 License -->
+<html>
+  <head>
+    <title>mPower performance report</title>
+    <script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="./css/main.css" />
+    <link rel="stylesheet" type="text/css" href="./css/bars.css" />
+  </head>
+  <body>  <!-- onLoad="setToday()"-->
+    <div class="header">mPower performance report
+      <a href="pies.html">pies</a>
+      <a href="spokes.html">spokes</a>
+      <a href="bars.html"><b>BARS</b></a>
+      <a href="lines.html">lines</a>
+    </div>
+
+    <div class="main">
+
+      <div id="title_date">February 2016</div>
+      <!-- Select-A-Month -->
+      <!--FORM NAME="calControl" onSubmit="return false;" method="post">
+        <div class="calendar_form">
+          <TABLE CELLPADDING=0 CELLSPACING=0 BORDER=0>
+          <TR><TD COLSPAN=7 align="center">
+          <SELECT NAME="month" onChange="selectDate()">
+            <OPTION>January</OPTION>
+            <OPTION>February</OPTION>
+            <OPTION>March</OPTION>
+            <OPTION>April</OPTION>
+            <OPTION>May</OPTION>
+            <OPTION>June</OPTION>
+            <OPTION>July</OPTION>
+            <OPTION>August</OPTION>
+            <OPTION>September</OPTION>
+            <OPTION>October</OPTION>
+            <OPTION>November</OPTION>
+            <OPTION>December</OPTION>
+          </SELECT>
+          <INPUT NAME="year" TYPE=TEXT SIZE=4 MAXLENGTH=4>
+          </TD></TR>
+          </TABLE>
+          <INPUT NAME="previousYear" VALUE=" <<  "  onClick="setPreviousYear()" type="image" src="images/arrow-left2_40px.png" id="arrow_button">
+          <INPUT NAME="previousYear" VALUE="  <  "  onClick="setPreviousMonth()" type="image" src="images/arrow-left_40px.png" id="arrow_button">
+          <INPUT TYPE=BUTTON NAME="previousYear" VALUE="Today"  onClick="setToday()" id="today_button">
+          <INPUT NAME="previousYear" VALUE="  >  " onClick="setNextMonth()" type="image" src="images/arrow-right_40px.png" id="arrow_button">
+          <INPUT NAME="previousYear" VALUE="  >>  " onClick="setNextYear()" type="image" src="images/arrow-right2_40px.png" id="arrow_button">
+        </div>
+      <!--/FORM>
+      <!--FORM NAME="calButtons" method="post">
+      <TR><TD><textarea FONT="Courier" NAME="calPage" WRAP=no ROWS=8 COLS=22></textarea></TD><TR><TD>
+      </TD></TR>
+      </FORM-->
+
+      <div id="barcharts_main">
+        <div class="barcharts"  id="voice_post_bars"></div>
+        <div class="barcharts"  id="voice_pre_bars"></div>
+        <div class="barcharts"  id="walk_post_bars"></div>
+        <div class="barcharts"  id="walk_pre_bars"></div>
+        <div class="barcharts"  id="stand_post_bars"></div>
+        <div class="barcharts"  id="stand_pre_bars"></div>
+        <div class="barcharts"  id="tap_post_bars"></div>
+        <div class="barcharts"  id="tap_pre_bars"></div>
+        <div class="barchart_axis">01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29</div>
+        <div class="barchart_prepost"  id="voice_post">post</div>
+        <div class="barchart_prepost"  id="voice_pre">pre</div>
+        <div class="barchart_prepost"  id="stand_post">post</div>
+        <div class="barchart_prepost"  id="stand_pre">pre</div>
+        <div class="barchart_prepost"  id="tap_post">post</div>
+        <div class="barchart_prepost"  id="tap_pre">pre</div>
+        <div class="barchart_prepost"  id="walk_post">post</div>
+        <div class="barchart_prepost"  id="walk_pre">pre</div>
+        <img src="./images/icon_voice.png" class="barchart_legends" id="voice_legend_bars">
+        <img src="./images/icon_walk.png" class="barchart_legends" id="walk_legend_bars">
+        <img src="./images/icon_stand.png" class="barchart_legends" id="stand_legend_bars">
+        <img src="./images/icon_tap.png" class="barchart_legends" id="tap_legend_bars">
+      </div>
+
+    </div>
+
+    <script type="text/javascript" src="./js/bars.js"></script>
+
+    <!--CALENDAR  (http://www.javascriptkit.com/script/script2/anymonthcal.shtml)
+        Any-Month calendar script: Rob Patrick (rpatrick@mit.edu) -->
+    <!--script type="text/javascript" src="./js/any_month_calendar.js"></script-->
+
+    <div class="footer">
+     &copy; <a href="http://sagebase.org">Sage Bionetworks</a>
+     <br />
+     study: <a href="http://parkinsonmpower.org">mPower</a>
+     <br />
+     code: <a href="https://github.com/Sage-Bionetworks/mhealthx">Github</a>
+     <br />
+     design: <a href="http://binarybottle.com">arno</a>
+     <br />
+    </div>
+
+  </body>
+</html>

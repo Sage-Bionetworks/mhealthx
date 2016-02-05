@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<!-- This website presents a patient report of mPower activities.-->
+<!-- Authors: Arno Klein, 2016  (arno@sagebase.org) http://binarybottle.com -->
+<!-- Copyright 2016, Sage Bionetworks (sagebase.org), Apache v2.0 License -->
+<html>
+  <head>
+    <title>mPower performance report</title>
+    <script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="./css/main.css" />
+    <link rel="stylesheet" type="text/css" href="./css/spokes.css" />
+    <link href='http://fonts.googleapis.com/css?family=Lato:300,700' rel='stylesheet' type='text/css' />
+    <script type="text/javascript" src="./js/modernizr.custom.79639.js"></script> 
+  </head>
+  <body>  <!-- onLoad="setToday()"-->
+    <div class="header">mPower performance report
+      <a href="pies.html">pies</a>
+      <a href="spokes.html"><b>SPOKES</b></a>
+      <a href="bars.html">bars</a>
+      <a href="lines.html">lines</a>
+    </div>
+
+    <div class="main">
+
+      <div id="title_date"><span id="month"></span> <span id="year"></span></div>
+      <!-- Select-A-Month -->
+      <!--FORM NAME="calControl" onSubmit="return false;" method="post">
+        <div class="calendar_form">
+          <TABLE CELLPADDING=0 CELLSPACING=0 BORDER=0>
+          <TR><TD COLSPAN=7 align="center">
+          <SELECT NAME="month" onChange="selectDate()">
+            <OPTION>January</OPTION>
+            <OPTION>February</OPTION>
+            <OPTION>March</OPTION>
+            <OPTION>April</OPTION>
+            <OPTION>May</OPTION>
+            <OPTION>June</OPTION>
+            <OPTION>July</OPTION>
+            <OPTION>August</OPTION>
+            <OPTION>September</OPTION>
+            <OPTION>October</OPTION>
+            <OPTION>November</OPTION>
+            <OPTION>December</OPTION>
+          </SELECT>
+          <INPUT NAME="year" TYPE=TEXT SIZE=4 MAXLENGTH=4>
+          </TD></TR>
+          </TABLE>
+          <INPUT NAME="previousYear" VALUE=" <<  "  onClick="setPreviousYear()" type="image" src="images/arrow-left2_40px.png" id="arrow_button">
+          <INPUT NAME="previousYear" VALUE="  <  "  onClick="setPreviousMonth()" type="image" src="images/arrow-left_40px.png" id="arrow_button">
+          <INPUT TYPE=BUTTON NAME="previousYear" VALUE="Today"  onClick="setToday()" id="today_button">
+          <INPUT NAME="previousYear" VALUE="  >  " onClick="setNextMonth()" type="image" src="images/arrow-right_40px.png" id="arrow_button">
+          <INPUT NAME="previousYear" VALUE="  >>  " onClick="setNextYear()" type="image" src="images/arrow-right2_40px.png" id="arrow_button">
+        </div>
+      </FORM-->
+      <!--/FORM>
+      <FORM NAME="calButtons" method="post">
+      <TR><TD><textarea FONT="Courier" NAME="calPage" WRAP=no ROWS=8 COLS=22></textarea></TD><TR><TD>
+      </TD></TR-->
+
+      <div id="glyph_calendar">
+        <div class="glyph_calendar_day" id="Sunday">Sunday</div>
+        <div class="glyph_calendar_day" id="Monday">Monday</div>
+        <div class="glyph_calendar_day" id="Tuesday">Tuesday</div>
+        <div class="glyph_calendar_day" id="Wednesday">Wednesday</div>
+        <div class="glyph_calendar_day" id="Thursday">Thursday</div>
+        <div class="glyph_calendar_day" id="Friday">Friday</div>
+        <div class="glyph_calendar_day" id="Saturday">Saturday</div>
+        <img src="./images/spokes_legend.png" id="glyph_calendar_legend">
+      </div>
+
+    </div>
+
+    <script type="text/javascript" src="./js/spokes.js"></script>
+
+    <!--CALENDAR  (http://www.javascriptkit.com/script/script2/anymonthcal.shtml)
+        Any-Month calendar script: Rob Patrick (rpatrick@mit.edu) -->
+    <!--script type="text/javascript" src="./js/any_month_calendar.js"></script-->
+
+    <div class="footer">
+     &copy; <a href="http://sagebase.org">Sage Bionetworks</a>
+     <br />
+     study: <a href="http://parkinsonmpower.org">mPower</a>
+     <br />
+     code: <a href="https://github.com/Sage-Bionetworks/mhealthx">Github</a>
+     <br />
+     design: <a href="http://binarybottle.com">arno</a>
+     <br />
+    </div>
+
+  </body>
+</html>

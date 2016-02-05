@@ -1,7 +1,7 @@
 #horizon_plot {
   position: absolute; 
   left: -60px; 
-  top: 900px; 
+  top: 60px; 
   width: 1000px; 
   margin: 0 auto 0px auto;
   padding: 20px 30px;
@@ -29,7 +29,7 @@
   height: 65px;
 }
 
-.activity {
+.horizon_prepost {
   position: absolute;
   left: 90px; 
   font-size: 14px;
@@ -73,6 +73,20 @@ text.activity-title {
 text.instructions {
   font-size: 14px;
   fill: rgba(0,0,0,.5);
+}
+
+.horizon_axis {
+  position: absolute;
+  top: 408px;
+  left: 86px;
+  font-size: 11px;
+  word-spacing: 16px;
+}
+
+.footer {
+  position: absolute;
+  top: 650px;
+  left: 100px;
 }
 
 g.context g.brush rect.background {
@@ -129,3 +143,4 @@ g.context rect.background{
   fill: rgb(200,200,255);
   visibility: visible !important;
 }​
+

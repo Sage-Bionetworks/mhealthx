@@ -1,0 +1,121 @@
+#barcharts_main {
+  position: absolute; 
+  left: 0px;
+  top: 60px;
+  width: 880px;
+}
+.barcharts {
+  position: absolute;
+  left: 40px; 
+}
+#voice_post_bars {
+  top: 35px; 
+}
+#voice_pre_bars {
+  top: 35px; 
+}
+#walk_post_bars {
+  top: 130px; 
+}
+#walk_pre_bars {
+  top: 130px; 
+}
+#stand_post_bars {
+  top: 225px; 
+}
+#stand_pre_bars {
+  top: 225px; 
+}
+#tap_post_bars {
+  top: 320px; 
+}
+#tap_pre_bars {
+  top: 320px; 
+}
+
+.barchart_legends {
+  position: absolute;
+  height: 50px;
+}
+#voice_legend_bars {
+  left: 925px;
+  top: 65px; 
+}
+#walk_legend_bars {
+  left: 950px;
+  top: 160px; 
+}
+#stand_legend_bars {
+  left: 940px;
+  top: 255px; 
+}
+#tap_legend_bars {
+  left: 940px;
+  top: 335px; 
+  height: 65px;
+}
+
+.barchart_prepost {
+  position: absolute;
+  left: 0px; 
+  font-size: 14px;
+}
+
+#voice_post {
+  top: 27px; 
+  color: #9F5B0D;
+}
+#voice_pre {
+  top: 41px; 
+  color: #EEBE32;
+}
+#walk_post {
+  top: 122px; 
+  color: #2C1EA2;
+}
+#walk_pre {
+  top: 136px; 
+  color: #20AED8;
+}
+#stand_post {
+  top: 217px; 
+  color: #151515;
+}
+#stand_pre {
+  top: 231px; 
+  color: #6E6E6E;
+}
+#tap_post {
+  top: 312px; 
+  color: #C02504;
+}
+#tap_pre {
+  top: 326px; 
+  color: #F78181;
+}
+
+.barchart_axis {
+  position: absolute;
+  top: 408px;
+  left: 50px;
+  font-size: 11px;
+  word-spacing: 15px;
+}
+
+
+.axis {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.footer {
+  position: absolute;
+  top: 650px;
+  left: 100px;
+}

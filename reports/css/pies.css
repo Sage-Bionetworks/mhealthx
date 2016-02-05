@@ -1,14 +1,18 @@
 #glyph_calendar {
   position: absolute; 
-  top: 120px; 
+  top: 100px; 
   width: 1000px;
+}
+
+#glyph_calendar_title {
+  font-size: 30px;
 }
 
 #glyph_calendar_legend {
   position: absolute; 
-  top: 245px; 
+  top: 267px; 
   left: 940px;
-  height: 405px;
+  height: 330px;
 }
 
 .glyph_calendar_day {
@@ -38,6 +42,7 @@
   left: 800px;
 }
 
+/*
 .calendar_form {
    background: transparent;
    font-size: 30px;
@@ -74,3 +79,9 @@
    height: 10px;
    width: 10px;
    }
+*/
+.footer {
+  position: absolute;
+  top: 900px;
+  left: 100px;
+}
