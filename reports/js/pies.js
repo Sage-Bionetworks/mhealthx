@@ -108,8 +108,6 @@ d3.csv(data_file, function(error, data) {
     // Pie chart function
     //--------------------------------------------------------------------
     function pie_charts(data_values, data_colors, date, is_empty_cell) { 
-//console.log(data_values)
-console.log(data_colors)
 
         var svg = d3.select('#glyph_calendar')
                     .append('svg')

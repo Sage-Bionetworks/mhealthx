@@ -14,11 +14,19 @@
 var parseDate = d3.time.format("%Y-%b-%d").parse;
 var show_zoom = 0;
 
-function drawGraphsForMonthlyData() {
+// Data:
+data_file = './data.txt';
+parseDate = d3.time.format("%Y-%b-%d").parse;
+parse_year = d3.time.format("%Y");
+parse_month = d3.time.format("%B");
+parse_date = d3.time.format("%d");
 
+//------------------------------------------------------------------------
+// Load data
+//------------------------------------------------------------------------
+d3.csv(data_file, function(error, data) {
 
     // Data file:
-    data_file = './data.txt';
     max_value = 1;       // maximum value for randomly generated data
     empty_value = -1;     // negative value corresponding to missing data
     control_voice = 0.85; // line to compare with control data
@@ -41,6 +49,15 @@ function drawGraphsForMonthlyData() {
     tap_pre_color = "#F78181";
     tap_post_color = "#C02504";
 
+    // Add month and year to the top of the graphic:
+    data.forEach(function(d) {
+        d.year = parse_year(parseDate(d.date));
+        d.month = parse_month(parseDate(d.date));
+    });
+    var middate = Math.round(data.length/2);
+    document.getElementById("month").innerHTML = data[middate].month;
+    document.getElementById("year").innerHTML = data[middate].year;
+
     // Create a horizon plot for all activities and dates:
     horizon_plot(); //data, cap_value, empty_value);
 
@@ -54,8 +71,7 @@ function drawGraphsForMonthlyData() {
             width = 980 - margin.left - margin.right,
             height = 500 - margin.top - margin.bottom,
             contextHeight = 50,
-            contextWidth = width * .5,
-            max_value = 1;       // maximum value for randomly generated data
+            contextWidth = width * .5;
 
         var svg = d3.select("#horizon_plot").append("svg")
                     .attr("width", width + margin.left + margin.right)
@@ -74,9 +90,9 @@ function drawGraphsForMonthlyData() {
           // Load data and date numbers:
           var idate = 0;
           data.forEach(function(d) {
-          idate = idate + 1;
-              d.date = parseDate(d.date);
+              idate = idate + 1;
               d.datenum = idate;
+              d.date = +parse_date(parseDate(d.date));
               d.voice_pre = +d.voice_pre;
               d.voice_post = +d.voice_post;
               d.walk_pre = +d.walk_pre;
@@ -162,7 +178,7 @@ function drawGraphsForMonthlyData() {
                                     .orient("bottom");
             var contextArea = d3.svg.area()
                                     .interpolate("linear")  //*cardinal")
-                                    .x(function(d) { return contextXScale(d.date); })
+                                    .x(function(d) { return contextXScale(d.datenum); })
                                     .y0(contextHeight)
                                     .y1(0);
             var brush = d3.svg.brush()
@@ -213,10 +229,10 @@ function drawGraphsForMonthlyData() {
 
           var localName = this.name;
 
-          // XScale is time based
-          this.xScale = d3.time.scale()
+          // XScale
+          this.xScale = d3.scale.linear()  // time.scale()
                   .range([0, this.width])
-                  .domain(d3.extent(this.chartData.map(function(d) { return d.datenum; })));
+                  .domain(d3.extent(this.chartData.map(function(d) { return +d.datenum; })));
 
           // YScale is linear based on the maxData Point we found earlier
           this.yScale = d3.scale.linear()
@@ -224,7 +240,7 @@ function drawGraphsForMonthlyData() {
                                 .domain([0, max_value]); //this.maxDataPoint]);
           var xS = this.xScale;
           var yS = this.yScale;
-          
+
           // create the chart (with interpolation):
           this.area = d3.svg.area()
                                 .interpolate("linear")  //"cardinal")
@@ -263,15 +279,13 @@ function drawGraphsForMonthlyData() {
               .style("stroke", "lightgray");
 
           // bottom axis on the last activity
-          /*
-          this.xAxisBottom = d3.svg.axis().scale(this.xScale).orient("bottom");
+          this.xAxisBottom = d3.svg.axis().scale(this.xScale).orient("bottom").ticks(31);
           if(this.showBottomAxis){
               this.chartContainer.append("g")
                   .attr("class", "x axis bottom")
                   .attr("transform", "translate(0," + (this.height + 11) + ")")
                   .call(this.xAxisBottom);
-            }  
-          */
+          }  
           this.yAxis = d3.svg.axis().scale(this.yScale).orient("left").ticks(1);
 
           this.chartContainer.append("g")
@@ -286,10 +300,7 @@ function drawGraphsForMonthlyData() {
         Chart.prototype.showOnly = function(b){
             this.xScale.domain(b);
             this.chartContainer.select("path").data([this.chartData]).attr("d", this.area);
-            //this.chartContainer.select(".x.axis.bottom").call(this.xAxisBottom);
+            this.chartContainer.select(".x.axis.bottom").call(this.xAxisBottom);
         }
     }
-}
-
-
-drawGraphsForMonthlyData();
+});

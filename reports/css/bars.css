@@ -62,35 +62,35 @@
 }
 
 #voice_post {
-  top: 27px; 
+  top: 87px; 
   color: #9F5B0D;
 }
 #voice_pre {
-  top: 41px; 
+  top: 101px; 
   color: #EEBE32;
 }
 #walk_post {
-  top: 122px; 
+  top: 182px; 
   color: #2C1EA2;
 }
 #walk_pre {
-  top: 136px; 
+  top: 196px; 
   color: #20AED8;
 }
 #stand_post {
-  top: 217px; 
+  top: 277px; 
   color: #151515;
 }
 #stand_pre {
-  top: 231px; 
+  top: 291px; 
   color: #6E6E6E;
 }
 #tap_post {
-  top: 312px; 
+  top: 372px; 
   color: #C02504;
 }
 #tap_pre {
-  top: 326px; 
+  top: 386px; 
   color: #F78181;
 }
 
