@@ -57,6 +57,8 @@ d3.csv(data_file, function(error, data) {
     var middate = Math.round(data.length/2);
     document.getElementById("month").innerHTML = data[middate].month;
     document.getElementById("year").innerHTML = data[middate].year;
+    // axis label:
+    document.getElementById("xaxis_label").innerHTML = "day in " + data[middate].month;
 
     // Create a horizon plot for all activities and dates:
     horizon_plot(); //data, cap_value, empty_value);
@@ -277,6 +279,18 @@ d3.csv(data_file, function(error, data) {
               .attr("x2", this.margin.left + width)
               .attr("y2", line_height)
               .style("stroke", "lightgray");
+
+          // Enclosing box:
+          /*
+          rect = svg.append('svg:rect')
+              .attr('width', width)
+              .attr('height', height/4)
+              .attr('x', margin.left)
+              .attr('y', margin.top)
+              .style("stroke", "black")
+              .style("stroke-width", 1)
+              .style("fill", "transparent");
+          */
 
           // bottom axis on the last activity
           this.xAxisBottom = d3.svg.axis().scale(this.xScale).orient("bottom").ticks(31);

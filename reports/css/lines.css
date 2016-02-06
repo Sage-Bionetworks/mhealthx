@@ -127,6 +127,15 @@ g.walk_pre path.horizon_plot {
   opacity: 0.75;
 }
 
+#xaxis_label {
+  position: absolute;
+  top: 440px;
+  #text-align: center;
+  left: 470px;
+  font: 14px sans-serif;
+}
+
+
 .axis path, .axis line {
   fill: none;
   stroke: #aaa;

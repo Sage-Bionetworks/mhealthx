@@ -62,46 +62,37 @@
 }
 
 #voice_post {
-  top: 87px; 
+  top: 62px; 
   color: #9F5B0D;
 }
 #voice_pre {
-  top: 101px; 
+  top: 76px; 
   color: #EEBE32;
 }
 #walk_post {
-  top: 182px; 
+  top: 157px; 
   color: #2C1EA2;
 }
 #walk_pre {
-  top: 196px; 
+  top: 171px; 
   color: #20AED8;
 }
 #stand_post {
-  top: 277px; 
+  top: 252px; 
   color: #151515;
 }
 #stand_pre {
-  top: 291px; 
+  top: 266px; 
   color: #6E6E6E;
 }
 #tap_post {
-  top: 372px; 
+  top: 347px; 
   color: #C02504;
 }
 #tap_pre {
-  top: 386px; 
+  top: 361px; 
   color: #F78181;
 }
-
-.barchart_axis {
-  position: absolute;
-  top: 408px;
-  left: 50px;
-  font-size: 11px;
-  word-spacing: 15px;
-}
-
 
 .axis {
   font: 10px sans-serif;
@@ -114,8 +105,46 @@
   shape-rendering: crispEdges;
 }
 
+#xaxis_label {
+  position: absolute;
+  top: 430px;
+  #text-align: center;
+  left: 430px;
+  font: 14px sans-serif;
+}
+
+.yaxis_labels {
+  position: absolute;
+  left: 30px;
+  font: 10px sans-serif;
+}
+#yaxis_label1 {
+  top: 30px;
+}
+#yaxis_label2 {
+  top: 110px;
+}
+#yaxis_label3 {
+  top: 125px;
+}
+#yaxis_label4 {
+  top: 205px;
+}
+#yaxis_label5 {
+  top: 220px;
+}
+#yaxis_label6 {
+  top: 300px;
+}
+#yaxis_label7 {
+  top: 315px;
+}
+#yaxis_label8 {
+  top: 395px;
+}
+
 .footer {
   position: absolute;
-  top: 650px;
+  top: 640px;
   left: 100px;
 }

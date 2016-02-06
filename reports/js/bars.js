@@ -67,7 +67,8 @@ d3.csv(data_file, function(error, data) {
         d.month = parse_month(parseDate(d.date));
     });
     var middate = Math.round(data.length/2);
-    document.getElementById("month").innerHTML = data[middate].month;
+    month_name = data[middate].month;
+    document.getElementById("month").innerHTML = month_name;
     document.getElementById("year").innerHTML = data[middate].year;
 
     //------------------------------------------------------------------------
@@ -124,6 +125,17 @@ d3.csv(data_file, function(error, data) {
             .attr("x2", width)
             .attr("y2", line_height)
             .style("stroke", "lightgray");
+
+        // Enclosing box:
+        rect = svg.append('rect')
+            .attr('width', width)
+            .attr('height', height/4 - 5)
+            .attr('x', 0)
+            .attr('y', 0)
+            .style("stroke", "black")
+            .style("stroke-width", 1)
+            .style("fill", "transparent");
+
       });
     }
 
@@ -174,13 +186,24 @@ d3.csv(data_file, function(error, data) {
           .style("opacity", barchart_opacity);
 
         // horizontal line to compare against:
-        var line_height = (1 - control_voice) * height/4;
+        var line_height = (1 - control_walk) * height/4;
         var myLine = svg.append("svg:line")
             .attr("x1", 0)
             .attr("y1", line_height)
             .attr("x2", width)
             .attr("y2", line_height)
             .style("stroke", "lightgray");
+
+        // Enclosing box:
+        rect = svg.append('rect')
+            .attr('width', width)
+            .attr('height', height/4 - 5)
+            .attr('x', 0)
+            .attr('y', 0)
+            .style("stroke", "black")
+            .style("stroke-width", 1)
+            .style("fill", "transparent");
+
       });
     }
 
@@ -231,13 +254,24 @@ d3.csv(data_file, function(error, data) {
           .style("opacity", barchart_opacity);
 
         // horizontal line to compare against:
-        var line_height = (1 - control_voice) * height/4;
+        var line_height = (1 - control_stand) * height/4;
         var myLine = svg.append("svg:line")
             .attr("x1", 0)
             .attr("y1", line_height)
             .attr("x2", width)
             .attr("y2", line_height)
             .style("stroke", "lightgray");
+
+        // Enclosing box:
+        rect = svg.append('rect')
+            .attr('width', width)
+            .attr('height', height/4 - 5)
+            .attr('x', 0)
+            .attr('y', 0)
+            .style("stroke", "black")
+            .style("stroke-width", 1)
+            .style("fill", "transparent");
+
       });
     }
 
@@ -262,6 +296,7 @@ d3.csv(data_file, function(error, data) {
           .attr("width", width / data.length)
           .attr("height", function(d) {return yScale(d.tap_post);})
           .attr("fill", tap_post_color);
+
       });
     }
 
@@ -288,6 +323,8 @@ d3.csv(data_file, function(error, data) {
                 .range([0, width])
                 .domain([0, idate]);  //data.map(function (d) { return +d.datenum; }));
             xAxis = d3.svg.axis().scale(xScale).orient("bottom").ticks(31);
+                //.attr("transform", "translate(-5,0)");
+
             yAxis = d3.svg.axis()
                 .scale(yScale)
                 .orient("left")
@@ -315,7 +352,7 @@ d3.csv(data_file, function(error, data) {
                 .style("opacity", barchart_opacity);
 
             // horizontal line to compare against:
-            var line_height = (1 - control_voice) * height/4;
+            var line_height = (1 - control_tap) * height/4;
             var myLine = svg.append("svg:line")
                 .attr("x1", 0)
                 .attr("y1", line_height)
@@ -323,6 +360,26 @@ d3.csv(data_file, function(error, data) {
                 .attr("y2", line_height)
                 .style("stroke", "lightgray");
 
+            // Enclosing box:
+            rect = svg.append('rect')
+                .attr('width', width)
+                .attr('height', height/4 - 5)
+                .attr('x', 0)
+                .attr('y', 0)
+                .style("stroke", "black")
+                .style("stroke-width", 1)
+                .style("fill", "transparent");
+
+            // axis labels:
+            document.getElementById("xaxis_label").innerHTML = "day in " + month_name;
+            document.getElementById("yaxis_label1").innerHTML = max_value;
+            document.getElementById("yaxis_label2").innerHTML = "0";
+            document.getElementById("yaxis_label3").innerHTML = max_value;
+            document.getElementById("yaxis_label4").innerHTML = "0";
+            document.getElementById("yaxis_label5").innerHTML = max_value;
+            document.getElementById("yaxis_label6").innerHTML = "0";
+            document.getElementById("yaxis_label7").innerHTML = max_value;
+            document.getElementById("yaxis_label8").innerHTML = "0";
 
       });
     }
