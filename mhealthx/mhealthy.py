@@ -165,7 +165,7 @@ path = os.environ['MHEALTHX_OUTPUT']
 for table in tables:
 
     table = os.path.join(path, 'feature_tables',
-                         'tap_row0_v0_9d44a388-5d7e-4271-8705-2faa66204486.csv']
+                         'tap_row0_v0_9d44a388-5d7e-4271-8705-2faa66204486.csv')
     column_headers = ['tapping_results.json.ButtonRectLeft',
                       'accel_tapping.json.items']
     username = ''
