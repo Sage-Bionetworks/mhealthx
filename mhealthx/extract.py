@@ -60,6 +60,7 @@ def make_row_table(file_path, table_stem, save_rows, row, row_data,
         try:
             feature_row.to_csv(feature_table)
         except IOError as e:
+            import traceback; traceback.print_exc()
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
             feature_table = None
     else:
@@ -70,6 +71,7 @@ def make_row_table(file_path, table_stem, save_rows, row, row_data,
         try:
             row_to_table(feature_row, feature_table)
         except IOError as e:
+            import traceback; traceback.print_exc()
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
             feature_table = None
 
@@ -190,7 +192,9 @@ def run_openSMILE(audio_file, command, flag1, flags, flagn, args, closing,
         try:
             row_data = pd.read_csv(argn, sep=";")
         except IOError as e:
+            import traceback; traceback.print_exc()
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
+            print("filename = ", argn)
         # Write feature row to a table or append to a feature table:
         else:
             feature_row, feature_table = make_row_table(argn, table_stem,

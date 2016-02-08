@@ -69,6 +69,7 @@ def extract_synapse_rows(synapse_table, save_path=None, limit=None,
         results = syn.tableQuery('select * from {0} {1}'.
                                  format(synapse_table, limit_string))
     except IOError as e:
+        import traceback; traceback.print_exc()
         print("I/O error({0}): {1}".format(e.errno, e.strerror))
         rows = None
         row_files = None
@@ -92,6 +93,7 @@ def extract_synapse_rows(synapse_table, save_path=None, limit=None,
                 try:
                     row_series.to_csv(csv_file)
                 except IOError as e:
+                    import traceback; traceback.print_exc()
                     print("I/O error({0}): {1}".format(e.errno, e.strerror))
                 else:
                     rows.append(row_series)
@@ -178,6 +180,7 @@ def read_file_from_synapse_table(synapse_table, row, column_name,
                             downloadLocation=out_path)
         filepath = fileinfo['path']
     except IOError as e:
+        import traceback; traceback.print_exc()
         print("I/O error({0}): {1}".format(e.errno, e.strerror))
         filepath = None
 
@@ -693,6 +696,7 @@ def convert_audio_file(old_file, new_file, command='ffmpeg',
             cli.cmdline
             cli.run()
         except:
+            import traceback; traceback.print_exc()
             print("'{0} {1}' unsuccessful".format(command, input_args))
             new_file = None
 
@@ -849,6 +853,7 @@ def concatenate_tables_vertically(tables, output_csv_file=None):
             if output_csv_file:
                 table_data.to_csv(output_csv_file, index=False)
         except:
+            import traceback; traceback.print_exc()
             table_data = None
             output_csv_file = None
 
