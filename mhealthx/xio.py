@@ -172,8 +172,8 @@ def read_file_from_synapse_table(synapse_table, row, column_name,
                                                 row['ROW_VERSION'],
                                                 row['recordId'])
         fileinfo = syn.downloadTableFile(synapse_table,
-                            rowId=row['ROW_ID'][0],
-                            versionNumber=row['ROW_VERSION'][0],
+                            rowId=row['ROW_ID'],
+                            versionNumber=row['ROW_VERSION'],
                             column=column_name,
                             downloadLocation=out_path)
         filepath = fileinfo['path']
