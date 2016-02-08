@@ -315,6 +315,12 @@ elif synID_voice and not setup_rows:
         os.path.join(feature_table_path, 'voice{0}'.format(smile_string))
     SMILEvoice.inputs.save_rows = True
 
+    ## Create output directory
+    output_dir = os.path.dirname(SMILEvoice.inputs.table_stem)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print "Created output directory: ", output_dir
+
     # ------------------------------------------------------------------------
     # Repeat for voice countdown data:
     # ------------------------------------------------------------------------
@@ -323,6 +329,12 @@ elif synID_voice and not setup_rows:
     Flow.connect(getPhonation0, 'row', SMILEvoice0, 'row')
     SMILEvoice0.inputs.table_stem = os.path.join(feature_table_path,
         'voice_count{0}'.format(smile_string))
+
+    ## Create output directory
+    output_dir = os.path.dirname(SMILEvoice0.inputs.table_stem)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print "Created output directory: ", output_dir
 
 
 # ============================================================================
