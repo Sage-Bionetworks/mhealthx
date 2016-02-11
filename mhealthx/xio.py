@@ -54,11 +54,11 @@ def extract_synapse_rows(synapse_table, save_path=None, limit=None,
     import synapseclient
 
     # Log in to Synapse:
-    syn = synapseclient.Synapse()
+    syn = synapseclient.Synapse(skip_checks=True)
     if username and password:
-        syn.login(username, password)
+        syn.login(username, password, silent=True)
     else:
-        syn.login()
+        syn.login(silent=True)
 
     # Synapse table query:
     if limit:
@@ -161,11 +161,11 @@ def read_file_from_synapse_table(synapse_table, row, column_name,
         raise IOError("row should be a pandas Series or a file string")
 
     # Log in to Synapse:
-    syn = synapseclient.Synapse()
+    syn = synapseclient.Synapse(skip_checks=True)
     if username and password:
-        syn.login(username, password)
+        syn.login(username, password, silent=True)
     else:
-        syn.login()
+        syn.login(silent=True)
 
     # Try to download file with column_name in row:
     try:
@@ -960,13 +960,13 @@ def write_synapse_table(table_data, synapse_project_id, table_name='',
     import synapseclient
     from synapseclient import Schema, Table, as_table_columns
 
-    syn = synapseclient.Synapse()
+    syn = synapseclient.Synapse(skip_checks=True)
 
     # Log in to Synapse:
     if username and password:
-        syn.login(username, password)
+        syn.login(username, password, silent=True)
     else:
-        syn.login()
+        syn.login(silent=True)
 
     #table_data.index = range(table_data.shape[0])
 
