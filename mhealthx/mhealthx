@@ -150,14 +150,22 @@ else:
 #
 # ============================================================================
 # openSMILE information:
-smile_v2_1 = 'openSMILE-2.1.0'
-smile_v2_2 = 'openSMILE-2.2rc1'
-smile_config1 = 'IS13_ComParE.conf'
-smile_config2 = os.path.join('gemaps', 'GeMAPSv01a_core.lld.conf.inc')
-smile_string1 = '_{0}_{1}'.format(smile_v2_1, smile_config1)
 if dependencies:
-    smile_config_file1 = os.path.join(dependencies, smile_v2_1,
-                                      'config', smile_config1)
+    # find openSmile directory in order to track what version we're using
+    # smile_version = 'openSMILE-2.1.0'
+    smile_version = 'openSMILE-2.2rc1'
+    smile_dir = os.path.join(dependencies, smile_version)
+    if not os.path.isdir(smile_dir):
+        raise IOError("Couldn't find openSmile at "+smile_dir)
+    else:
+        print "found ", smile_version
+
+    # smile_config = 'IS13_ComParE.conf'
+    smile_config = os.path.join('gemaps', 'GeMAPSv01a.conf')
+    smile_string = '_{0}_{1}'.format(smile_version, smile_config)
+
+    smile_config_file = os.path.join(dependencies, smile_version,
+                                        'config', smile_config)
 else:
     raise Warning("dependencies not set -- cannot run openSMILE!")
 
@@ -301,11 +309,17 @@ elif synID_voice and not setup_rows:
     SMILEvoice.inputs.flag1 = '-I'
     SMILEvoice.inputs.flags = '-C'
     SMILEvoice.inputs.flagn = '-csvoutput'
-    SMILEvoice.inputs.args = smile_config_file1
+    SMILEvoice.inputs.args = smile_config_file
     SMILEvoice.inputs.closing = '-nologfile 1'
     SMILEvoice.inputs.table_stem = \
-        os.path.join(feature_table_path, 'voice{0}'.format(smile_string1))
+        os.path.join(feature_table_path, 'voice{0}'.format(smile_string))
     SMILEvoice.inputs.save_rows = True
+
+    ## Create output directory
+    output_dir = os.path.dirname(SMILEvoice.inputs.table_stem)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print "Created output directory: ", output_dir
 
     # ------------------------------------------------------------------------
     # Repeat for voice countdown data:
@@ -314,7 +328,13 @@ elif synID_voice and not setup_rows:
     Flow.connect(getPhonation0, 'new_file', SMILEvoice0, 'audio_file')
     Flow.connect(getPhonation0, 'row', SMILEvoice0, 'row')
     SMILEvoice0.inputs.table_stem = os.path.join(feature_table_path,
-        'voice_count{0}'.format(smile_string1))
+        'voice_count{0}'.format(smile_string))
+
+    ## Create output directory
+    output_dir = os.path.dirname(SMILEvoice0.inputs.table_stem)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print "Created output directory: ", output_dir
 
 
 # ============================================================================
@@ -757,7 +777,7 @@ elif synID_walk and not setup_rows:
     SMILEbalanceX.inputs.flag1 = '-I'
     SMILEbalanceX.inputs.flags = '-C'
     SMILEbalanceX.inputs.flagn = '-csvoutput'
-    SMILEbalanceX.inputs.args = smile_config_file1
+    SMILEbalanceX.inputs.args = smile_config_file
     SMILEbalanceX.inputs.closing = '-nologfile 1'
     SMILEbalanceX.inputs.save_rows = True
 
@@ -770,11 +790,11 @@ elif synID_walk and not setup_rows:
     Flow.connect(getBalance, 'row', SMILEbalanceY, 'row')
     Flow.connect(getBalance, 'row', SMILEbalanceZ, 'row')
     SMILEbalanceX.inputs.table_stem = \
-        os.path.join(feature_table_path, 'balance_x{0}'.format(smile_string1))
+        os.path.join(feature_table_path, 'balance_x{0}'.format(smile_string))
     SMILEbalanceY.inputs.table_stem = \
-        os.path.join(feature_table_path, 'balance_y{0}'.format(smile_string1))
+        os.path.join(feature_table_path, 'balance_y{0}'.format(smile_string))
     SMILEbalanceZ.inputs.table_stem = \
-        os.path.join(feature_table_path, 'balance_z{0}'.format(smile_string1))
+        os.path.join(feature_table_path, 'balance_z{0}'.format(smile_string))
 
     # ------------------------------------------------------------------------
     # Repeat for walk data:
@@ -797,7 +817,7 @@ elif synID_walk and not setup_rows:
     SMILEwalkX.inputs.flag1 = '-I'
     SMILEwalkX.inputs.flags = '-C'
     SMILEwalkX.inputs.flagn = '-csvoutput'
-    SMILEwalkX.inputs.args = smile_config_file1
+    SMILEwalkX.inputs.args = smile_config_file
     SMILEwalkX.inputs.closing = '-nologfile 1'
     SMILEwalkX.inputs.save_rows = True
 
@@ -811,11 +831,11 @@ elif synID_walk and not setup_rows:
     Flow.connect(getWalking, 'row', SMILEwalkY, 'row')
     Flow.connect(getWalking, 'row', SMILEwalkZ, 'row')
     SMILEwalkX.inputs.table_stem = \
-        os.path.join(feature_table_path, 'walk_x{0}'.format(smile_string1))
+        os.path.join(feature_table_path, 'walk_x{0}'.format(smile_string))
     SMILEwalkY.inputs.table_stem = \
-        os.path.join(feature_table_path, 'walk_y{0}'.format(smile_string1))
+        os.path.join(feature_table_path, 'walk_y{0}'.format(smile_string))
     SMILEwalkZ.inputs.table_stem = \
-        os.path.join(feature_table_path, 'walk_z{0}'.format(smile_string1))
+        os.path.join(feature_table_path, 'walk_z{0}'.format(smile_string))
 
 # ============================================================================
 #

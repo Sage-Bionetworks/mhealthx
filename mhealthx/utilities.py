@@ -83,6 +83,7 @@ def run_command(command, flag1='', arg1='', flags='', args=[],
         cli.cmdline
         cli.run()
     except:
+        import traceback; traceback.print_exc()
         print("'{0}' unsuccessful".format(command_line))
 
     return command_line, args, arg1, argn
