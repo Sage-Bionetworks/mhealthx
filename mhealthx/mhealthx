@@ -706,52 +706,52 @@ elif synID_walk and not setup_rows:
     # ------------------------------------------------------------------------
     # Convert balance data from json to wav format for each axis:
     # ------------------------------------------------------------------------
-    WAVbalanceX = Node(name='convert_balance_x_to_wav',
-                       interface=Fn(function=write_wav,
-                                    input_names=['data',
-                                                 'file_stem',
-                                                 'file_append',
-                                                 'sample_rate',
-                                                 'amplitude'],
-                                    output_names=['wav_file']))
-    WAVbalanceX.inputs.file_append = '.wav'
-    WAVbalanceX.inputs.amplitude = 32700
-    WAVbalanceY = WAVbalanceX.clone('convert_balance_y_to_wav')
-    WAVbalanceZ = WAVbalanceX.clone('convert_balance_z_to_wav')
-    Flow.connect(getBalance, 'ax', WAVbalanceX, 'data')
-    Flow.connect(getBalance, 'ay', WAVbalanceY, 'data')
-    Flow.connect(getBalance, 'az', WAVbalanceZ, 'data')
-    Flow.connect(getBalance, 'file_path', WAVbalanceX, 'file_stem')
-    Flow.connect(getBalance, 'file_path', WAVbalanceY, 'file_stem')
-    Flow.connect(getBalance, 'file_path', WAVbalanceZ, 'file_stem')
-    Flow.connect(getBalance, 'sample_rate', WAVbalanceX, 'sample_rate')
-    Flow.connect(getBalance, 'sample_rate', WAVbalanceY, 'sample_rate')
-    Flow.connect(getBalance, 'sample_rate', WAVbalanceZ, 'sample_rate')
+    # WAVbalanceX = Node(name='convert_balance_x_to_wav',
+    #                    interface=Fn(function=write_wav,
+    #                                 input_names=['data',
+    #                                              'file_stem',
+    #                                              'file_append',
+    #                                              'sample_rate',
+    #                                              'amplitude'],
+    #                                 output_names=['wav_file']))
+    # WAVbalanceX.inputs.file_append = '.wav'
+    # WAVbalanceX.inputs.amplitude = 32700
+    # WAVbalanceY = WAVbalanceX.clone('convert_balance_y_to_wav')
+    # WAVbalanceZ = WAVbalanceX.clone('convert_balance_z_to_wav')
+    # Flow.connect(getBalance, 'ax', WAVbalanceX, 'data')
+    # Flow.connect(getBalance, 'ay', WAVbalanceY, 'data')
+    # Flow.connect(getBalance, 'az', WAVbalanceZ, 'data')
+    # Flow.connect(getBalance, 'file_path', WAVbalanceX, 'file_stem')
+    # Flow.connect(getBalance, 'file_path', WAVbalanceY, 'file_stem')
+    # Flow.connect(getBalance, 'file_path', WAVbalanceZ, 'file_stem')
+    # Flow.connect(getBalance, 'sample_rate', WAVbalanceX, 'sample_rate')
+    # Flow.connect(getBalance, 'sample_rate', WAVbalanceY, 'sample_rate')
+    # Flow.connect(getBalance, 'sample_rate', WAVbalanceZ, 'sample_rate')
 
     # ------------------------------------------------------------------------
     # Repeat for walk data:
     # ------------------------------------------------------------------------
-    WAVwalkX = Node(name='convert_walk_x_to_wav',
-                    interface=Fn(function=write_wav,
-                                 input_names=['data',
-                                              'file_stem',
-                                              'file_append',
-                                              'sample_rate',
-                                              'amplitude'],
-                                 output_names=['wav_file']))
-    WAVwalkX.inputs.file_append = '.wav'
-    WAVwalkX.inputs.amplitude = 32700
-    WAVwalkY = WAVwalkX.clone('convert_walk_y_to_wav')
-    WAVwalkZ = WAVwalkX.clone('convert_walk_z_to_wav')
-    Flow.connect(projectAccel, 'px', WAVwalkX, 'data')
-    Flow.connect(projectAccel, 'py', WAVwalkY, 'data')
-    Flow.connect(projectAccel, 'pz', WAVwalkZ, 'data')
-    Flow.connect(getBalance, 'file_path', WAVwalkX, 'file_stem')
-    Flow.connect(getBalance, 'file_path', WAVwalkY, 'file_stem')
-    Flow.connect(getBalance, 'file_path', WAVwalkZ, 'file_stem')
-    Flow.connect(getBalance, 'sample_rate', WAVwalkX, 'sample_rate')
-    Flow.connect(getBalance, 'sample_rate', WAVwalkY, 'sample_rate')
-    Flow.connect(getBalance, 'sample_rate', WAVwalkZ, 'sample_rate')
+    # WAVwalkX = Node(name='convert_walk_x_to_wav',
+    #                 interface=Fn(function=write_wav,
+    #                              input_names=['data',
+    #                                           'file_stem',
+    #                                           'file_append',
+    #                                           'sample_rate',
+    #                                           'amplitude'],
+    #                              output_names=['wav_file']))
+    # WAVwalkX.inputs.file_append = '.wav'
+    # WAVwalkX.inputs.amplitude = 32700
+    # WAVwalkY = WAVwalkX.clone('convert_walk_y_to_wav')
+    # WAVwalkZ = WAVwalkX.clone('convert_walk_z_to_wav')
+    # Flow.connect(projectAccel, 'px', WAVwalkX, 'data')
+    # Flow.connect(projectAccel, 'py', WAVwalkY, 'data')
+    # Flow.connect(projectAccel, 'pz', WAVwalkZ, 'data')
+    # Flow.connect(getBalance, 'file_path', WAVwalkX, 'file_stem')
+    # Flow.connect(getBalance, 'file_path', WAVwalkY, 'file_stem')
+    # Flow.connect(getBalance, 'file_path', WAVwalkZ, 'file_stem')
+    # Flow.connect(getBalance, 'sample_rate', WAVwalkX, 'sample_rate')
+    # Flow.connect(getBalance, 'sample_rate', WAVwalkY, 'sample_rate')
+    # Flow.connect(getBalance, 'sample_rate', WAVwalkZ, 'sample_rate')
 
     # ------------------------------------------------------------------------
     # openSMILE on each axis of balance data:
@@ -759,83 +759,83 @@ elif synID_walk and not setup_rows:
     # 2. Construct a feature row from the original and openSMILE rows.
     # 3. Write the feature row to a table or append to a feature table.
     # ------------------------------------------------------------------------
-    SMILEbalanceX = Node(name='openSMILE_balance_x',
-                         interface=Fn(function=run_openSMILE,
-                                      input_names=['audio_file',
-                                                   'command',
-                                                   'flag1',
-                                                   'flags',
-                                                   'flagn',
-                                                   'args',
-                                                   'closing',
-                                                   'row',
-                                                   'table_stem',
-                                                   'save_rows'],
-                                      output_names=['feature_row',
-                                                    'feature_table']))
-    SMILEbalanceX.inputs.command = 'SMILExtract'
-    SMILEbalanceX.inputs.flag1 = '-I'
-    SMILEbalanceX.inputs.flags = '-C'
-    SMILEbalanceX.inputs.flagn = '-csvoutput'
-    SMILEbalanceX.inputs.args = smile_config_file
-    SMILEbalanceX.inputs.closing = '-nologfile 1'
-    SMILEbalanceX.inputs.save_rows = True
+    # SMILEbalanceX = Node(name='openSMILE_balance_x',
+    #                      interface=Fn(function=run_openSMILE,
+    #                                   input_names=['audio_file',
+    #                                                'command',
+    #                                                'flag1',
+    #                                                'flags',
+    #                                                'flagn',
+    #                                                'args',
+    #                                                'closing',
+    #                                                'row',
+    #                                                'table_stem',
+    #                                                'save_rows'],
+    #                                   output_names=['feature_row',
+    #                                                 'feature_table']))
+    # SMILEbalanceX.inputs.command = 'SMILExtract'
+    # SMILEbalanceX.inputs.flag1 = '-I'
+    # SMILEbalanceX.inputs.flags = '-C'
+    # SMILEbalanceX.inputs.flagn = '-csvoutput'
+    # SMILEbalanceX.inputs.args = smile_config_file
+    # SMILEbalanceX.inputs.closing = '-nologfile 1'
+    # SMILEbalanceX.inputs.save_rows = True
 
-    SMILEbalanceY = SMILEbalanceX.clone('openSMILE_balance_y')
-    SMILEbalanceZ = SMILEbalanceX.clone('openSMILE_balance_z')
-    Flow.connect(WAVbalanceX, 'wav_file', SMILEbalanceX, 'audio_file')
-    Flow.connect(WAVbalanceY, 'wav_file', SMILEbalanceY, 'audio_file')
-    Flow.connect(WAVbalanceZ, 'wav_file', SMILEbalanceZ, 'audio_file')
-    Flow.connect(getBalance, 'row', SMILEbalanceX, 'row')
-    Flow.connect(getBalance, 'row', SMILEbalanceY, 'row')
-    Flow.connect(getBalance, 'row', SMILEbalanceZ, 'row')
-    SMILEbalanceX.inputs.table_stem = \
-        os.path.join(feature_table_path, 'balance_x{0}'.format(smile_string))
-    SMILEbalanceY.inputs.table_stem = \
-        os.path.join(feature_table_path, 'balance_y{0}'.format(smile_string))
-    SMILEbalanceZ.inputs.table_stem = \
-        os.path.join(feature_table_path, 'balance_z{0}'.format(smile_string))
+    # SMILEbalanceY = SMILEbalanceX.clone('openSMILE_balance_y')
+    # SMILEbalanceZ = SMILEbalanceX.clone('openSMILE_balance_z')
+    # Flow.connect(WAVbalanceX, 'wav_file', SMILEbalanceX, 'audio_file')
+    # Flow.connect(WAVbalanceY, 'wav_file', SMILEbalanceY, 'audio_file')
+    # Flow.connect(WAVbalanceZ, 'wav_file', SMILEbalanceZ, 'audio_file')
+    # Flow.connect(getBalance, 'row', SMILEbalanceX, 'row')
+    # Flow.connect(getBalance, 'row', SMILEbalanceY, 'row')
+    # Flow.connect(getBalance, 'row', SMILEbalanceZ, 'row')
+    # SMILEbalanceX.inputs.table_stem = \
+    #     os.path.join(feature_table_path, 'balance_x{0}'.format(smile_string))
+    # SMILEbalanceY.inputs.table_stem = \
+    #     os.path.join(feature_table_path, 'balance_y{0}'.format(smile_string))
+    # SMILEbalanceZ.inputs.table_stem = \
+    #     os.path.join(feature_table_path, 'balance_z{0}'.format(smile_string))
 
     # ------------------------------------------------------------------------
     # Repeat for walk data:
     # ------------------------------------------------------------------------
-    SMILEwalkX = Node(name='openSMILE_walk_x',
-                      interface=Fn(function=run_openSMILE,
-                                   input_names=['audio_file',
-                                                'command',
-                                                'flag1',
-                                                'flags',
-                                                'flagn',
-                                                'args',
-                                                'closing',
-                                                'row',
-                                                'table_stem',
-                                                'save_rows'],
-                                   output_names=['feature_row',
-                                                 'feature_table']))
-    SMILEwalkX.inputs.command = 'SMILExtract'
-    SMILEwalkX.inputs.flag1 = '-I'
-    SMILEwalkX.inputs.flags = '-C'
-    SMILEwalkX.inputs.flagn = '-csvoutput'
-    SMILEwalkX.inputs.args = smile_config_file
-    SMILEwalkX.inputs.closing = '-nologfile 1'
-    SMILEwalkX.inputs.save_rows = True
+    # SMILEwalkX = Node(name='openSMILE_walk_x',
+    #                   interface=Fn(function=run_openSMILE,
+    #                                input_names=['audio_file',
+    #                                             'command',
+    #                                             'flag1',
+    #                                             'flags',
+    #                                             'flagn',
+    #                                             'args',
+    #                                             'closing',
+    #                                             'row',
+    #                                             'table_stem',
+    #                                             'save_rows'],
+    #                                output_names=['feature_row',
+    #                                              'feature_table']))
+    # SMILEwalkX.inputs.command = 'SMILExtract'
+    # SMILEwalkX.inputs.flag1 = '-I'
+    # SMILEwalkX.inputs.flags = '-C'
+    # SMILEwalkX.inputs.flagn = '-csvoutput'
+    # SMILEwalkX.inputs.args = smile_config_file
+    # SMILEwalkX.inputs.closing = '-nologfile 1'
+    # SMILEwalkX.inputs.save_rows = True
 
-    #SMILEwalkX = SMILEbalanceX.clone('openSMILE_walk_x')
-    SMILEwalkY = SMILEwalkX.clone('openSMILE_walk_y')
-    SMILEwalkZ = SMILEwalkX.clone('openSMILE_walk_z')
-    Flow.connect(WAVwalkX, 'wav_file', SMILEwalkX, 'audio_file')
-    Flow.connect(WAVwalkY, 'wav_file', SMILEwalkY, 'audio_file')
-    Flow.connect(WAVwalkZ, 'wav_file', SMILEwalkZ, 'audio_file')
-    Flow.connect(getWalking, 'row', SMILEwalkX, 'row')
-    Flow.connect(getWalking, 'row', SMILEwalkY, 'row')
-    Flow.connect(getWalking, 'row', SMILEwalkZ, 'row')
-    SMILEwalkX.inputs.table_stem = \
-        os.path.join(feature_table_path, 'walk_x{0}'.format(smile_string))
-    SMILEwalkY.inputs.table_stem = \
-        os.path.join(feature_table_path, 'walk_y{0}'.format(smile_string))
-    SMILEwalkZ.inputs.table_stem = \
-        os.path.join(feature_table_path, 'walk_z{0}'.format(smile_string))
+    # #SMILEwalkX = SMILEbalanceX.clone('openSMILE_walk_x')
+    # SMILEwalkY = SMILEwalkX.clone('openSMILE_walk_y')
+    # SMILEwalkZ = SMILEwalkX.clone('openSMILE_walk_z')
+    # Flow.connect(WAVwalkX, 'wav_file', SMILEwalkX, 'audio_file')
+    # Flow.connect(WAVwalkY, 'wav_file', SMILEwalkY, 'audio_file')
+    # Flow.connect(WAVwalkZ, 'wav_file', SMILEwalkZ, 'audio_file')
+    # Flow.connect(getWalking, 'row', SMILEwalkX, 'row')
+    # Flow.connect(getWalking, 'row', SMILEwalkY, 'row')
+    # Flow.connect(getWalking, 'row', SMILEwalkZ, 'row')
+    # SMILEwalkX.inputs.table_stem = \
+    #     os.path.join(feature_table_path, 'walk_x{0}'.format(smile_string))
+    # SMILEwalkY.inputs.table_stem = \
+    #     os.path.join(feature_table_path, 'walk_y{0}'.format(smile_string))
+    # SMILEwalkZ.inputs.table_stem = \
+    #     os.path.join(feature_table_path, 'walk_z{0}'.format(smile_string))
 
 # ============================================================================
 #
