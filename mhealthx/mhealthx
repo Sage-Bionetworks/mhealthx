@@ -203,32 +203,32 @@ path_tap = os.path.join(row_path, 'row_files_tap')
 # Voice: phonation (microphone)
 #
 # ============================================================================
+if not os.path.isdir(path_voice):
+    os.makedirs(path_voice)
+
+# ------------------------------------------------------------------------
+# Retrieve information about all voice files in Synapse table:
+# ------------------------------------------------------------------------
+GetPhonationRows = Node(name='retrieve_voice_rows',
+                        interface=Fn(function=extract_synapse_rows,
+                                     input_names=['synapse_table',
+                                                  'save_path',
+                                                  'limit',
+                                                  'username',
+                                                  'password'],
+                                     output_names=['row_data',
+                                                   'row_files']))
+GetPhonationRows.inputs.synapse_table = synID_voice
+GetPhonationRows.inputs.save_path = path_voice
+if args.rows:
+    GetPhonationRows.inputs.limit = args.rows
+else:
+    GetPhonationRows.inputs.limit = None
+GetPhonationRows.inputs.username = ''
+GetPhonationRows.inputs.password = ''
+
 if synID_voice and setup_rows:
-    if not os.path.isdir(path_voice):
-        os.makedirs(path_voice)
-
-    # ------------------------------------------------------------------------
-    # Retrieve information about all voice files in Synapse table:
-    # ------------------------------------------------------------------------
-    GetPhonationRows = Node(name='retrieve_voice_rows',
-                            interface=Fn(function=extract_synapse_rows,
-                                         input_names=['synapse_table',
-                                                      'save_path',
-                                                      'limit',
-                                                      'username',
-                                                      'password'],
-                                         output_names=['row_data',
-                                                       'row_files']))
     Flow.add_nodes([GetPhonationRows])
-    GetPhonationRows.inputs.synapse_table = synID_voice
-    GetPhonationRows.inputs.save_path = path_voice
-    if args.rows:
-        GetPhonationRows.inputs.limit = args.rows
-    else:
-        GetPhonationRows.inputs.limit = None
-    GetPhonationRows.inputs.username = ''
-    GetPhonationRows.inputs.password = ''
-
 elif synID_voice and not setup_rows:
     if records:
         fid = open(records)
