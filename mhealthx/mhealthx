@@ -139,10 +139,6 @@ else:
 synID_voice = args.voice
 synID_walk = args.walk
 synID_tap = args.tap
-if args.numproc:
-    nproc = args.numproc
-else:
-    nproc = 1
 
 # ============================================================================
 #
@@ -978,7 +974,7 @@ if __name__ == '__main__':
         config.set('logging', 'workflow_level', 'DEBUG')
         logging.update_logging(config)
         Flow.config['execution']['stop_on_first_rerun'] = True
-        nproc = 1
+        args.numproc = 1
 
     # ------------------------------------------------------------------------
     # Run with or without a plugin:
@@ -990,9 +986,9 @@ if __name__ == '__main__':
             Flow.run(plugin=args.plugin, plugin_args=eval(args.plugin_args))
         else:
             Flow.run(plugin=args.plugin)
-    elif nproc > 1:
+    elif args.numproc > 1:
         Flow.run(plugin='MultiProc',
-                 plugin_args={'n_procs': nproc})
+                 plugin_args={'n_procs': args.numproc})
     else:
         Flow.run()  # Use all processors: Flow.run(plugin='MultiProc')
 
