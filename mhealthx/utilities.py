@@ -270,3 +270,11 @@ def plot_vectors(x, y, z, hx=[], hy=[], hz=[], title=''):
     plt.title(title)
     plt.draw()
     plt.show()
+
+def create_directory(path):
+    import os
+    if not os.path.exists(path):
+        os.makedirs(path)
+        print "Created directory: ", path
+
+

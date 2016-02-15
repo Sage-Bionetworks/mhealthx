@@ -51,12 +51,9 @@ def make_row_table(file_path, table_stem, save_rows, row, row_data,
 
     # Write feature row to a table or append to a feature table:
     if save_rows:
-        if file_path.endswith('.csv'):
-            feature_table = '{0}_{1}'.format(table_stem,
-                                             os.path.basename(file_path))
-        else:
-            feature_table = '{0}_{1}.csv'.format(table_stem,
-                                                 os.path.basename(file_path))
+        if not file_path.endswith('.csv'):
+            file_path = file_path + '.csv'
+        feature_table = os.path.join(table_stem, os.path.basename(file_path))
         try:
             feature_row.to_csv(feature_table)
         except IOError as e:

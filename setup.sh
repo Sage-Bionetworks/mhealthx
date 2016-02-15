@@ -37,14 +37,15 @@ fi
 if [ ! -d $INSTALLS ]; then
     mkdir -p $INSTALLS;
 fi
-export $INSTALLS
+export INSTALLS
 export PATH=$INSTALLS/bin:$PATH
 
 #-----------------------------------------------------------------------------
 # System-wide dependencies:
 #-----------------------------------------------------------------------------
 sudo apt-get update
-#sudo apt-get install -y git
+sudo apt-get install -y git
+sudo apt-get install -y build-essential
 
 #-----------------------------------------------------------------------------
 # Anaconda's miniconda Python distribution for local installs:
